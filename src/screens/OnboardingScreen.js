@@ -1,7 +1,25 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { useAuth } from '../context/AuthContext';
+import { colors } from '../styles/colors';
 
 export default function OnboardingScreen({ navigation }) {
+  const { loginAnonymously } = useAuth();
+  const [loading, setLoading] = useState(false);
+
+  const handleGuestLogin = async () => {
+    try {
+      setLoading(true);
+      await loginAnonymously();
+      // Navigation will happen automatically via AuthContext
+    } catch (error) {
+      console.error('Guest login error:', error);
+      Alert.alert('Error', 'Failed to continue as guest. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.content}>
@@ -16,9 +34,26 @@ export default function OnboardingScreen({ navigation }) {
         <TouchableOpacity
           style={styles.button}
           onPress={() => navigation.navigate('Login')}
+          disabled={loading}
         >
           <Text style={styles.buttonText}>Get Started</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.guestButton}
+          onPress={handleGuestLogin}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color={colors.text.tertiary} />
+          ) : (
+            <Text style={styles.guestButtonText}>Continue as Guest</Text>
+          )}
+        </TouchableOpacity>
+
+        <Text style={styles.guestNote}>
+          Try the app without signing up. You can create an account later to save your progress.
+        </Text>
       </View>
     </View>
   );
@@ -27,7 +62,7 @@ export default function OnboardingScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: colors.background.primary,
   },
   content: {
     flex: 1,
@@ -38,19 +73,19 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#FF6B6B',
+    color: colors.accent.primary,
     marginBottom: 20,
   },
   tagline: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
     textAlign: 'center',
     marginBottom: 12,
   },
   description: {
     fontSize: 16,
-    color: '#CCCCCC',
+    color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -59,14 +94,41 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   button: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: colors.accent.primary,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: colors.text.primary,
     fontSize: 18,
     fontWeight: '600',
+  },
+  guestButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.divider,
+    marginBottom: 16,
+  },
+  guestButtonText: {
+    color: colors.text.tertiary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  guestNote: {
+    fontSize: 12,
+    color: colors.text.placeholder,
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: 10,
   },
 });

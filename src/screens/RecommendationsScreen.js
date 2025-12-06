@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { api } from '../services/api';
+import CollectionPickerModal from '../components/CollectionPickerModal';
+import SkeletonLoader from '../components/SkeletonLoader';
+import OptimizedImage from '../components/OptimizedImage';
 
 export default function RecommendationsScreen() {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [collectionModalVisible, setCollectionModalVisible] = useState(false);
+  const [selectedGame, setSelectedGame] = useState(null);
 
   useEffect(() => {
     loadGames();
@@ -13,21 +19,38 @@ export default function RecommendationsScreen() {
   const loadGames = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await api.getRecommendations(null, 50);
       setGames(data);
     } catch (error) {
       console.error('Error loading games:', error);
+      const errorMessage = error.response?.data?.message ||
+                          error.message ||
+                          'Failed to load games. Please check your connection.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleAddToCollection = (game) => {
+    setSelectedGame(game);
+    setCollectionModalVisible(true);
+  };
+
   const renderGame = ({ item }) => (
-    <TouchableOpacity style={styles.gameCard}>
-      <Image 
-        source={{ uri: item.thumbnail_url || 'https://via.placeholder.com/150' }} 
+    <View style={styles.gameCard}>
+      <OptimizedImage
+        source={{ uri: item.thumbnail_url || 'https://via.placeholder.com/150' }}
         style={styles.thumbnail}
+        resizeMode="cover"
       />
+      <TouchableOpacity
+        style={styles.addToCollectionButton}
+        onPress={() => handleAddToCollection(item)}
+      >
+        <Text style={styles.addToCollectionIcon}>+</Text>
+      </TouchableOpacity>
       <View style={styles.gameInfo}>
         <Text style={styles.gameTitle} numberOfLines={2}>{item.title}</Text>
         <Text style={styles.gameGenre}>{item.genre}</Text>
@@ -35,13 +58,28 @@ export default function RecommendationsScreen() {
           {item.visits?.toLocaleString()} visits
         </Text>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   if (loading) {
     return (
+      <View style={styles.container}>
+        <Text style={styles.header}>Browse Games</Text>
+        <View style={styles.row}>
+          <SkeletonLoader variant="grid" count={10} />
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#FF6B6B" />
+        <Text style={styles.errorTitle}>Oops!</Text>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.button} onPress={loadGames}>
+          <Text style={styles.buttonText}>Try Again</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -57,6 +95,17 @@ export default function RecommendationsScreen() {
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.list}
       />
+      {selectedGame && (
+        <CollectionPickerModal
+          visible={collectionModalVisible}
+          onClose={() => {
+            setCollectionModalVisible(false);
+            setSelectedGame(null);
+          }}
+          gameId={selectedGame.universe_id}
+          gameName={selectedGame.title}
+        />
+      )}
     </View>
   );
 }
@@ -117,5 +166,47 @@ const styles = StyleSheet.create({
   gameStats: {
     fontSize: 11,
     color: '#999999',
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FF6B6B',
+    marginBottom: 12,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#CCCCCC',
+    textAlign: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 40,
+    lineHeight: 22,
+  },
+  button: {
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  addToCollectionButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(66, 133, 244, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  addToCollectionIcon: {
+    fontSize: 20,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
 });

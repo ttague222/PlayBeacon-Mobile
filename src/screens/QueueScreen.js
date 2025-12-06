@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Linking } from 'react-native';
 import { api } from '../services/api';
+import CollectionPickerModal from '../components/CollectionPickerModal';
+import SkeletonLoader from '../components/SkeletonLoader';
+import OptimizedImage from '../components/OptimizedImage';
+import { colors } from '../styles/colors';
 
 export default function QueueScreen() {
   const [games, setGames] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [collectionModalVisible, setCollectionModalVisible] = useState(false);
 
   useEffect(() => {
     loadQueue();
@@ -14,10 +21,15 @@ export default function QueueScreen() {
   const loadQueue = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await api.getQueue(10);
-      setGames(data.queue || []);
+      setGames(data.games || []);
     } catch (error) {
       console.error('Error loading queue:', error);
+      const errorMessage = error.response?.data?.message ||
+                          error.message ||
+                          'Failed to load games. Please check your connection.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -25,11 +37,12 @@ export default function QueueScreen() {
 
   const handleFeedback = async (feedback) => {
     const currentGame = games[currentIndex];
-    if (!currentGame) return;
+    if (!currentGame || submittingFeedback) return;
 
     try {
+      setSubmittingFeedback(true);
       await api.submitFeedback(currentGame.universe_id, feedback);
-      
+
       if (currentIndex < games.length - 1) {
         setCurrentIndex(currentIndex + 1);
       } else {
@@ -38,13 +51,51 @@ export default function QueueScreen() {
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
+      Alert.alert(
+        'Error',
+        'Failed to submit feedback. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  };
+
+  const openRobloxGame = async () => {
+    const currentGame = games[currentIndex];
+    if (!currentGame || !currentGame.root_place_id) return;
+
+    const url = `https://www.roblox.com/games/${currentGame.root_place_id}`;
+
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Error', 'Unable to open Roblox game link');
+      }
+    } catch (error) {
+      console.error('Error opening URL:', error);
+      Alert.alert('Error', 'Failed to open game');
     }
   };
 
   if (loading) {
     return (
+      <View style={styles.container}>
+        <SkeletonLoader variant="queue" count={1} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#FF6B6B" />
+        <Text style={styles.errorTitle}>Oops!</Text>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.button} onPress={loadQueue}>
+          <Text style={styles.buttonText}>Try Again</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -65,10 +116,19 @@ export default function QueueScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        <Image 
-          source={{ uri: currentGame.thumbnail_url || 'https://via.placeholder.com/400' }} 
-          style={styles.image}
-        />
+        <TouchableOpacity activeOpacity={0.8} onPress={openRobloxGame}>
+          <OptimizedImage
+            source={{ uri: currentGame.thumbnail_url }}
+            style={styles.image}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.addToCollectionButton}
+          onPress={() => setCollectionModalVisible(true)}
+        >
+          <Text style={styles.addToCollectionIcon}>+</Text>
+        </TouchableOpacity>
         <View style={styles.info}>
           <Text style={styles.title}>{currentGame.title}</Text>
           <Text style={styles.genre}>{currentGame.genre}</Text>
@@ -96,15 +156,22 @@ export default function QueueScreen() {
           <Text style={styles.actionText}>→</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.actionButton, styles.likeButton]}
           onPress={() => handleFeedback(1)}
         >
-          <Text style={styles.actionText}>♥</Text>
+          <Text style={styles.actionText}>✓</Text>
         </TouchableOpacity>
       </View>
 
       <Text style={styles.counter}>{currentIndex + 1} / {games.length}</Text>
+
+      <CollectionPickerModal
+        visible={collectionModalVisible}
+        onClose={() => setCollectionModalVisible(false)}
+        gameId={currentGame.universe_id}
+        gameName={currentGame.title}
+      />
     </View>
   );
 }
@@ -112,7 +179,7 @@ export default function QueueScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: colors.background.primary,
     padding: 20,
     paddingTop: 60,
   },
@@ -120,18 +187,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1A1A1A',
+    backgroundColor: colors.background.primary,
   },
   card: {
     flex: 1,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.background.secondary,
     borderRadius: 20,
     overflow: 'hidden',
   },
   image: {
     width: '100%',
     height: 250,
-    backgroundColor: '#3A3A3A',
+    backgroundColor: colors.background.tertiary,
   },
   info: {
     padding: 20,
@@ -139,69 +206,115 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.text.primary,
     marginBottom: 8,
   },
   genre: {
     fontSize: 14,
-    color: '#FF6B6B',
+    color: colors.accent.primary,
     marginBottom: 12,
     textTransform: 'uppercase',
+    fontWeight: '600',
   },
   description: {
     fontSize: 14,
-    color: '#CCCCCC',
+    color: colors.text.secondary,
     lineHeight: 20,
     marginBottom: 12,
   },
   stats: {
     fontSize: 12,
-    color: '#999999',
+    color: colors.text.tertiary,
   },
   actions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    alignItems: 'center',
     marginTop: 20,
+    paddingHorizontal: 20,
   },
   actionButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 75,
+    height: 75,
+    borderRadius: 37.5,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
   },
   dislikeButton: {
-    backgroundColor: '#FF4444',
+    backgroundColor: colors.action.dislike,
   },
   skipButton: {
-    backgroundColor: '#666666',
+    backgroundColor: colors.action.skip,
   },
   likeButton: {
-    backgroundColor: '#44FF44',
+    backgroundColor: colors.action.like,
   },
   actionText: {
-    fontSize: 32,
-    color: '#FFFFFF',
+    fontSize: 38,
+    color: colors.text.primary,
+    fontWeight: 'bold',
   },
   counter: {
     textAlign: 'center',
-    color: '#999999',
+    color: colors.text.tertiary,
     marginTop: 12,
+    fontSize: 14,
   },
   emptyText: {
     fontSize: 18,
-    color: '#999999',
+    color: colors.text.tertiary,
     marginBottom: 20,
   },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.error,
+    marginBottom: 12,
+  },
+  errorText: {
+    fontSize: 16,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 40,
+    lineHeight: 22,
+  },
   button: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: colors.accent.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: colors.text.primary,
     fontSize: 16,
     fontWeight: '600',
+  },
+  addToCollectionButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.action.info,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  addToCollectionIcon: {
+    fontSize: 28,
+    color: colors.text.primary,
+    fontWeight: 'bold',
   },
 });

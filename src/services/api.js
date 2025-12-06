@@ -57,6 +57,85 @@ export const api = {
     const response = await apiClient.put('/user/profile', profileData);
     return response.data;
   },
+
+  resolveRobloxUsername: async (username) => {
+    const response = await apiClient.get('/roblox/resolve', {
+      params: { username },
+    });
+    return response.data;
+  },
+
+  getRobloxImportData: async (userId) => {
+    const response = await apiClient.get('/roblox/import-data', {
+      params: { userId },
+    });
+    return response.data;
+  },
+
+  importRobloxGames: async (importData) => {
+    const response = await apiClient.post('/roblox/import-selected', importData);
+    return response.data;
+  },
+
+  skipRobloxImport: async () => {
+    const response = await apiClient.post('/user/skip-roblox-import');
+    return response.data;
+  },
+
+  getUserStats: async () => {
+    const response = await apiClient.get('/user/stats');
+    return response.data;
+  },
+
+  getUserFeedback: async (feedbackType, limit = 50, offset = 0) => {
+    const response = await apiClient.get(`/user/feedback/${feedbackType}`, {
+      params: { limit, offset },
+    });
+    return response.data;
+  },
+
+  resetProfile: async () => {
+    const response = await apiClient.post('/user/reset-profile');
+    return response.data;
+  },
+
+  // Collections
+  getCollections: async () => {
+    const response = await apiClient.get('/collections');
+    return response.data;
+  },
+
+  createCollection: async (name, description = null) => {
+    const response = await apiClient.post('/collections', { name, description });
+    return response.data;
+  },
+
+  getCollectionWithGames: async (collectionId) => {
+    const response = await apiClient.get(`/collections/${collectionId}`);
+    return response.data;
+  },
+
+  updateCollection: async (collectionId, updates) => {
+    const response = await apiClient.put(`/collections/${collectionId}`, updates);
+    return response.data;
+  },
+
+  deleteCollection: async (collectionId) => {
+    const response = await apiClient.delete(`/collections/${collectionId}`);
+    return response.data;
+  },
+
+  addGameToCollection: async (collectionId, universeId) => {
+    const response = await apiClient.post(`/collections/${collectionId}/games`, {
+      universe_id: universeId,
+    });
+    return response.data;
+  },
+
+  removeGameFromCollection: async (collectionId, universeId) => {
+    const response = await apiClient.delete(`/collections/${collectionId}/games/${universeId}`);
+    return response.data;
+  },
 };
 
 export default apiClient;
