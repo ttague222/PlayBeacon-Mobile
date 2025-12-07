@@ -5,7 +5,7 @@ import { api } from '../services/api';
 import { colors } from '../styles/colors';
 
 export default function ProfileScreen() {
-  const { user, logout, upgradeAnonymousWithGoogle } = useAuth();
+  const { user, logout, upgradeAnonymousWithGoogle, resetTutorialProgress } = useAuth();
   const [upgrading, setUpgrading] = useState(false);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -227,6 +227,28 @@ export default function ProfileScreen() {
           ) : (
             <Text style={styles.dangerText}>Reset Recommendations</Text>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={async () => {
+            Alert.alert(
+              'Reset Tutorial',
+              'This will show you the onboarding tutorial again next time you open the app.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Reset Tutorial',
+                  onPress: async () => {
+                    await resetTutorialProgress();
+                    Alert.alert('Success', 'Tutorial will show again next time you open the app');
+                  },
+                },
+              ]
+            );
+          }}
+        >
+          <Text style={styles.menuText}>Reset Tutorial</Text>
         </TouchableOpacity>
       </View>
 

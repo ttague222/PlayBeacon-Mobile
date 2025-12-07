@@ -12,6 +12,8 @@ import {
 import { auth } from '../config/firebase';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
+import { resetTutorial } from '../utils/tutorialStorage';
+import { setUser as setSentryUser } from '../config/sentry';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -30,6 +32,9 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
+
+      // Update Sentry user context
+      setSentryUser(user);
     });
 
     return unsubscribe;
@@ -81,6 +86,10 @@ export const AuthProvider = ({ children }) => {
     return signOut(auth);
   };
 
+  const resetTutorialProgress = async () => {
+    return resetTutorial();
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -90,7 +99,8 @@ export const AuthProvider = ({ children }) => {
       loginAnonymously,
       loginWithGoogle,
       upgradeAnonymousWithGoogle,
-      logout
+      logout,
+      resetTutorialProgress
     }}>
       {children}
     </AuthContext.Provider>

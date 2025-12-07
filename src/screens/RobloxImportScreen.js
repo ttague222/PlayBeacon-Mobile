@@ -11,16 +11,19 @@ import {
 } from 'react-native';
 import { api } from '../services/api';
 import { colors } from '../styles/colors';
+import { validateRobloxUsername, sanitizeRobloxUsername } from '../utils/validation';
 
-export default function RobloxImportScreen({ navigation }) {
+export default function RobloxImportScreen({ navigation, onImportComplete }) {
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState('input'); // 'input', 'loading', 'success'
   const [importResult, setImportResult] = useState(null);
 
   const handleImport = async () => {
-    if (!username.trim()) {
-      Alert.alert('Error', 'Please enter a Roblox username');
+    // Validate username
+    const validation = validateRobloxUsername(username);
+    if (!validation.valid) {
+      Alert.alert('Invalid Username', validation.error);
       return;
     }
 
@@ -28,8 +31,11 @@ export default function RobloxImportScreen({ navigation }) {
       setLoading(true);
       setStep('loading');
 
+      // Sanitize username before sending to API
+      const sanitizedUsername = sanitizeRobloxUsername(username);
+
       // Step 1: Resolve username to user ID
-      const userData = await api.resolveRobloxUsername(username.trim());
+      const userData = await api.resolveRobloxUsername(sanitizedUsername);
 
       if (!userData) {
         Alert.alert('Error', 'Roblox user not found. Please check the username and try again.');
@@ -84,17 +90,29 @@ export default function RobloxImportScreen({ navigation }) {
 
   const handleSkip = async () => {
     try {
+      setLoading(true);
       await api.skipRobloxImport();
-      navigation.replace('Main');
+      // Trigger AppNavigator re-render to show Main tabs
+      if (onImportComplete) {
+        onImportComplete();
+      }
     } catch (error) {
       console.error('Error skipping import:', error);
-      // Navigate anyway
-      navigation.replace('Main');
+      Alert.alert(
+        'Connection Error',
+        'Unable to connect to the server. Please check your network connection and make sure the backend server is running.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleContinue = () => {
-    navigation.replace('Main');
+    // Trigger AppNavigator re-render to show Main tabs
+    if (onImportComplete) {
+      onImportComplete();
+    }
   };
 
   if (step === 'loading') {

@@ -1,0 +1,101 @@
+/**
+ * AdMob Configuration
+ *
+ * COPPA-compliant configuration for child-directed ads.
+ * Uses test IDs in development, real IDs in production.
+ */
+
+import { Platform } from 'react-native';
+import { MaxAdContentRating } from 'react-native-google-mobile-ads';
+
+// Google's official test ad unit IDs
+const TEST_IDS = {
+  BANNER_IOS: 'ca-app-pub-3940256099942544/2934735716',
+  BANNER_ANDROID: 'ca-app-pub-3940256099942544/6300978111',
+  INTERSTITIAL_IOS: 'ca-app-pub-3940256099942544/4411468910',
+  INTERSTITIAL_ANDROID: 'ca-app-pub-3940256099942544/1033173712',
+  REWARDED_IOS: 'ca-app-pub-3940256099942544/1712485313',
+  REWARDED_ANDROID: 'ca-app-pub-3940256099942544/5224354917',
+};
+
+// Production ad unit IDs from environment variables
+const PROD_IDS = {
+  BANNER_IOS: process.env.EXPO_PUBLIC_ADMOB_BANNER_ID_IOS,
+  BANNER_ANDROID: process.env.EXPO_PUBLIC_ADMOB_BANNER_ID_ANDROID,
+  INTERSTITIAL_IOS: process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ID_IOS,
+  INTERSTITIAL_ANDROID: process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ID_ANDROID,
+  REWARDED_IOS: process.env.EXPO_PUBLIC_ADMOB_REWARDED_ID_IOS,
+  REWARDED_ANDROID: process.env.EXPO_PUBLIC_ADMOB_REWARDED_ID_ANDROID,
+};
+
+// Use test IDs in development, real IDs in production
+const getAdUnitId = (iosId, androidId, testIosId, testAndroidId) => {
+  if (__DEV__) {
+    return Platform.OS === 'ios' ? testIosId : testAndroidId;
+  }
+  return Platform.OS === 'ios' ? iosId : androidId;
+};
+
+export const AD_UNIT_IDS = {
+  BANNER: getAdUnitId(
+    PROD_IDS.BANNER_IOS,
+    PROD_IDS.BANNER_ANDROID,
+    TEST_IDS.BANNER_IOS,
+    TEST_IDS.BANNER_ANDROID
+  ),
+  INTERSTITIAL: getAdUnitId(
+    PROD_IDS.INTERSTITIAL_IOS,
+    PROD_IDS.INTERSTITIAL_ANDROID,
+    TEST_IDS.INTERSTITIAL_IOS,
+    TEST_IDS.INTERSTITIAL_ANDROID
+  ),
+  REWARDED: getAdUnitId(
+    PROD_IDS.REWARDED_IOS,
+    PROD_IDS.REWARDED_ANDROID,
+    TEST_IDS.REWARDED_IOS,
+    TEST_IDS.REWARDED_ANDROID
+  ),
+};
+
+/**
+ * COPPA-compliant request configuration for child-directed ads
+ * This is CRITICAL for App Store/Play Store approval
+ */
+export const COPPA_REQUEST_CONFIG = {
+  // Set max ad content rating to 'G' for General audiences
+  maxAdContentRating: MaxAdContentRating.G,
+  // Tag for child-directed treatment (COPPA compliance)
+  tagForChildDirectedTreatment: true,
+  // Tag for users under age of consent (GDPR compliance)
+  tagForUnderAgeOfConsent: true,
+};
+
+/**
+ * Screens where ads should NEVER be shown
+ */
+export const AD_BLOCKED_SCREENS = [
+  'Tutorial',
+  'Onboarding',
+  'OnboardingSlides',
+  'RobloxImport',
+  'Premium',
+  'PremiumPurchase',
+  'AchievementModal',
+];
+
+/**
+ * Interstitial ad configuration
+ */
+export const INTERSTITIAL_CONFIG = {
+  // Number of game detail views before showing an interstitial
+  viewsBeforeAd: 4,
+  // Minimum time between interstitials (in milliseconds)
+  minTimeBetweenAds: 60000, // 1 minute
+};
+
+/**
+ * Check if ads should be shown on a given screen
+ */
+export const shouldShowAds = (screenName) => {
+  return !AD_BLOCKED_SCREENS.includes(screenName);
+};

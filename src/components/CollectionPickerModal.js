@@ -40,6 +40,15 @@ export default function CollectionPickerModal({ visible, onClose, gameId, gameNa
     try {
       setAdding(collection.id);
       await api.addGameToCollection(collection.id, gameId);
+
+      // Track game save for achievements
+      try {
+        await api.incrementGamesSaved();
+      } catch (trackError) {
+        // Silently fail - don't block game save
+        console.log('Game save tracking failed:', trackError.message);
+      }
+
       Alert.alert('Success', `Added to "${collection.name}"`);
       onClose();
     } catch (error) {

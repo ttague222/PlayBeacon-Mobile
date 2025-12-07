@@ -13,11 +13,40 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(async (config) => {
   const currentUser = auth.currentUser;
   if (currentUser) {
+    // getIdToken() automatically refreshes the token if expired
     const token = await currentUser.getIdToken();
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
+
+// Response interceptor to handle token expiration
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // If we get a 401 and haven't retried yet, refresh token and retry
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        try {
+          // Force token refresh
+          const token = await currentUser.getIdToken(true);
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return apiClient(originalRequest);
+        } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError);
+          return Promise.reject(error);
+        }
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export const api = {
   getQueue: async (limit = 10) => {
@@ -134,6 +163,45 @@ export const api = {
 
   removeGameFromCollection: async (collectionId, universeId) => {
     const response = await apiClient.delete(`/collections/${collectionId}/games/${universeId}`);
+    return response.data;
+  },
+
+  // Achievements and Stats
+  getUserAchievements: async () => {
+    const response = await apiClient.get('/achievements');
+    return response.data;
+  },
+
+  trackStat: async (action, data = {}) => {
+    const response = await apiClient.post('/stats/track', {
+      action,
+      ...data,
+    });
+    return response.data;
+  },
+
+  incrementGamesViewed: async () => {
+    const response = await apiClient.post('/stats/increment-games-viewed');
+    return response.data;
+  },
+
+  incrementGamesSaved: async () => {
+    const response = await apiClient.post('/stats/increment-games-saved');
+    return response.data;
+  },
+
+  incrementCollectionsCreated: async () => {
+    const response = await apiClient.post('/stats/increment-collections-created');
+    return response.data;
+  },
+
+  incrementAIRecommendationsUsed: async () => {
+    const response = await apiClient.post('/stats/increment-ai-recommendations');
+    return response.data;
+  },
+
+  updateDailyLogin: async () => {
+    const response = await apiClient.post('/stats/update-daily-login');
     return response.data;
   },
 };

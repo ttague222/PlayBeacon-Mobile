@@ -13,7 +13,14 @@ import {
 } from 'react-native';
 import { api } from '../services/api';
 import SkeletonLoader from '../components/SkeletonLoader';
+import { PlayBeaconBannerAd } from '../components/ads';
 import { colors } from '../styles/colors';
+import {
+  validateCollectionName,
+  validateCollectionDescription,
+  sanitizeCollectionName,
+  sanitizeCollectionDescription,
+} from '../utils/validation';
 
 export default function CollectionsScreen({ navigation }) {
   const [collections, setCollections] = useState([]);
@@ -46,17 +53,40 @@ export default function CollectionsScreen({ navigation }) {
   };
 
   const handleCreateCollection = async () => {
-    if (!newCollectionName.trim()) {
-      Alert.alert('Error', 'Please enter a collection name');
+    // Validate collection name
+    const nameValidation = validateCollectionName(newCollectionName);
+    if (!nameValidation.valid) {
+      Alert.alert('Invalid Name', nameValidation.error);
+      return;
+    }
+
+    // Validate collection description
+    const descValidation = validateCollectionDescription(newCollectionDescription);
+    if (!descValidation.valid) {
+      Alert.alert('Invalid Description', descValidation.error);
       return;
     }
 
     try {
       setCreating(true);
+
+      // Sanitize inputs before sending to API
+      const sanitizedName = sanitizeCollectionName(newCollectionName);
+      const sanitizedDesc = sanitizeCollectionDescription(newCollectionDescription);
+
       await api.createCollection(
-        newCollectionName.trim(),
-        newCollectionDescription.trim() || null
+        sanitizedName,
+        sanitizedDesc || null
       );
+
+      // Track collection creation for achievements
+      try {
+        await api.incrementCollectionsCreated();
+      } catch (trackError) {
+        // Silently fail - don't block collection creation
+        console.log('Collection creation tracking failed:', trackError.message);
+      }
+
       setNewCollectionName('');
       setNewCollectionDescription('');
       setCreateModalVisible(false);
@@ -241,6 +271,11 @@ export default function CollectionsScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+
+      {/* Banner Ad at bottom */}
+      <View style={styles.adContainer}>
+        <PlayBeaconBannerAd />
+      </View>
     </View>
   );
 }
@@ -443,5 +478,9 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontSize: 16,
     fontWeight: '600',
+  },
+  adContainer: {
+    alignItems: 'center',
+    paddingBottom: 10,
   },
 });

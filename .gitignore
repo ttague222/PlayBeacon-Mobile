@@ -30,6 +30,9 @@ yarn-error.*
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
+.env.staging
 
 # Temporary
 *.tmp
@@ -49,3 +52,11 @@ Thumbs.db
 # Firebase
 firebase-config.js
 firebaseServiceAccount*.json
+
+# App Signing & Credentials
+*.keystore
+!debug.keystore
+credentials.json
+playbeacon-play-store-service-account.json
+google-services.json
+GoogleService-Info.plist
