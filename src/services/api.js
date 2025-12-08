@@ -204,6 +204,53 @@ export const api = {
     const response = await apiClient.post('/stats/update-daily-login');
     return response.data;
   },
+
+  // Tasks
+  getTasks: async (filters = {}) => {
+    const params = {};
+    if (filters.taskType) params.task_type = filters.taskType;
+    if (filters.completed !== undefined) params.completed = filters.completed;
+    if (filters.gameId) params.game_id = filters.gameId;
+    const response = await apiClient.get('/tasks', { params });
+    return response.data;
+  },
+
+  getTask: async (taskId) => {
+    const response = await apiClient.get(`/tasks/${taskId}`);
+    return response.data;
+  },
+
+  createTask: async (taskData) => {
+    const response = await apiClient.post('/tasks', taskData);
+    return response.data;
+  },
+
+  updateTask: async (taskId, updates) => {
+    const response = await apiClient.patch(`/tasks/${taskId}`, updates);
+    return response.data;
+  },
+
+  deleteTask: async (taskId) => {
+    const response = await apiClient.delete(`/tasks/${taskId}`);
+    return response.data;
+  },
+
+  completeTask: async (taskId) => {
+    const response = await apiClient.post(`/tasks/${taskId}/complete`);
+    return response.data;
+  },
+
+  uncompleteTask: async (taskId) => {
+    const response = await apiClient.post(`/tasks/${taskId}/uncomplete`);
+    return response.data;
+  },
+
+  resetTasks: async (taskType) => {
+    const response = await apiClient.post('/tasks/reset', null, {
+      params: { task_type: taskType },
+    });
+    return response.data;
+  },
 };
 
 export default apiClient;

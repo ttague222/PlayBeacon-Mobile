@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { api } from '../services/api';
 import SkeletonLoader from '../components/SkeletonLoader';
+import ProfileButton from '../components/ProfileButton';
 import { PlayBeaconBannerAd } from '../components/ads';
 import { colors } from '../styles/colors';
 import {
@@ -160,6 +161,7 @@ export default function CollectionsScreen({ navigation }) {
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Collections</Text>
+          <ProfileButton />
         </View>
         <View style={styles.listContent}>
           <SkeletonLoader variant="list" count={5} />
@@ -184,12 +186,15 @@ export default function CollectionsScreen({ navigation }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Collections</Text>
-        <TouchableOpacity
-          style={styles.createButton}
-          onPress={() => setCreateModalVisible(true)}
-        >
-          <Text style={styles.createButtonText}>+ New</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={() => setCreateModalVisible(true)}
+          >
+            <Text style={styles.createButtonText}>+ New</Text>
+          </TouchableOpacity>
+          <ProfileButton />
+        </View>
       </View>
 
       {collections.length === 0 ? (
@@ -302,6 +307,11 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: colors.text.primary,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   createButton: {
     backgroundColor: colors.accent.secondary,

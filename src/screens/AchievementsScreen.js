@@ -9,6 +9,7 @@ import {
 } from '../config/achievements';
 import { api } from '../services/api';
 import XPProgressBar from '../components/XPProgressBar';
+import ProfileButton from '../components/ProfileButton';
 import { PlayBeaconBannerAd } from '../components/ads';
 
 const AchievementCard = ({ achievement, userAchievement, userStats }) => {
@@ -161,7 +162,10 @@ export default function AchievementsScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.header}>Achievements</Text>
+      <View style={styles.headerContainer}>
+        <Text style={styles.header}>Achievements</Text>
+        <ProfileButton />
+      </View>
 
       {/* XP Progress */}
       {userStats && (
@@ -231,11 +235,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   header: {
     fontSize: 28,
     fontWeight: 'bold',
     color: colors.text.primary,
-    marginBottom: 20,
   },
   xpSection: {
     marginBottom: 20,
@@ -360,5 +369,9 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 40,
+  },
+  adContainer: {
+    alignItems: 'center',
+    paddingBottom: 10,
   },
 });

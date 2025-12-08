@@ -3,14 +3,24 @@
  *
  * Manages ad state, premium user logic, and provides hooks for ad components.
  * Integrates with Firebase for premium status and RevenueCat for purchases.
+ *
+ * NOTE: react-native-google-mobile-ads requires a native build (EAS Build).
+ * In Expo Go, ads will be disabled gracefully.
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
-import mobileAds, { AdsConsent, AdsConsentStatus } from 'react-native-google-mobile-ads';
-import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
+import Constants from 'expo-constants';
 import { useAuth } from './AuthContext';
-import { COPPA_REQUEST_CONFIG, INTERSTITIAL_CONFIG } from '../config/admob';
+
+// Check if we're running in Expo Go (where native modules aren't available)
+const isExpoGo = Constants.appOwnership === 'expo';
+
+// Interstitial config - duplicated here to avoid importing from admob.js which may trigger native imports
+const INTERSTITIAL_CONFIG = {
+  viewsBeforeAd: 4,
+  minTimeBetweenAds: 60000,
+};
 
 const AdContext = createContext(null);
 
@@ -18,7 +28,7 @@ export function AdProvider({ children }) {
   const { user } = useAuth();
   const [isInitialized, setIsInitialized] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
-  const [adsEnabled, setAdsEnabled] = useState(true);
+  const [adsEnabled, setAdsEnabled] = useState(!isExpoGo);
   const [trackingStatus, setTrackingStatus] = useState(null);
 
   // Interstitial tracking
@@ -29,30 +39,46 @@ export function AdProvider({ children }) {
    * Initialize AdMob SDK with COPPA-compliant settings
    */
   const initializeAds = useCallback(async () => {
+    // Skip initialization in Expo Go
+    if (isExpoGo) {
+      console.log('AdMob: Skipping initialization (running in Expo Go)');
+      setIsInitialized(false);
+      setAdsEnabled(false);
+      return;
+    }
+
     try {
+      // Dynamically import native modules
+      const mobileAds = require('react-native-google-mobile-ads').default;
+      const { MaxAdContentRating } = require('react-native-google-mobile-ads');
+      const { requestTrackingPermissionsAsync } = require('expo-tracking-transparency');
+
       // Request iOS App Tracking Transparency permission
       if (Platform.OS === 'ios') {
         const { status } = await requestTrackingPermissionsAsync();
         setTrackingStatus(status);
 
-        // If user denies tracking, we still show ads but non-personalized
         if (status !== 'granted') {
           console.log('Tracking permission not granted, showing non-personalized ads');
         }
       }
 
-      // Set COPPA-compliant request configuration
-      await mobileAds().setRequestConfiguration(COPPA_REQUEST_CONFIG);
+      // COPPA-compliant request configuration
+      const coppaConfig = {
+        maxAdContentRating: MaxAdContentRating.G,
+        tagForChildDirectedTreatment: true,
+        tagForUnderAgeOfConsent: true,
+      };
 
-      // Initialize the Mobile Ads SDK
+      await mobileAds().setRequestConfiguration(coppaConfig);
       await mobileAds().initialize();
 
       console.log('AdMob SDK initialized successfully');
       setIsInitialized(true);
     } catch (error) {
       console.error('Failed to initialize AdMob:', error);
-      // Fail silently - ads just won't show
       setIsInitialized(false);
+      setAdsEnabled(false);
     }
   }, []);
 
@@ -66,34 +92,30 @@ export function AdProvider({ children }) {
     }
 
     try {
-      // Check Firestore user document for premium status
-      // This would be set by RevenueCat webhook or manual admin action
-      // For now, check a simple flag on the user profile
       const userIsPremium = user.isPremium || false;
       setIsPremium(userIsPremium);
-      setAdsEnabled(!userIsPremium);
+      if (!isExpoGo) {
+        setAdsEnabled(!userIsPremium);
+      }
     } catch (error) {
       console.error('Failed to check premium status:', error);
       setIsPremium(false);
     }
   }, [user]);
 
-  // Initialize ads on mount
   useEffect(() => {
     initializeAds();
   }, [initializeAds]);
 
-  // Check premium status when user changes
   useEffect(() => {
     checkPremiumStatus();
   }, [checkPremiumStatus]);
 
   /**
    * Track game detail view for interstitial ad logic
-   * Returns true if an interstitial should be shown
    */
   const trackGameView = useCallback(() => {
-    if (isPremium || !adsEnabled) {
+    if (isPremium || !adsEnabled || isExpoGo) {
       return false;
     }
 
@@ -101,7 +123,6 @@ export function AdProvider({ children }) {
     const now = Date.now();
     const timeSinceLastAd = now - lastInterstitialTime.current;
 
-    // Check if we should show an interstitial
     const shouldShow =
       gameViewCount.current >= INTERSTITIAL_CONFIG.viewsBeforeAd &&
       timeSinceLastAd >= INTERSTITIAL_CONFIG.minTimeBetweenAds;
@@ -115,27 +136,20 @@ export function AdProvider({ children }) {
     return false;
   }, [isPremium, adsEnabled]);
 
-  /**
-   * Reset interstitial counter (e.g., after showing an ad)
-   */
   const resetInterstitialCounter = useCallback(() => {
     gameViewCount.current = 0;
     lastInterstitialTime.current = Date.now();
   }, []);
 
-  /**
-   * Manually set premium status (for RevenueCat integration)
-   */
   const setPremiumStatus = useCallback((status) => {
     setIsPremium(status);
-    setAdsEnabled(!status);
+    if (!isExpoGo) {
+      setAdsEnabled(!status);
+    }
   }, []);
 
-  /**
-   * Check if ads should be shown
-   */
   const shouldShowAds = useCallback(() => {
-    return isInitialized && adsEnabled && !isPremium;
+    return isInitialized && adsEnabled && !isPremium && !isExpoGo;
   }, [isInitialized, adsEnabled, isPremium]);
 
   const value = {
@@ -143,6 +157,7 @@ export function AdProvider({ children }) {
     isPremium,
     adsEnabled,
     trackingStatus,
+    isExpoGo,
     shouldShowAds,
     trackGameView,
     resetInterstitialCounter,
@@ -153,9 +168,6 @@ export function AdProvider({ children }) {
   return <AdContext.Provider value={value}>{children}</AdContext.Provider>;
 }
 
-/**
- * Hook to access ad context
- */
 export function useAds() {
   const context = useContext(AdContext);
   if (!context) {

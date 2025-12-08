@@ -4,6 +4,8 @@ import { api } from '../services/api';
 import CollectionPickerModal from '../components/CollectionPickerModal';
 import SkeletonLoader from '../components/SkeletonLoader';
 import OptimizedImage from '../components/OptimizedImage';
+import { PlayBeaconBannerAd } from '../components/ads';
+import { colors } from '../styles/colors';
 
 export default function RecommendationsScreen() {
   const [games, setGames] = useState([]);
@@ -106,6 +108,11 @@ export default function RecommendationsScreen() {
           gameName={selectedGame.title}
         />
       )}
+
+      {/* Banner Ad at bottom */}
+      <View style={styles.adContainer}>
+        <PlayBeaconBannerAd />
+      </View>
     </View>
   );
 }
@@ -208,5 +215,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  adContainer: {
+    alignItems: 'center',
+    paddingBottom: 10,
   },
 });

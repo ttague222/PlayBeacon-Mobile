@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Modal } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { colors } from '../styles/colors';
 
 export default function ProfileScreen() {
+  const navigation = useNavigation();
   const { user, logout, upgradeAnonymousWithGoogle, resetTutorialProgress } = useAuth();
   const [upgrading, setUpgrading] = useState(false);
   const [stats, setStats] = useState(null);
@@ -143,7 +146,16 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.header}>Profile</Text>
+      <View style={styles.headerContainer}>
+        <Text style={styles.header}>Profile</Text>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="close" size={28} color={colors.text.primary} />
+        </TouchableOpacity>
+      </View>
 
       {user?.isAnonymous && (
         <View style={styles.upgradeCard}>
@@ -299,11 +311,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
   header: {
     fontSize: 28,
     fontWeight: 'bold',
     color: colors.text.primary,
-    marginBottom: 30,
+  },
+  closeButton: {
+    padding: 4,
   },
   upgradeCard: {
     backgroundColor: colors.background.secondary,

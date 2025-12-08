@@ -3,10 +3,25 @@
  *
  * COPPA-compliant configuration for child-directed ads.
  * Uses test IDs in development, real IDs in production.
+ * Gracefully handles Expo Go (where native ads aren't available).
  */
 
 import { Platform } from 'react-native';
-import { MaxAdContentRating } from 'react-native-google-mobile-ads';
+import Constants from 'expo-constants';
+
+// Check if we're running in Expo Go
+const isExpoGo = Constants.appOwnership === 'expo';
+
+// Dynamically import MaxAdContentRating only when not in Expo Go
+let MaxAdContentRating = null;
+
+if (!isExpoGo) {
+  try {
+    MaxAdContentRating = require('react-native-google-mobile-ads').MaxAdContentRating;
+  } catch (error) {
+    console.log('MaxAdContentRating not available - running in Expo Go');
+  }
+}
 
 // Google's official test ad unit IDs
 const TEST_IDS = {
@@ -60,15 +75,25 @@ export const AD_UNIT_IDS = {
 /**
  * COPPA-compliant request configuration for child-directed ads
  * This is CRITICAL for App Store/Play Store approval
+ *
+ * Note: When running in Expo Go, MaxAdContentRating won't be available.
+ * The actual config is only used when initializing AdMob in a native build.
  */
-export const COPPA_REQUEST_CONFIG = {
-  // Set max ad content rating to 'G' for General audiences
-  maxAdContentRating: MaxAdContentRating.G,
-  // Tag for child-directed treatment (COPPA compliance)
-  tagForChildDirectedTreatment: true,
-  // Tag for users under age of consent (GDPR compliance)
-  tagForUnderAgeOfConsent: true,
-};
+export const COPPA_REQUEST_CONFIG = MaxAdContentRating
+  ? {
+      // Set max ad content rating to 'G' for General audiences
+      maxAdContentRating: MaxAdContentRating.G,
+      // Tag for child-directed treatment (COPPA compliance)
+      tagForChildDirectedTreatment: true,
+      // Tag for users under age of consent (GDPR compliance)
+      tagForUnderAgeOfConsent: true,
+    }
+  : {
+      // Fallback config for Expo Go (won't be used but prevents errors)
+      maxAdContentRating: 'G',
+      tagForChildDirectedTreatment: true,
+      tagForUnderAgeOfConsent: true,
+    };
 
 /**
  * Screens where ads should NEVER be shown
@@ -96,6 +121,11 @@ export const INTERSTITIAL_CONFIG = {
 /**
  * Check if ads should be shown on a given screen
  */
-export const shouldShowAds = (screenName) => {
+export const shouldShowAdsOnScreen = (screenName) => {
   return !AD_BLOCKED_SCREENS.includes(screenName);
 };
+
+/**
+ * Whether we're running in Expo Go (ads not available)
+ */
+export const IS_EXPO_GO = isExpoGo;

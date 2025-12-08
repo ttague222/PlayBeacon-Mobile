@@ -3,24 +3,45 @@
  *
  * Manages interstitial ad loading and display.
  * Tracks game detail views and shows ads at appropriate intervals.
+ * Gracefully handles Expo Go (where native ads aren't available).
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { InterstitialAd, AdEventType } from 'react-native-google-mobile-ads';
+import Constants from 'expo-constants';
 import { useAds } from '../context/AdContext';
 import { AD_UNIT_IDS } from '../config/admob';
 
+// Check if we're running in Expo Go
+const isExpoGo = Constants.appOwnership === 'expo';
+
+// Dynamically import InterstitialAd only when not in Expo Go
+let InterstitialAd = null;
+let AdEventType = null;
+
+if (!isExpoGo) {
+  try {
+    const ads = require('react-native-google-mobile-ads');
+    InterstitialAd = ads.InterstitialAd;
+    AdEventType = ads.AdEventType;
+  } catch (error) {
+    console.log('InterstitialAd not available - running in Expo Go');
+  }
+}
+
 export function useInterstitial() {
-  const { shouldShowAds, trackGameView, resetInterstitialCounter } = useAds();
+  const { shouldShowAds, trackGameView, resetInterstitialCounter, isExpoGo: contextIsExpoGo } = useAds();
   const [isLoaded, setIsLoaded] = useState(false);
   const [isShowing, setIsShowing] = useState(false);
   const interstitialRef = useRef(null);
+
+  // Check if ads are available
+  const adsAvailable = !isExpoGo && !contextIsExpoGo && InterstitialAd !== null;
 
   /**
    * Load a new interstitial ad
    */
   const loadAd = useCallback(() => {
-    if (!shouldShowAds()) {
+    if (!adsAvailable || !shouldShowAds()) {
       return;
     }
 
@@ -61,14 +82,14 @@ export function useInterstitial() {
     } catch (error) {
       console.error('Failed to create interstitial ad:', error);
     }
-  }, [shouldShowAds]);
+  }, [adsAvailable, shouldShowAds]);
 
   /**
    * Show interstitial if loaded
    * Returns true if ad was shown
    */
   const showAd = useCallback(async () => {
-    if (!isLoaded || !interstitialRef.current?.ad) {
+    if (!adsAvailable || !isLoaded || !interstitialRef.current?.ad) {
       console.log('Interstitial not ready');
       return false;
     }
@@ -83,14 +104,14 @@ export function useInterstitial() {
       setIsShowing(false);
       return false;
     }
-  }, [isLoaded, resetInterstitialCounter]);
+  }, [adsAvailable, isLoaded, resetInterstitialCounter]);
 
   /**
    * Check if we should show an interstitial and show it
    * Call this when user views a game detail
    */
   const showInterstitialIfNeeded = useCallback(async () => {
-    if (!shouldShowAds()) {
+    if (!adsAvailable || !shouldShowAds()) {
       return false;
     }
 
@@ -101,11 +122,11 @@ export function useInterstitial() {
     }
 
     return false;
-  }, [shouldShowAds, trackGameView, isLoaded, showAd]);
+  }, [adsAvailable, shouldShowAds, trackGameView, isLoaded, showAd]);
 
   // Load ad on mount if ads are enabled
   useEffect(() => {
-    if (shouldShowAds()) {
+    if (adsAvailable && shouldShowAds()) {
       loadAd();
     }
 
@@ -117,7 +138,7 @@ export function useInterstitial() {
         interstitialRef.current.unsubscribeError?.();
       }
     };
-  }, [shouldShowAds, loadAd]);
+  }, [adsAvailable, shouldShowAds, loadAd]);
 
   return {
     isLoaded,
@@ -125,6 +146,7 @@ export function useInterstitial() {
     showAd,
     showInterstitialIfNeeded,
     loadAd,
+    adsAvailable,
   };
 }
 

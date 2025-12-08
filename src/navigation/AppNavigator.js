@@ -17,6 +17,7 @@ import RobloxImportScreen from '../screens/RobloxImportScreen';
 import QueueScreen from '../screens/QueueScreen';
 import CollectionsScreen from '../screens/CollectionsScreen';
 import CollectionDetailScreen from '../screens/CollectionDetailScreen';
+import TasksScreen from '../screens/TasksScreen';
 import AchievementsScreen from '../screens/AchievementsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
@@ -69,6 +70,21 @@ const MainTabs = () => {
         }}
       />
       <Tab.Screen
+        name="Tasks"
+        component={TasksScreen}
+        options={{
+          tabBarLabel: 'Tasks',
+          headerShown: false,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? 'checkbox' : 'checkbox-outline'}
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
         name="Achievements"
         component={AchievementsScreen}
         options={{
@@ -77,21 +93,6 @@ const MainTabs = () => {
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'trophy' : 'trophy-outline'}
-              size={size}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{
-          tabBarLabel: 'Profile',
-          headerShown: false,
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? 'person' : 'person-outline'}
               size={size}
               color={color}
             />
@@ -182,6 +183,14 @@ export default function AppNavigator() {
           <>
             <Stack.Screen name="Main" component={MainTabs} />
             <Stack.Screen name="CollectionDetail" component={CollectionDetailScreen} />
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={{
+                presentation: 'modal',
+                gestureEnabled: true,
+              }}
+            />
           </>
         )}
       </Stack.Navigator>

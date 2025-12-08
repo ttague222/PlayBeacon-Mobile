@@ -4,7 +4,9 @@ import { api } from '../services/api';
 import CollectionPickerModal from '../components/CollectionPickerModal';
 import SkeletonLoader from '../components/SkeletonLoader';
 import OptimizedImage from '../components/OptimizedImage';
+import ProfileButton from '../components/ProfileButton';
 import { PlayBeaconBannerAd } from '../components/ads';
+import { useInterstitial } from '../hooks/useInterstitial';
 import { colors } from '../styles/colors';
 
 export default function QueueScreen() {
@@ -14,6 +16,9 @@ export default function QueueScreen() {
   const [error, setError] = useState(null);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [collectionModalVisible, setCollectionModalVisible] = useState(false);
+
+  // Interstitial ad hook - shows every 4 game views
+  const { showInterstitialIfNeeded } = useInterstitial();
 
   useEffect(() => {
     loadQueue();
@@ -53,6 +58,9 @@ export default function QueueScreen() {
     try {
       setSubmittingFeedback(true);
       await api.submitFeedback(currentGame.universe_id, feedback);
+
+      // Try to show interstitial ad (will only show every 4 views)
+      showInterstitialIfNeeded();
 
       if (currentIndex < games.length - 1) {
         setCurrentIndex(currentIndex + 1);
@@ -126,6 +134,10 @@ export default function QueueScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Discover</Text>
+        <ProfileButton />
+      </View>
       <View style={styles.card}>
         <TouchableOpacity activeOpacity={0.8} onPress={openRobloxGame}>
           <OptimizedImage
@@ -197,7 +209,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
     padding: 20,
-    paddingTop: 60,
+    paddingTop: 50,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: colors.text.primary,
   },
   centerContainer: {
     flex: 1,

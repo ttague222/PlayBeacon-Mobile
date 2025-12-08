@@ -2,6 +2,7 @@
 export const ACHIEVEMENT_CATEGORIES = {
   DISCOVERY: 'discovery',
   COLLECTIONS: 'collections',
+  TASKS: 'tasks',
   AI: 'ai',
   ENGAGEMENT: 'engagement',
 };
@@ -114,6 +115,38 @@ export const ACHIEVEMENTS = {
     xpReward: 200,
     statKey: 'dailyLoginStreak',
   },
+
+  // Task Achievements
+  TASKS_COMPLETED_1: {
+    id: 'tasks_completed_1',
+    category: ACHIEVEMENT_CATEGORIES.TASKS,
+    title: 'Task Starter',
+    description: 'Complete your first task',
+    emoji: '✅',
+    threshold: 1,
+    xpReward: 25,
+    statKey: 'tasksCompleted',
+  },
+  TASKS_COMPLETED_10: {
+    id: 'tasks_completed_10',
+    category: ACHIEVEMENT_CATEGORIES.TASKS,
+    title: 'Task Master',
+    description: 'Complete 10 tasks',
+    emoji: '📋',
+    threshold: 10,
+    xpReward: 100,
+    statKey: 'tasksCompleted',
+  },
+  TASKS_COMPLETED_50: {
+    id: 'tasks_completed_50',
+    category: ACHIEVEMENT_CATEGORIES.TASKS,
+    title: 'Productivity Pro',
+    description: 'Complete 50 tasks',
+    emoji: '🎯',
+    threshold: 50,
+    xpReward: 250,
+    statKey: 'tasksCompleted',
+  },
 };
 
 // Get all achievements as an array
@@ -135,6 +168,11 @@ export const CATEGORY_INFO = {
     title: 'Collections',
     emoji: '📚',
     color: '#10B981',
+  },
+  [ACHIEVEMENT_CATEGORIES.TASKS]: {
+    title: 'Tasks',
+    emoji: '✅',
+    color: '#EC4899',
   },
   [ACHIEVEMENT_CATEGORIES.AI]: {
     title: 'AI Powered',
