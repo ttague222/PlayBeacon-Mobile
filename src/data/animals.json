@@ -1,0 +1,148 @@
+{
+  "animals": [
+    {
+      "id": "bear",
+      "name": "Benny Bear",
+      "image": "bear",
+      "rarity": "common",
+      "funFact": "Bears love honey and exploring new places!",
+      "badgeId": "explorer",
+      "order": 1
+    },
+    {
+      "id": "fox",
+      "name": "Fifi Fox",
+      "image": "fox",
+      "rarity": "common",
+      "funFact": "Foxes have super hearing and can find hidden things!",
+      "badgeId": "favorite_finder",
+      "order": 2
+    },
+    {
+      "id": "penguin",
+      "name": "Pippa Penguin",
+      "image": "penguin",
+      "rarity": "common",
+      "funFact": "Penguins slide on ice to get around faster!",
+      "badgeId": "daily_adventurer",
+      "order": 3
+    },
+    {
+      "id": "owl",
+      "name": "Ollie Owl",
+      "image": "owl",
+      "rarity": "common",
+      "funFact": "Owls can turn their heads almost all the way around!",
+      "badgeId": "trend_spotter",
+      "order": 4
+    },
+    {
+      "id": "turtle",
+      "name": "Tilly Turtle",
+      "image": "turtle",
+      "rarity": "common",
+      "funFact": "Turtles have been around since dinosaur times!",
+      "badgeId": "super_swiper",
+      "order": 5
+    },
+    {
+      "id": "raccoon",
+      "name": "Rocky Raccoon",
+      "image": "raccoon",
+      "rarity": "rare",
+      "funFact": "Raccoons wash their food before eating it!",
+      "badgeId": "collection_creator",
+      "order": 6
+    },
+    {
+      "id": "cat",
+      "name": "Cleo Cat",
+      "image": "cat",
+      "rarity": "rare",
+      "funFact": "Cats spend 70% of their lives sleeping!",
+      "badgeId": "game_hunter",
+      "order": 7
+    },
+    {
+      "id": "dog",
+      "name": "Dash Dog",
+      "image": "dog",
+      "rarity": "rare",
+      "funFact": "Dogs can understand over 150 words!",
+      "badgeId": "wishlist_master",
+      "order": 8
+    },
+    {
+      "id": "hedgehog",
+      "name": "Hugo Hedgehog",
+      "image": "hedgehog",
+      "rarity": "rare",
+      "funFact": "Hedgehogs have about 5,000 spines on their back!",
+      "badgeId": "loyal_friend",
+      "order": 9
+    },
+    {
+      "id": "parrot",
+      "name": "Polly Parrot",
+      "image": "parrot",
+      "rarity": "special",
+      "funFact": "Parrots can live for over 80 years!",
+      "badgeId": "curious_mind",
+      "order": 10
+    },
+    {
+      "id": "panda",
+      "name": "Pandy Panda",
+      "image": "panda",
+      "rarity": "special",
+      "funFact": "Pandas eat bamboo for up to 12 hours a day!",
+      "badgeId": "discovery_champion",
+      "order": 11
+    },
+    {
+      "id": "lion",
+      "name": "Leo Lion",
+      "image": "lion",
+      "rarity": "special",
+      "funFact": "A lion's roar can be heard 5 miles away!",
+      "badgeId": "organizer",
+      "order": 12
+    },
+    {
+      "id": "elephant",
+      "name": "Ellie Elephant",
+      "image": "elephant",
+      "rarity": "special",
+      "funFact": "Elephants never forget their friends!",
+      "badgeId": "super_explorer",
+      "order": 13
+    },
+    {
+      "id": "dolphin",
+      "name": "Dolly Dolphin",
+      "image": "dolphin",
+      "rarity": "special",
+      "funFact": "Dolphins sleep with one eye open!",
+      "badgeId": "dedication_star",
+      "order": 14
+    },
+    {
+      "id": "koala",
+      "name": "Kiki Koala",
+      "image": "koala",
+      "rarity": "special",
+      "funFact": "Koalas sleep up to 22 hours a day to save energy!",
+      "badgeId": "mega_swiper",
+      "order": 15
+    },
+    {
+      "id": "frog",
+      "name": "Freddy Frog",
+      "image": "frog",
+      "rarity": "special",
+      "funFact": "Frogs can jump 20 times their own body length!",
+      "badgeId": "wishlist_legend",
+      "order": 16
+    }
+  ]
+}

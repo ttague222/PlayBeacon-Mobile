@@ -4,16 +4,17 @@
  * A reusable banner ad component that:
  * - Automatically detects iOS/Android and loads correct Ad Unit ID
  * - Hides when user is premium
- * - Fails silently if ads can't load
+ * - Retries loading on failure with exponential backoff (max 3 retries)
  * - Supports smart banner sizing
  * - Gracefully handles Expo Go (where native ads aren't available)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import Constants from 'expo-constants';
 import { useAds } from '../../context/AdContext';
 import { AD_UNIT_IDS } from '../../config/admob';
+import logger from '../../utils/logger';
 
 // Check if we're running in Expo Go
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -28,9 +29,13 @@ if (!isExpoGo) {
     BannerAd = ads.BannerAd;
     BannerAdSize = ads.BannerAdSize;
   } catch (error) {
-    console.log('BannerAd not available - running in Expo Go');
+    logger.log('BannerAd not available - running in Expo Go');
   }
 }
+
+// Retry configuration
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY = 2000; // 2 seconds
 
 export default function PlayBeaconBannerAd({
   size,
@@ -39,7 +44,44 @@ export default function PlayBeaconBannerAd({
 }) {
   const { shouldShowAds, isInitialized, isExpoGo: contextIsExpoGo } = useAds();
   const [adLoaded, setAdLoaded] = useState(false);
-  const [adError, setAdError] = useState(false);
+  const [adKey, setAdKey] = useState(0); // Used to force re-render and retry
+  const [retryCount, setRetryCount] = useState(0);
+  const [permanentError, setPermanentError] = useState(false);
+  const retryTimeoutRef = useRef(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleAdFailedToLoad = useCallback((error) => {
+    logger.log(`Banner ad failed to load (attempt ${retryCount + 1}/${MAX_RETRIES}):`, error);
+    setAdLoaded(false);
+
+    if (retryCount < MAX_RETRIES) {
+      // Calculate delay with exponential backoff: 2s, 4s, 8s
+      const delay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount);
+      logger.log(`Retrying banner ad in ${delay / 1000}s...`);
+
+      retryTimeoutRef.current = setTimeout(() => {
+        setRetryCount((prev) => prev + 1);
+        setAdKey((prev) => prev + 1); // Force re-render to retry loading
+      }, delay);
+    } else {
+      logger.log('Banner ad max retries reached, giving up');
+      setPermanentError(true);
+    }
+  }, [retryCount]);
+
+  const handleAdLoaded = useCallback(() => {
+    logger.log('Banner ad loaded successfully');
+    setAdLoaded(true);
+    setRetryCount(0); // Reset retry count on success
+  }, []);
 
   // Don't render in Expo Go or if native modules aren't available
   if (isExpoGo || contextIsExpoGo || !BannerAd) {
@@ -51,8 +93,8 @@ export default function PlayBeaconBannerAd({
     return null;
   }
 
-  // Don't render if ad failed to load
-  if (adError) {
+  // Don't render if we've exhausted all retries
+  if (permanentError) {
     return null;
   }
 
@@ -62,24 +104,19 @@ export default function PlayBeaconBannerAd({
   return (
     <View style={[styles.container, containerStyle, !adLoaded && styles.hidden]}>
       <BannerAd
+        key={adKey}
         unitId={AD_UNIT_IDS.BANNER}
         size={bannerSize}
         requestOptions={{
           requestNonPersonalizedAdsOnly: true,
         }}
-        onAdLoaded={() => {
-          console.log('Banner ad loaded');
-          setAdLoaded(true);
-        }}
-        onAdFailedToLoad={(error) => {
-          console.log('Banner ad failed to load:', error);
-          setAdError(true);
-        }}
+        onAdLoaded={handleAdLoaded}
+        onAdFailedToLoad={handleAdFailedToLoad}
         onAdOpened={() => {
-          console.log('Banner ad opened');
+          logger.log('Banner ad opened');
         }}
         onAdClosed={() => {
-          console.log('Banner ad closed');
+          logger.log('Banner ad closed');
         }}
       />
     </View>

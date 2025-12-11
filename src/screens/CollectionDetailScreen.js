@@ -12,10 +12,13 @@ import {
   TextInput,
 } from 'react-native';
 import { api } from '../services/api';
+import SoundManager from '../services/SoundManager';
 import SkeletonLoader from '../components/SkeletonLoader';
 import OptimizedImage from '../components/OptimizedImage';
 import { PlayBeaconBannerAd } from '../components/ads';
 import { colors } from '../styles/colors';
+import { typography, radii, shadows } from '../styles/kidTheme';
+import logger from '../utils/logger';
 
 export default function CollectionDetailScreen({ route, navigation }) {
   const { collection: initialCollection } = route.params;
@@ -38,7 +41,7 @@ export default function CollectionDetailScreen({ route, navigation }) {
       setCollection(data.collection);
       setGames(data.games);
     } catch (error) {
-      console.error('Failed to fetch collection games:', error);
+      logger.error('Failed to fetch collection games:', error);
       Alert.alert('Error', 'Failed to load collection games');
     } finally {
       setLoading(false);
@@ -46,6 +49,7 @@ export default function CollectionDetailScreen({ route, navigation }) {
   };
 
   const handleRemoveGame = (game) => {
+    SoundManager.play('ui.tap');
     Alert.alert(
       'Remove Game',
       `Remove "${game.title}" from this collection?`,
@@ -70,7 +74,7 @@ export default function CollectionDetailScreen({ route, navigation }) {
               // Revert on error
               setGames(previousGames);
               setCollection(previousCollection);
-              console.error('Failed to remove game:', error);
+              logger.error('Failed to remove game:', error);
               Alert.alert('Error', 'Failed to remove game from collection');
             }
           },
@@ -80,10 +84,11 @@ export default function CollectionDetailScreen({ route, navigation }) {
   };
 
   const handlePlayGame = (game) => {
+    SoundManager.play('ui.tap');
     if (game.root_place_id) {
       const url = `https://www.roblox.com/games/${game.root_place_id}`;
       Linking.openURL(url).catch((err) => {
-        console.error('Failed to open URL:', err);
+        logger.error('Failed to open URL:', err);
         Alert.alert('Error', 'Failed to open game');
       });
     } else {
@@ -92,12 +97,15 @@ export default function CollectionDetailScreen({ route, navigation }) {
   };
 
   const handleOpenEditModal = () => {
+    SoundManager.play('ui.tap');
+    SoundManager.play('ui.modal_open');
     setEditName(collection.name);
     setEditDescription(collection.description || '');
     setEditModalVisible(true);
   };
 
   const handleUpdateCollection = async () => {
+    SoundManager.play('ui.tap');
     if (!editName.trim()) {
       Alert.alert('Error', 'Please enter a collection name');
       return;
@@ -119,11 +127,8 @@ export default function CollectionDetailScreen({ route, navigation }) {
       setEditModalVisible(false);
       Alert.alert('Success', 'Collection updated successfully');
     } catch (error) {
-      console.error('Failed to update collection:', error);
-      const errorMessage = error.response?.data?.message ||
-                          error.message ||
-                          'Failed to update collection. Please try again.';
-      Alert.alert('Error', errorMessage);
+      logger.error('Failed to update collection:', error);
+      Alert.alert('Error', 'Failed to update collection. Please try again.');
     } finally {
       setUpdating(false);
     }
@@ -184,7 +189,10 @@ export default function CollectionDetailScreen({ route, navigation }) {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={() => {
+              SoundManager.play('ui.tap');
+              navigation.goBack();
+            }}
           >
             <Text style={styles.backButtonText}>‹ Back</Text>
           </TouchableOpacity>
@@ -207,7 +215,10 @@ export default function CollectionDetailScreen({ route, navigation }) {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            SoundManager.play('ui.tap');
+            navigation.goBack();
+          }}
         >
           <Text style={styles.backButtonText}>‹ Back</Text>
         </TouchableOpacity>
@@ -249,7 +260,10 @@ export default function CollectionDetailScreen({ route, navigation }) {
         visible={editModalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setEditModalVisible(false)}
+        onRequestClose={() => {
+          SoundManager.play('ui.modal_close');
+          setEditModalVisible(false);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -278,7 +292,10 @@ export default function CollectionDetailScreen({ route, navigation }) {
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setEditModalVisible(false)}
+                onPress={() => {
+                  SoundManager.play('ui.modal_close');
+                  setEditModalVisible(false);
+                }}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
@@ -336,12 +353,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 6,
     backgroundColor: colors.accent.secondary,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    borderRadius: radii.s,
+    ...shadows.medium,
   },
   editButtonText: {
     fontSize: 16,
@@ -353,29 +366,29 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   collectionName: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.sizes.header,
+    fontWeight: typography.fontWeight.bold,
     color: colors.text.primary,
     marginBottom: 8,
   },
   collectionDescription: {
-    fontSize: 16,
+    fontSize: typography.sizes.body,
     color: colors.text.secondary,
     lineHeight: 22,
     marginBottom: 12,
   },
   gameCount: {
-    fontSize: 14,
+    fontSize: typography.sizes.small,
     color: colors.text.tertiary,
     textTransform: 'uppercase',
-    fontWeight: '600',
+    fontWeight: typography.fontWeight.semibold,
   },
   listContent: {
     padding: 20,
   },
   gameItem: {
     backgroundColor: colors.background.secondary,
-    borderRadius: 12,
+    borderRadius: radii.s,
     marginBottom: 16,
     overflow: 'hidden',
   },
@@ -421,13 +434,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.accent.tertiary,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: radii.s,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    ...shadows.medium,
   },
   playButtonText: {
     color: colors.text.primary,
@@ -438,7 +447,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.tertiary,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: radii.s,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: colors.action.dislike,
@@ -473,15 +482,11 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: colors.background.secondary,
-    borderRadius: 16,
+    borderRadius: radii.m,
     padding: 24,
     width: '85%',
     maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
+    ...shadows.xlarge,
   },
   modalTitle: {
     fontSize: 24,
@@ -492,8 +497,9 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: colors.background.primary,
     color: colors.text.primary,
-    padding: 12,
-    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: radii.s,
     fontSize: 16,
     marginBottom: 16,
     borderWidth: 1,
@@ -511,7 +517,7 @@ const styles = StyleSheet.create({
   modalButton: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: radii.s,
     alignItems: 'center',
   },
   cancelButton: {

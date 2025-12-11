@@ -10,6 +10,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Constants from 'expo-constants';
 import { useAds } from '../context/AdContext';
 import { AD_UNIT_IDS } from '../config/admob';
+import logger from '../utils/logger';
 
 // Check if we're running in Expo Go
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -26,31 +27,42 @@ if (!isExpoGo) {
     RewardedAdEventType = ads.RewardedAdEventType;
     AdEventType = ads.AdEventType;
   } catch (error) {
-    console.log('RewardedAd not available - running in Expo Go');
+    logger.log('RewardedAd not available - running in Expo Go');
   }
 }
+
+// Max retry attempts for loading ads
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 5000;
 
 export function useRewarded() {
   const { shouldShowAds, isExpoGo: contextIsExpoGo } = useAds();
   const [isLoaded, setIsLoaded] = useState(false);
   const [isShowing, setIsShowing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const rewardedRef = useRef(null);
   const onRewardRef = useRef(null);
+  const retryCountRef = useRef(0);
+  const retryTimeoutRef = useRef(null);
 
   // Check if ads are available
   const adsAvailable = !isExpoGo && !contextIsExpoGo && RewardedAd !== null;
 
   /**
-   * Load a new rewarded ad
+   * Load a new rewarded ad with retry support
    */
   const loadAd = useCallback(() => {
     if (!adsAvailable || !shouldShowAds() || isLoading) {
+      logger.log('Rewarded ad: skipping load', { adsAvailable, shouldShowAds: shouldShowAds?.(), isLoading });
       return;
     }
 
     try {
       setIsLoading(true);
+      setLoadError(null);
+
+      logger.log('Rewarded ad: creating ad request with unit ID:', AD_UNIT_IDS.REWARDED);
 
       // Create new rewarded ad instance
       const rewarded = RewardedAd.createForAdRequest(AD_UNIT_IDS.REWARDED, {
@@ -59,15 +71,17 @@ export function useRewarded() {
 
       // Set up event listeners
       const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
-        console.log('Rewarded ad loaded');
+        logger.log('Rewarded ad loaded successfully');
         setIsLoaded(true);
         setIsLoading(false);
+        setLoadError(null);
+        retryCountRef.current = 0; // Reset retry count on success
       });
 
       const unsubscribeEarned = rewarded.addAdEventListener(
         RewardedAdEventType.EARNED_REWARD,
         (reward) => {
-          console.log('User earned reward:', reward);
+          logger.log('User earned reward:', reward);
           // Call the reward callback if set
           if (onRewardRef.current) {
             onRewardRef.current(reward);
@@ -77,17 +91,30 @@ export function useRewarded() {
       );
 
       const unsubscribeClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => {
-        console.log('Rewarded ad closed');
+        logger.log('Rewarded ad closed');
         setIsShowing(false);
         setIsLoaded(false);
+        retryCountRef.current = 0; // Reset retry count
         // Preload next ad
         loadAd();
       });
 
       const unsubscribeError = rewarded.addAdEventListener(AdEventType.ERROR, (error) => {
-        console.log('Rewarded ad error:', error);
+        logger.log('Rewarded ad error:', error?.message || error);
         setIsLoaded(false);
         setIsLoading(false);
+        setLoadError(error?.message || 'Failed to load ad');
+
+        // Retry loading if we haven't exceeded max attempts
+        if (retryCountRef.current < MAX_RETRY_ATTEMPTS) {
+          retryCountRef.current += 1;
+          logger.log(`Rewarded ad: retrying (attempt ${retryCountRef.current}/${MAX_RETRY_ATTEMPTS}) in ${RETRY_DELAY_MS}ms`);
+          retryTimeoutRef.current = setTimeout(() => {
+            loadAd();
+          }, RETRY_DELAY_MS);
+        } else {
+          logger.log('Rewarded ad: max retry attempts reached');
+        }
       });
 
       // Store reference and load
@@ -101,8 +128,9 @@ export function useRewarded() {
 
       rewarded.load();
     } catch (error) {
-      console.error('Failed to create rewarded ad:', error);
+      logger.error('Failed to create rewarded ad:', error);
       setIsLoading(false);
+      setLoadError(error?.message || 'Failed to create ad');
     }
   }, [adsAvailable, shouldShowAds, isLoading]);
 
@@ -114,7 +142,7 @@ export function useRewarded() {
   const showAd = useCallback(
     async (onReward) => {
       if (!adsAvailable || !isLoaded || !rewardedRef.current?.ad) {
-        console.log('Rewarded ad not ready');
+        logger.log('Rewarded ad not ready');
         return false;
       }
 
@@ -125,7 +153,7 @@ export function useRewarded() {
         await rewardedRef.current.ad.show();
         return true;
       } catch (error) {
-        console.error('Failed to show rewarded ad:', error);
+        logger.error('Failed to show rewarded ad:', error);
         setIsShowing(false);
         onRewardRef.current = null;
         return false;
@@ -169,6 +197,10 @@ export function useRewarded() {
 
     // Cleanup on unmount
     return () => {
+      // Clear any pending retry timeout
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
       if (rewardedRef.current) {
         rewardedRef.current.unsubscribeLoaded?.();
         rewardedRef.current.unsubscribeEarned?.();
@@ -182,6 +214,7 @@ export function useRewarded() {
     isLoaded,
     isShowing,
     isLoading,
+    loadError,
     showAd,
     showRewardedAd,
     loadAd,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,11 +11,16 @@ import {
   TextInput,
   ScrollView,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../services/api';
+import SoundManager from '../services/SoundManager';
 import SkeletonLoader from '../components/SkeletonLoader';
 import ProfileButton from '../components/ProfileButton';
 import { PlayBeaconBannerAd } from '../components/ads';
+import { useCollection } from '../context/CollectionContext';
 import { colors } from '../styles/colors';
+import logger from '../utils/logger';
+import { typography, radii, shadows } from '../styles/kidTheme';
 import {
   validateCollectionName,
   validateCollectionDescription,
@@ -32,9 +37,16 @@ export default function CollectionsScreen({ navigation }) {
   const [newCollectionDescription, setNewCollectionDescription] = useState('');
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    fetchCollections();
-  }, []);
+  // Badge collection hook
+  const { triggerEvent } = useCollection();
+
+  // Refetch collections whenever the screen gains focus
+  // This ensures game counts are updated after adding games from other screens
+  useFocusEffect(
+    useCallback(() => {
+      fetchCollections();
+    }, [])
+  );
 
   const fetchCollections = async () => {
     try {
@@ -43,17 +55,15 @@ export default function CollectionsScreen({ navigation }) {
       const data = await api.getCollections();
       setCollections(data.collections);
     } catch (error) {
-      console.error('Failed to fetch collections:', error);
-      const errorMessage = error.response?.data?.message ||
-                          error.message ||
-                          'Failed to load collections. Please check your connection.';
-      setError(errorMessage);
+      logger.error('Failed to fetch collections:', error);
+      setError('Failed to load collections. Please check your connection.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCreateCollection = async () => {
+    SoundManager.play('ui.tap');
     // Validate collection name
     const nameValidation = validateCollectionName(newCollectionName);
     if (!nameValidation.valid) {
@@ -80,13 +90,8 @@ export default function CollectionsScreen({ navigation }) {
         sanitizedDesc || null
       );
 
-      // Track collection creation for achievements
-      try {
-        await api.incrementCollectionsCreated();
-      } catch (trackError) {
-        // Silently fail - don't block collection creation
-        console.log('Collection creation tracking failed:', trackError.message);
-      }
+      // Trigger badge event for creating a collection
+      triggerEvent('CREATE_COLLECTION');
 
       setNewCollectionName('');
       setNewCollectionDescription('');
@@ -94,17 +99,15 @@ export default function CollectionsScreen({ navigation }) {
       await fetchCollections();
       Alert.alert('Success', 'Collection created successfully');
     } catch (error) {
-      console.error('Failed to create collection:', error);
-      const errorMessage = error.response?.data?.message ||
-                          error.message ||
-                          'Failed to create collection. Please try again.';
-      Alert.alert('Error', errorMessage);
+      logger.error('Failed to create collection:', error);
+      Alert.alert('Error', 'Failed to create collection. Please try again.');
     } finally {
       setCreating(false);
     }
   };
 
   const handleDeleteCollection = (collection) => {
+    SoundManager.play('ui.tap');
     Alert.alert(
       'Delete Collection',
       `Are you sure you want to delete "${collection.name}"? This action cannot be undone.`,
@@ -119,11 +122,8 @@ export default function CollectionsScreen({ navigation }) {
               await fetchCollections();
               Alert.alert('Success', 'Collection deleted');
             } catch (error) {
-              console.error('Failed to delete collection:', error);
-              const errorMessage = error.response?.data?.message ||
-                                  error.message ||
-                                  'Failed to delete collection. Please try again.';
-              Alert.alert('Error', errorMessage);
+              logger.error('Failed to delete collection:', error);
+              Alert.alert('Error', 'Failed to delete collection. Please try again.');
             }
           },
         },
@@ -132,6 +132,7 @@ export default function CollectionsScreen({ navigation }) {
   };
 
   const handleViewCollection = (collection) => {
+    SoundManager.play('ui.tap');
     navigation.navigate('CollectionDetail', { collection });
   };
 
@@ -189,7 +190,11 @@ export default function CollectionsScreen({ navigation }) {
         <View style={styles.headerRight}>
           <TouchableOpacity
             style={styles.createButton}
-            onPress={() => setCreateModalVisible(true)}
+            onPress={() => {
+              SoundManager.play('ui.tap');
+              SoundManager.play('ui.modal_open');
+              setCreateModalVisible(true);
+            }}
           >
             <Text style={styles.createButtonText}>+ New</Text>
           </TouchableOpacity>
@@ -205,7 +210,11 @@ export default function CollectionsScreen({ navigation }) {
           </Text>
           <TouchableOpacity
             style={styles.emptyCreateButton}
-            onPress={() => setCreateModalVisible(true)}
+            onPress={() => {
+              SoundManager.play('ui.tap');
+              SoundManager.play('ui.modal_open');
+              setCreateModalVisible(true);
+            }}
           >
             <Text style={styles.emptyCreateButtonText}>Create Collection</Text>
           </TouchableOpacity>
@@ -223,7 +232,10 @@ export default function CollectionsScreen({ navigation }) {
         visible={createModalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setCreateModalVisible(false)}
+        onRequestClose={() => {
+          SoundManager.play('ui.modal_close');
+          setCreateModalVisible(false);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -253,6 +265,7 @@ export default function CollectionsScreen({ navigation }) {
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {
+                  SoundManager.play('ui.modal_close');
                   setCreateModalVisible(false);
                   setNewCollectionName('');
                   setNewCollectionDescription('');
@@ -304,8 +317,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.sizes.header,
+    fontWeight: typography.fontWeight.bold,
     color: colors.text.primary,
   },
   headerRight: {
@@ -317,17 +330,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.secondary,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    borderRadius: radii.s,
+    ...shadows.medium,
   },
   createButtonText: {
     color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.sizes.body,
+    fontWeight: typography.fontWeight.semibold,
   },
   listContent: {
     padding: 20,
@@ -335,8 +344,8 @@ const styles = StyleSheet.create({
   collectionItem: {
     backgroundColor: colors.background.secondary,
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    borderRadius: radii.s,
+    marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -387,12 +396,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    borderRadius: radii.s,
+    ...shadows.medium,
   },
   emptyCreateButtonText: {
     color: colors.text.primary,
@@ -407,15 +412,11 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: colors.background.secondary,
-    borderRadius: 16,
+    borderRadius: radii.m,
     padding: 24,
     width: '85%',
     maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
+    ...shadows.xlarge,
   },
   modalTitle: {
     fontSize: 24,
@@ -426,8 +427,9 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: colors.background.primary,
     color: colors.text.primary,
-    padding: 12,
-    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: radii.s,
     fontSize: 16,
     marginBottom: 16,
     borderWidth: 1,
@@ -445,7 +447,7 @@ const styles = StyleSheet.create({
   modalButton: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: radii.s,
     alignItems: 'center',
   },
   cancelButton: {
@@ -482,7 +484,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: radii.s,
   },
   buttonText: {
     color: colors.text.primary,

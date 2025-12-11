@@ -7,19 +7,25 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../styles/colors';
 import { getTutorialCompleted } from '../utils/tutorialStorage';
+import { getAgeVerificationStatus } from '../utils/ageVerification';
 import { api } from '../services/api';
+import SoundManager from '../services/SoundManager';
+import OfflineBanner from '../components/OfflineBanner';
+import logger from '../utils/logger';
+import { UnlockModalManager } from '../components/badges';
 
 // Import screens
+import AgeVerificationScreen from '../screens/AgeVerificationScreen';
 import TutorialScreen from '../screens/TutorialScreen';
-import OnboardingScreen from '../screens/OnboardingScreen';
-import LoginScreen from '../screens/LoginScreen';
 import RobloxImportScreen from '../screens/RobloxImportScreen';
 import QueueScreen from '../screens/QueueScreen';
 import CollectionsScreen from '../screens/CollectionsScreen';
 import CollectionDetailScreen from '../screens/CollectionDetailScreen';
 import TasksScreen from '../screens/TasksScreen';
-import AchievementsScreen from '../screens/AchievementsScreen';
+import BadgesScreen from '../screens/BadgesScreen';
+import CollectablesScreen from '../screens/CollectablesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import PremiumUpgradeScreen from '../screens/PremiumUpgradeScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -27,7 +33,9 @@ const Tab = createBottomTabNavigator();
 // Main tab navigator for authenticated users
 const MainTabs = () => {
   return (
-    <Tab.Navigator
+    <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
+      <OfflineBanner />
+      <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.tab.active,
@@ -37,6 +45,11 @@ const MainTabs = () => {
           borderTopColor: colors.divider,
         },
         tabBarHideOnKeyboard: true,
+      }}
+      screenListeners={{
+        tabPress: () => {
+          SoundManager.play('ui.tap');
+        },
       }}
     >
       <Tab.Screen
@@ -85,14 +98,14 @@ const MainTabs = () => {
         }}
       />
       <Tab.Screen
-        name="Achievements"
-        component={AchievementsScreen}
+        name="Badges"
+        component={BadgesScreen}
         options={{
-          tabBarLabel: 'Achievements',
+          tabBarLabel: 'Badges',
           headerShown: false,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
-              name={focused ? 'trophy' : 'trophy-outline'}
+              name={focused ? 'ribbon' : 'ribbon-outline'}
               size={size}
               color={color}
             />
@@ -100,62 +113,71 @@ const MainTabs = () => {
         }}
       />
     </Tab.Navigator>
+    </View>
   );
 };
 
 // Root navigation
+// COPPA-compliant: Users are automatically signed in anonymously
+// No login required for any features - Google sign-in is optional and parent-gated
 export default function AppNavigator() {
   const { user, loading } = useAuth();
-  const [tutorialCompleted, setTutorialCompleted] = useState(false);
-  const [checkingTutorial, setCheckingTutorial] = useState(true);
-  const [hasCompletedImport, setHasCompletedImport] = useState(false);
-  const [checkingImportStatus, setCheckingImportStatus] = useState(false);
+  const [ageVerified, setAgeVerified] = useState(null); // null = checking
+  const [tutorialCompleted, setTutorialCompleted] = useState(null); // null = checking
+  const [hasCompletedImport, setHasCompletedImport] = useState(null); // null = checking
 
+  // Check age verification, tutorial, and import status in parallel once auth is ready
   useEffect(() => {
-    const checkTutorial = async () => {
-      const completed = await getTutorialCompleted();
-      setTutorialCompleted(completed);
-      setCheckingTutorial(false);
-    };
-    checkTutorial();
-  }, []);
+    const initializeAppState = async () => {
+      // Start age verification check (local storage - fast)
+      const agePromise = getAgeVerificationStatus()
+        .then(status => status !== null)
+        .catch(() => false);
 
-  useEffect(() => {
-    const checkImportStatus = async () => {
-      if (user && !user.isAnonymous) {
-        try {
-          setCheckingImportStatus(true);
-          const stats = await api.getUserStats();
-          setHasCompletedImport(stats.has_completed_import || false);
+      // Start tutorial check immediately (local storage - fast)
+      const tutorialPromise = getTutorialCompleted().catch(() => false);
 
-          // Track daily login for achievements
-          try {
-            await api.updateDailyLogin();
-          } catch (loginError) {
-            // Silently fail - don't block app loading
-            console.log('Daily login tracking failed:', loginError.message);
-          }
-        } catch (error) {
-          // Silently handle auth errors - user may not be fully authenticated yet
-          if (error.response?.status === 401) {
-            setHasCompletedImport(false);
-          } else {
-            console.error('Error checking import status:', error);
-            setHasCompletedImport(false);
-          }
-        } finally {
-          setCheckingImportStatus(false);
-        }
-      } else {
-        // No user or anonymous user - default to not completed
-        setHasCompletedImport(false);
-        setCheckingImportStatus(false);
+      // Start import status check if user exists (API call)
+      const importPromise = user
+        ? api.getUserStats()
+            .then(stats => stats.has_completed_import || false)
+            .catch(error => {
+              if (error.response?.status !== 401) {
+                logger.error('Error checking import status:', error);
+              }
+              return false;
+            })
+        : Promise.resolve(false);
+
+      // Wait for all to complete in parallel
+      const [ageResult, tutorialResult, importResult] = await Promise.all([
+        agePromise,
+        tutorialPromise,
+        importPromise,
+      ]);
+
+      setAgeVerified(ageResult);
+      setTutorialCompleted(tutorialResult);
+      setHasCompletedImport(importResult);
+
+      // Track daily login in background (non-blocking)
+      if (user) {
+        api.updateDailyLogin().catch(error => {
+          logger.log('Daily login tracking failed:', error.message);
+        });
       }
     };
-    checkImportStatus();
-  }, [user]);
 
-  if (loading || checkingTutorial || checkingImportStatus) {
+    // Only run when auth loading is complete
+    if (!loading) {
+      initializeAppState();
+    }
+  }, [user, loading]);
+
+  // Show loading while auth or app state is initializing
+  const isInitializing = loading || ageVerified === null || tutorialCompleted === null || hasCompletedImport === null;
+
+  if (isInitializing || !user) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.primary }}>
         <ActivityIndicator size="large" color={colors.accent.primary} />
@@ -166,15 +188,14 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!tutorialCompleted ? (
+        {!ageVerified ? (
+          <Stack.Screen name="AgeVerification">
+            {(props) => <AgeVerificationScreen {...props} onComplete={() => setAgeVerified(true)} />}
+          </Stack.Screen>
+        ) : !tutorialCompleted ? (
           <Stack.Screen name="Tutorial">
             {(props) => <TutorialScreen {...props} onComplete={() => setTutorialCompleted(true)} />}
           </Stack.Screen>
-        ) : !user ? (
-          <>
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-          </>
         ) : !hasCompletedImport ? (
           <Stack.Screen name="RobloxImport">
             {(props) => <RobloxImportScreen {...props} onImportComplete={() => setHasCompletedImport(true)} />}
@@ -183,6 +204,7 @@ export default function AppNavigator() {
           <>
             <Stack.Screen name="Main" component={MainTabs} />
             <Stack.Screen name="CollectionDetail" component={CollectionDetailScreen} />
+            <Stack.Screen name="Collectables" component={CollectablesScreen} />
             <Stack.Screen
               name="Profile"
               component={ProfileScreen}
@@ -191,9 +213,19 @@ export default function AppNavigator() {
                 gestureEnabled: true,
               }}
             />
+            <Stack.Screen
+              name="Premium"
+              component={PremiumUpgradeScreen}
+              options={{
+                presentation: 'modal',
+                gestureEnabled: true,
+              }}
+            />
           </>
         )}
       </Stack.Navigator>
+      {/* UnlockModalManager must be inside NavigationContainer to access navigation */}
+      <UnlockModalManager />
     </NavigationContainer>
   );
 }

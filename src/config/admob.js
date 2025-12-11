@@ -8,6 +8,7 @@
 
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import logger from '../utils/logger';
 
 // Check if we're running in Expo Go
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -19,7 +20,7 @@ if (!isExpoGo) {
   try {
     MaxAdContentRating = require('react-native-google-mobile-ads').MaxAdContentRating;
   } catch (error) {
-    console.log('MaxAdContentRating not available - running in Expo Go');
+    logger.log('MaxAdContentRating not available - running in Expo Go');
   }
 }
 
@@ -96,19 +97,6 @@ export const COPPA_REQUEST_CONFIG = MaxAdContentRating
     };
 
 /**
- * Screens where ads should NEVER be shown
- */
-export const AD_BLOCKED_SCREENS = [
-  'Tutorial',
-  'Onboarding',
-  'OnboardingSlides',
-  'RobloxImport',
-  'Premium',
-  'PremiumPurchase',
-  'AchievementModal',
-];
-
-/**
  * Interstitial ad configuration
  */
 export const INTERSTITIAL_CONFIG = {
@@ -116,13 +104,6 @@ export const INTERSTITIAL_CONFIG = {
   viewsBeforeAd: 4,
   // Minimum time between interstitials (in milliseconds)
   minTimeBetweenAds: 60000, // 1 minute
-};
-
-/**
- * Check if ads should be shown on a given screen
- */
-export const shouldShowAdsOnScreen = (screenName) => {
-  return !AD_BLOCKED_SCREENS.includes(screenName);
 };
 
 /**

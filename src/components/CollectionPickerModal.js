@@ -10,12 +10,17 @@ import {
   Alert,
 } from 'react-native';
 import { api } from '../services/api';
+import { useCollection } from '../context/CollectionContext';
 import { colors } from '../styles/colors';
+import logger from '../utils/logger';
 
 export default function CollectionPickerModal({ visible, onClose, gameId, gameName }) {
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(null);
+
+  // Badge collection hook
+  const { triggerEvent } = useCollection();
 
   useEffect(() => {
     if (visible) {
@@ -29,7 +34,7 @@ export default function CollectionPickerModal({ visible, onClose, gameId, gameNa
       const data = await api.getCollections();
       setCollections(data.collections);
     } catch (error) {
-      console.error('Failed to fetch collections:', error);
+      logger.error('Failed to fetch collections:', error);
       Alert.alert('Error', 'Failed to load collections');
     } finally {
       setLoading(false);
@@ -41,18 +46,13 @@ export default function CollectionPickerModal({ visible, onClose, gameId, gameNa
       setAdding(collection.id);
       await api.addGameToCollection(collection.id, gameId);
 
-      // Track game save for achievements
-      try {
-        await api.incrementGamesSaved();
-      } catch (trackError) {
-        // Silently fail - don't block game save
-        console.log('Game save tracking failed:', trackError.message);
-      }
+      // Trigger badge event for adding to collection
+      triggerEvent('ADD_TO_WISHLIST');
 
       Alert.alert('Success', `Added to "${collection.name}"`);
       onClose();
     } catch (error) {
-      console.error('Failed to add to collection:', error);
+      logger.error('Failed to add to collection:', error);
       if (error.response?.status === 400) {
         Alert.alert('Already Added', 'This game is already in that collection');
       } else {

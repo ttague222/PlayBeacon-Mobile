@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { colors } from '../styles/colors';
+import { radii, typography } from '../styles/kidTheme';
 import {
   getAllAchievements,
   getAchievementsByCategory,
@@ -11,6 +12,7 @@ import { api } from '../services/api';
 import XPProgressBar from '../components/XPProgressBar';
 import ProfileButton from '../components/ProfileButton';
 import { PlayBeaconBannerAd } from '../components/ads';
+import logger from '../utils/logger';
 
 const AchievementCard = ({ achievement, userAchievement, userStats }) => {
   const progress = userAchievement?.progress || 0;
@@ -134,7 +136,7 @@ export default function AchievementsScreen() {
       });
       setUserAchievements(achievementsMap);
     } catch (error) {
-      console.error('Failed to fetch achievements:', error);
+      logger.error('Failed to fetch achievements:', error);
       setError('Failed to load achievements. Please try again.');
     } finally {
       setLoading(false);
@@ -252,7 +254,7 @@ const styles = StyleSheet.create({
   summaryCard: {
     backgroundColor: colors.background.secondary,
     padding: 20,
-    borderRadius: 12,
+    borderRadius: radii.s,
     marginBottom: 30,
   },
   summaryRow: {
@@ -290,7 +292,7 @@ const styles = StyleSheet.create({
   achievementCard: {
     backgroundColor: colors.background.secondary,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: radii.s,
     marginBottom: 12,
     borderWidth: 2,
     borderColor: 'transparent',
@@ -329,7 +331,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.tertiary,
     paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: radii.xs,
   },
   xpBadgeText: {
     fontSize: 12,

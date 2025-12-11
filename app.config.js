@@ -17,6 +17,24 @@ export default ({ config }) => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.playbeacon.app',
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
+        NSCameraUsageDescription: 'PlayBeacon needs camera access to scan QR codes',
+        NSPhotoLibraryUsageDescription: 'PlayBeacon needs photo library access to upload game screenshots',
+        NSUserTrackingUsageDescription: 'This identifier will be used to deliver personalized ads to you.',
+        SKAdNetworkItems: [
+          { SKAdNetworkIdentifier: 'cstr6suwn9.skadnetwork' },
+          { SKAdNetworkIdentifier: '4fzdc2evr5.skadnetwork' },
+          { SKAdNetworkIdentifier: '2fnua5tdw4.skadnetwork' },
+          { SKAdNetworkIdentifier: 'ydx93a7ass.skadnetwork' },
+          { SKAdNetworkIdentifier: '5a6flpkh64.skadnetwork' },
+          { SKAdNetworkIdentifier: 'p78axxw29g.skadnetwork' },
+          { SKAdNetworkIdentifier: 'v72qych5uu.skadnetwork' },
+          { SKAdNetworkIdentifier: 'c6k4g5qg8m.skadnetwork' },
+          { SKAdNetworkIdentifier: 's39g8k73mm.skadnetwork' },
+          { SKAdNetworkIdentifier: '3qy4746246.skadnetwork' },
+        ],
+      },
     },
     android: {
       adaptiveIcon: {
@@ -42,6 +60,18 @@ export default ({ config }) => {
           },
         },
       ],
+      [
+        'react-native-google-mobile-ads',
+        {
+          // Google's official test app IDs - replace with real IDs for production
+          androidAppId: 'ca-app-pub-3940256099942544~3347511713',
+          iosAppId: 'ca-app-pub-3940256099942544~1458002511',
+          userTrackingUsageDescription: 'This identifier will be used to deliver personalized ads to you.',
+        },
+      ],
+      'expo-tracking-transparency',
+      'react-native-iap',
+      'expo-secure-store',
     ],
     extra: {
       env,
@@ -55,21 +85,9 @@ export default ({ config }) => {
         appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
       },
       googleClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
-      sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
       eas: {
         projectId: '23865d64-b2c1-4555-89f6-e85e795bc696',
       },
-    },
-    hooks: {
-      postPublish: [
-        {
-          file: 'sentry-expo/upload-sourcemaps',
-          config: {
-            organization: process.env.SENTRY_ORG,
-            project: process.env.SENTRY_PROJECT,
-          },
-        },
-      ],
     },
     updates: {
       fallbackToCacheTimeout: 0,

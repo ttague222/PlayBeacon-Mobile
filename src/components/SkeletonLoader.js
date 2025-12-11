@@ -81,6 +81,36 @@ export default function SkeletonLoader({ variant = 'card', count = 1 }) {
     </View>
   );
 
+  const renderBadgeCard = () => (
+    <View style={styles.badgeCard}>
+      <Animated.View style={[styles.badgeIcon, { opacity }]} />
+      <View style={styles.badgeInfo}>
+        <Animated.View style={[styles.badgeName, { opacity }]} />
+        <Animated.View style={[styles.badgeProgress, { opacity }]} />
+      </View>
+    </View>
+  );
+
+  const renderTaskItem = () => (
+    <View style={styles.taskItem}>
+      <Animated.View style={[styles.taskCheckbox, { opacity }]} />
+      <View style={styles.taskContent}>
+        <Animated.View style={[styles.taskTitle, { opacity }]} />
+        <Animated.View style={[styles.taskDescription, { opacity }]} />
+      </View>
+    </View>
+  );
+
+  const renderProfileHeader = () => (
+    <View style={styles.profileHeader}>
+      <Animated.View style={[styles.profileAvatar, { opacity }]} />
+      <View style={styles.profileInfo}>
+        <Animated.View style={[styles.profileName, { opacity }]} />
+        <Animated.View style={[styles.profileStats, { opacity }]} />
+      </View>
+    </View>
+  );
+
   const renderSkeleton = () => {
     switch (variant) {
       case 'queue':
@@ -91,6 +121,12 @@ export default function SkeletonLoader({ variant = 'card', count = 1 }) {
         return renderListItem();
       case 'game':
         return renderGameItem();
+      case 'badge':
+        return renderBadgeCard();
+      case 'task':
+        return renderTaskItem();
+      case 'profile':
+        return renderProfileHeader();
       default:
         return renderGridCard();
     }
@@ -154,7 +190,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
 
-  // Grid Card Skeleton (for RecommendationsScreen)
+  // Grid Card Skeleton (for grid layouts)
   gridCard: {
     width: '48%',
     backgroundColor: colors.background.secondary,
@@ -270,5 +306,104 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: colors.background.tertiary,
     borderRadius: 8,
+  },
+
+  // Badge Card Skeleton
+  badgeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background.secondary,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  badgeIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.background.tertiary,
+    marginRight: 12,
+  },
+  badgeInfo: {
+    flex: 1,
+  },
+  badgeName: {
+    height: 16,
+    backgroundColor: colors.background.tertiary,
+    borderRadius: 4,
+    marginBottom: 8,
+    width: '60%',
+  },
+  badgeProgress: {
+    height: 8,
+    backgroundColor: colors.background.tertiary,
+    borderRadius: 4,
+    width: '100%',
+  },
+
+  // Task Item Skeleton
+  taskItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background.secondary,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  taskCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: colors.background.tertiary,
+    marginRight: 12,
+  },
+  taskContent: {
+    flex: 1,
+  },
+  taskTitle: {
+    height: 16,
+    backgroundColor: colors.background.tertiary,
+    borderRadius: 4,
+    marginBottom: 8,
+    width: '70%',
+  },
+  taskDescription: {
+    height: 12,
+    backgroundColor: colors.background.tertiary,
+    borderRadius: 4,
+    width: '90%',
+  },
+
+  // Profile Header Skeleton
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background.secondary,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+  },
+  profileAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.background.tertiary,
+    marginRight: 16,
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    height: 20,
+    backgroundColor: colors.background.tertiary,
+    borderRadius: 4,
+    marginBottom: 8,
+    width: '50%',
+  },
+  profileStats: {
+    height: 14,
+    backgroundColor: colors.background.tertiary,
+    borderRadius: 4,
+    width: '80%',
   },
 });

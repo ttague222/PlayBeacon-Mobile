@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import logger from './logger';
 
 const TUTORIAL_COMPLETED_KEY = '@playbeacon_tutorial_completed';
 
@@ -7,7 +8,7 @@ export const getTutorialCompleted = async () => {
     const value = await AsyncStorage.getItem(TUTORIAL_COMPLETED_KEY);
     return value === 'true';
   } catch (error) {
-    console.error('Error reading tutorial completion status:', error);
+    logger.error('Error reading tutorial completion status:', error);
     return false;
   }
 };
@@ -17,7 +18,7 @@ export const setTutorialCompleted = async (completed) => {
     await AsyncStorage.setItem(TUTORIAL_COMPLETED_KEY, completed ? 'true' : 'false');
     return true;
   } catch (error) {
-    console.error('Error setting tutorial completion status:', error);
+    logger.error('Error setting tutorial completion status:', error);
     return false;
   }
 };
@@ -27,7 +28,7 @@ export const resetTutorial = async () => {
     await AsyncStorage.removeItem(TUTORIAL_COMPLETED_KEY);
     return true;
   } catch (error) {
-    console.error('Error resetting tutorial:', error);
+    logger.error('Error resetting tutorial:', error);
     return false;
   }
 };

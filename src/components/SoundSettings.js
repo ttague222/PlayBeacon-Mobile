@@ -1,0 +1,264 @@
+/**
+ * Sound Settings Component
+ *
+ * UI component for managing sound preferences.
+ * Integrates with SoundContext for persistent settings.
+ */
+
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Switch,
+  TouchableOpacity,
+} from 'react-native';
+import Slider from '@react-native-community/slider';
+import { useSoundSettings } from '../context/SoundContext';
+import { colors } from '../styles/colors';
+
+/**
+ * Full sound settings panel
+ */
+export default function SoundSettings() {
+  const {
+    soundEnabled,
+    bearSoundEnabled,
+    masterVolume,
+    reduceLoudSounds,
+    toggleSound,
+    toggleBearSound,
+    toggleReduceLoudSounds,
+    setMasterVolume,
+    resetSettings,
+  } = useSoundSettings();
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.sectionTitle}>Sound Settings</Text>
+
+      {/* Master Sound Toggle */}
+      <View style={styles.settingRow}>
+        <View style={styles.settingInfo}>
+          <Text style={styles.settingLabel}>Sound Effects</Text>
+          <Text style={styles.settingDescription}>
+            Enable all sound effects in the app
+          </Text>
+        </View>
+        <Switch
+          value={soundEnabled}
+          onValueChange={toggleSound}
+          trackColor={{ false: colors.background.tertiary, true: colors.accent.primary }}
+          thumbColor={soundEnabled ? colors.text.primary : colors.text.secondary}
+        />
+      </View>
+
+      {/* Bear Sounds Toggle */}
+      <View style={[styles.settingRow, !soundEnabled && styles.disabled]}>
+        <View style={styles.settingInfo}>
+          <Text style={[styles.settingLabel, !soundEnabled && styles.disabledText]}>
+            Bear Sounds
+          </Text>
+          <Text style={[styles.settingDescription, !soundEnabled && styles.disabledText]}>
+            Sound effects when Bear reacts
+          </Text>
+        </View>
+        <Switch
+          value={bearSoundEnabled && soundEnabled}
+          onValueChange={toggleBearSound}
+          disabled={!soundEnabled}
+          trackColor={{ false: colors.background.tertiary, true: colors.accent.secondary }}
+          thumbColor={bearSoundEnabled ? colors.text.primary : colors.text.secondary}
+        />
+      </View>
+
+      {/* Reduce Loud Sounds Toggle */}
+      <View style={[styles.settingRow, !soundEnabled && styles.disabled]}>
+        <View style={styles.settingInfo}>
+          <Text style={[styles.settingLabel, !soundEnabled && styles.disabledText]}>
+            Reduce Loud Sounds
+          </Text>
+          <Text style={[styles.settingDescription, !soundEnabled && styles.disabledText]}>
+            Cap maximum volume for sensitive ears
+          </Text>
+        </View>
+        <Switch
+          value={reduceLoudSounds}
+          onValueChange={toggleReduceLoudSounds}
+          disabled={!soundEnabled}
+          trackColor={{ false: colors.background.tertiary, true: colors.accent.tertiary }}
+          thumbColor={reduceLoudSounds ? colors.text.primary : colors.text.secondary}
+        />
+      </View>
+
+      {/* Volume Slider */}
+      <View style={[styles.volumeContainer, !soundEnabled && styles.disabled]}>
+        <View style={styles.volumeHeader}>
+          <Text style={[styles.settingLabel, !soundEnabled && styles.disabledText]}>
+            Master Volume
+          </Text>
+          <Text style={[styles.volumeValue, !soundEnabled && styles.disabledText]}>
+            {Math.round(masterVolume * 100)}%
+          </Text>
+        </View>
+        <Slider
+          style={styles.slider}
+          minimumValue={0}
+          maximumValue={1}
+          value={masterVolume}
+          onValueChange={setMasterVolume}
+          disabled={!soundEnabled}
+          minimumTrackTintColor={soundEnabled ? colors.accent.primary : colors.background.tertiary}
+          maximumTrackTintColor={colors.background.tertiary}
+          thumbTintColor={soundEnabled ? colors.text.primary : colors.text.secondary}
+        />
+        <View style={styles.volumeLabels}>
+          <Text style={[styles.volumeLabelText, !soundEnabled && styles.disabledText]}>
+            Quiet
+          </Text>
+          <Text style={[styles.volumeLabelText, !soundEnabled && styles.disabledText]}>
+            Loud
+          </Text>
+        </View>
+      </View>
+
+      {/* Reset Button */}
+      <TouchableOpacity style={styles.resetButton} onPress={resetSettings}>
+        <Text style={styles.resetButtonText}>Reset to Defaults</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+/**
+ * Compact sound toggle for settings list
+ */
+export function SoundToggle({ label = 'Sound Effects' }) {
+  const { soundEnabled, toggleSound } = useSoundSettings();
+
+  return (
+    <View style={styles.compactRow}>
+      <Text style={styles.compactLabel}>{label}</Text>
+      <Switch
+        value={soundEnabled}
+        onValueChange={toggleSound}
+        trackColor={{ false: colors.background.tertiary, true: colors.accent.primary }}
+        thumbColor={soundEnabled ? colors.text.primary : colors.text.secondary}
+      />
+    </View>
+  );
+}
+
+/**
+ * Compact bear sound toggle
+ */
+export function BearSoundToggle({ label = 'Bear Sounds' }) {
+  const { soundEnabled, bearSoundEnabled, toggleBearSound } = useSoundSettings();
+
+  return (
+    <View style={[styles.compactRow, !soundEnabled && styles.disabled]}>
+      <Text style={[styles.compactLabel, !soundEnabled && styles.disabledText]}>
+        {label}
+      </Text>
+      <Switch
+        value={bearSoundEnabled && soundEnabled}
+        onValueChange={toggleBearSound}
+        disabled={!soundEnabled}
+        trackColor={{ false: colors.background.tertiary, true: colors.accent.secondary }}
+        thumbColor={bearSoundEnabled ? colors.text.primary : colors.text.secondary}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: colors.background.secondary,
+    borderRadius: 16,
+    padding: 16,
+    marginVertical: 8,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    marginBottom: 16,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.background.tertiary,
+  },
+  settingInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  settingLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 4,
+  },
+  settingDescription: {
+    fontSize: 13,
+    color: colors.text.secondary,
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+  disabledText: {
+    color: colors.text.tertiary,
+  },
+  volumeContainer: {
+    paddingVertical: 16,
+  },
+  volumeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  volumeValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.accent.primary,
+  },
+  slider: {
+    width: '100%',
+    height: 40,
+  },
+  volumeLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+  },
+  volumeLabelText: {
+    fontSize: 12,
+    color: colors.text.secondary,
+  },
+  resetButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: colors.background.tertiary,
+  },
+  resetButtonText: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    fontWeight: '500',
+  },
+  compactRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  compactLabel: {
+    fontSize: 16,
+    color: colors.text.primary,
+  },
+});

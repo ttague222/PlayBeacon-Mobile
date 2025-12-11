@@ -10,6 +10,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Constants from 'expo-constants';
 import { useAds } from '../context/AdContext';
 import { AD_UNIT_IDS } from '../config/admob';
+import logger from '../utils/logger';
 
 // Check if we're running in Expo Go
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -24,7 +25,7 @@ if (!isExpoGo) {
     InterstitialAd = ads.InterstitialAd;
     AdEventType = ads.AdEventType;
   } catch (error) {
-    console.log('InterstitialAd not available - running in Expo Go');
+    logger.log('InterstitialAd not available - running in Expo Go');
   }
 }
 
@@ -53,12 +54,12 @@ export function useInterstitial() {
 
       // Set up event listeners
       const unsubscribeLoaded = interstitial.addAdEventListener(AdEventType.LOADED, () => {
-        console.log('Interstitial ad loaded');
+        logger.log('Interstitial ad loaded');
         setIsLoaded(true);
       });
 
       const unsubscribeClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
-        console.log('Interstitial ad closed');
+        logger.log('Interstitial ad closed');
         setIsShowing(false);
         setIsLoaded(false);
         // Preload next ad
@@ -66,7 +67,7 @@ export function useInterstitial() {
       });
 
       const unsubscribeError = interstitial.addAdEventListener(AdEventType.ERROR, (error) => {
-        console.log('Interstitial ad error:', error);
+        logger.log('Interstitial ad error:', error);
         setIsLoaded(false);
       });
 
@@ -80,7 +81,7 @@ export function useInterstitial() {
 
       interstitial.load();
     } catch (error) {
-      console.error('Failed to create interstitial ad:', error);
+      logger.error('Failed to create interstitial ad:', error);
     }
   }, [adsAvailable, shouldShowAds]);
 
@@ -90,7 +91,7 @@ export function useInterstitial() {
    */
   const showAd = useCallback(async () => {
     if (!adsAvailable || !isLoaded || !interstitialRef.current?.ad) {
-      console.log('Interstitial not ready');
+      logger.log('Interstitial not ready');
       return false;
     }
 
@@ -100,7 +101,7 @@ export function useInterstitial() {
       resetInterstitialCounter();
       return true;
     } catch (error) {
-      console.error('Failed to show interstitial:', error);
+      logger.error('Failed to show interstitial:', error);
       setIsShowing(false);
       return false;
     }

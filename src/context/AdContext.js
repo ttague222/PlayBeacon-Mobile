@@ -1,8 +1,13 @@
 /**
  * Ad Context Provider
  *
- * Manages ad state, premium user logic, and provides hooks for ad components.
- * Integrates with Firebase for premium status and RevenueCat for purchases.
+ * Manages ad state and provides hooks for ad components.
+ * Integrates with PremiumContext for premium/ad-free status.
+ *
+ * Ad Frequency Logic:
+ * - First 20 game recommendations each day are ad-free
+ * - After 20 games, show interstitial every 5 games
+ * - Resets daily at midnight (local time)
  *
  * NOTE: react-native-google-mobile-ads requires a native build (EAS Build).
  * In Expo Go, ads will be disabled gracefully.
@@ -11,29 +16,124 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
-import { useAuth } from './AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { usePremium } from './PremiumContext';
+import logger from '../utils/logger';
 
 // Check if we're running in Expo Go (where native modules aren't available)
 const isExpoGo = Constants.appOwnership === 'expo';
 
-// Interstitial config - duplicated here to avoid importing from admob.js which may trigger native imports
-const INTERSTITIAL_CONFIG = {
-  viewsBeforeAd: 4,
-  minTimeBetweenAds: 60000,
+// Storage key for daily ad tracking
+const AD_TRACKING_KEY = '@playbeacon_ad_tracking';
+
+// Ad frequency configuration
+const AD_FREQUENCY_CONFIG = {
+  freeGamesPerDay: 20,      // First 20 games are ad-free
+  gamesPerAdAfterFree: 5,   // After free games, show ad every 5 games
+  minTimeBetweenAds: 30000, // 30 seconds minimum between ads
 };
 
 const AdContext = createContext(null);
 
+/**
+ * Get today's date string in YYYY-MM-DD format (local time)
+ */
+function getTodayDateString() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
 export function AdProvider({ children }) {
-  const { user } = useAuth();
+  // Get premium status from PremiumContext
+  const { isPremium: premiumStatus } = usePremium();
+
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isPremium, setIsPremium] = useState(false);
   const [adsEnabled, setAdsEnabled] = useState(!isExpoGo);
   const [trackingStatus, setTrackingStatus] = useState(null);
 
-  // Interstitial tracking
-  const gameViewCount = useRef(0);
+  // Daily tracking state
+  const [dailyGameCount, setDailyGameCount] = useState(0);
+  const [trackingDate, setTrackingDate] = useState(getTodayDateString());
+  const [gamesSinceLastAd, setGamesSinceLastAd] = useState(0);
   const lastInterstitialTime = useRef(0);
+  const isLoadingTracking = useRef(true);
+
+  // Update ads enabled based on premium status
+  useEffect(() => {
+    if (!isExpoGo) {
+      setAdsEnabled(!premiumStatus);
+    }
+  }, [premiumStatus]);
+
+  /**
+   * Load saved tracking data from AsyncStorage
+   */
+  const loadTrackingData = useCallback(async () => {
+    try {
+      const savedData = await AsyncStorage.getItem(AD_TRACKING_KEY);
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        const today = getTodayDateString();
+
+        // Check if it's a new day - reset if so
+        if (parsed.date === today) {
+          setDailyGameCount(parsed.dailyGameCount || 0);
+          setGamesSinceLastAd(parsed.gamesSinceLastAd || 0);
+          setTrackingDate(today);
+          logger.log(`[AdContext] Loaded tracking: ${parsed.dailyGameCount} games today, ${parsed.gamesSinceLastAd} since last ad`);
+        } else {
+          // New day - reset counters
+          logger.log('[AdContext] New day detected, resetting ad counters');
+          setDailyGameCount(0);
+          setGamesSinceLastAd(0);
+          setTrackingDate(today);
+          await saveTrackingData(0, 0, today);
+        }
+      } else {
+        // No saved data - initialize
+        const today = getTodayDateString();
+        setTrackingDate(today);
+        await saveTrackingData(0, 0, today);
+      }
+    } catch (error) {
+      logger.warn('[AdContext] Failed to load tracking data:', error);
+    } finally {
+      isLoadingTracking.current = false;
+    }
+  }, []);
+
+  /**
+   * Save tracking data to AsyncStorage
+   */
+  const saveTrackingData = useCallback(async (gameCount, sinceLastAd, date) => {
+    try {
+      const data = {
+        date: date || getTodayDateString(),
+        dailyGameCount: gameCount,
+        gamesSinceLastAd: sinceLastAd,
+        lastUpdated: Date.now(),
+      };
+      await AsyncStorage.setItem(AD_TRACKING_KEY, JSON.stringify(data));
+    } catch (error) {
+      logger.warn('[AdContext] Failed to save tracking data:', error);
+    }
+  }, []);
+
+  /**
+   * Check if it's a new day and reset if needed
+   */
+  const checkAndResetIfNewDay = useCallback(() => {
+    const today = getTodayDateString();
+    if (trackingDate !== today) {
+      logger.log('[AdContext] New day detected during session, resetting counters');
+      setDailyGameCount(0);
+      setGamesSinceLastAd(0);
+      setTrackingDate(today);
+      saveTrackingData(0, 0, today);
+      return true;
+    }
+    return false;
+  }, [trackingDate, saveTrackingData]);
 
   /**
    * Initialize AdMob SDK with COPPA-compliant settings
@@ -41,7 +141,7 @@ export function AdProvider({ children }) {
   const initializeAds = useCallback(async () => {
     // Skip initialization in Expo Go
     if (isExpoGo) {
-      console.log('AdMob: Skipping initialization (running in Expo Go)');
+      logger.log('AdMob: Skipping initialization (running in Expo Go)');
       setIsInitialized(false);
       setAdsEnabled(false);
       return;
@@ -59,7 +159,7 @@ export function AdProvider({ children }) {
         setTrackingStatus(status);
 
         if (status !== 'granted') {
-          console.log('Tracking permission not granted, showing non-personalized ads');
+          logger.log('Tracking permission not granted, showing non-personalized ads');
         }
       }
 
@@ -73,96 +173,131 @@ export function AdProvider({ children }) {
       await mobileAds().setRequestConfiguration(coppaConfig);
       await mobileAds().initialize();
 
-      console.log('AdMob SDK initialized successfully');
+      logger.log('AdMob SDK initialized successfully');
       setIsInitialized(true);
     } catch (error) {
-      console.error('Failed to initialize AdMob:', error);
+      logger.error('Failed to initialize AdMob:', error);
       setIsInitialized(false);
       setAdsEnabled(false);
     }
   }, []);
 
-  /**
-   * Check if user has premium status (Remove Ads)
-   */
-  const checkPremiumStatus = useCallback(async () => {
-    if (!user) {
-      setIsPremium(false);
-      return;
-    }
-
-    try {
-      const userIsPremium = user.isPremium || false;
-      setIsPremium(userIsPremium);
-      if (!isExpoGo) {
-        setAdsEnabled(!userIsPremium);
-      }
-    } catch (error) {
-      console.error('Failed to check premium status:', error);
-      setIsPremium(false);
-    }
-  }, [user]);
-
+  // Load tracking data and initialize ads on mount
   useEffect(() => {
+    loadTrackingData();
     initializeAds();
-  }, [initializeAds]);
-
-  useEffect(() => {
-    checkPremiumStatus();
-  }, [checkPremiumStatus]);
+  }, [loadTrackingData, initializeAds]);
 
   /**
-   * Track game detail view for interstitial ad logic
+   * Track game recommendation view for interstitial ad logic
+   *
+   * Logic:
+   * - First 20 games per day: No ads
+   * - After 20 games: Show ad every 5 games
+   *
+   * @returns {boolean} Whether an ad should be shown
    */
   const trackGameView = useCallback(() => {
-    if (isPremium || !adsEnabled || isExpoGo) {
+    // Skip if premium, ads disabled, or still loading
+    if (premiumStatus || !adsEnabled || isExpoGo || isLoadingTracking.current) {
       return false;
     }
 
-    gameViewCount.current += 1;
+    // Check for new day
+    checkAndResetIfNewDay();
+
+    const newDailyCount = dailyGameCount + 1;
+    const newSinceLastAd = gamesSinceLastAd + 1;
+
+    // Update state
+    setDailyGameCount(newDailyCount);
+    setGamesSinceLastAd(newSinceLastAd);
+
+    // Determine if we should show an ad
     const now = Date.now();
     const timeSinceLastAd = now - lastInterstitialTime.current;
 
+    // Within free games period - no ads
+    if (newDailyCount <= AD_FREQUENCY_CONFIG.freeGamesPerDay) {
+      logger.log(`[AdContext] Game ${newDailyCount}/${AD_FREQUENCY_CONFIG.freeGamesPerDay} (free period)`);
+      saveTrackingData(newDailyCount, newSinceLastAd, trackingDate);
+      return false;
+    }
+
+    // After free period - check if we should show an ad
     const shouldShow =
-      gameViewCount.current >= INTERSTITIAL_CONFIG.viewsBeforeAd &&
-      timeSinceLastAd >= INTERSTITIAL_CONFIG.minTimeBetweenAds;
+      newSinceLastAd >= AD_FREQUENCY_CONFIG.gamesPerAdAfterFree &&
+      timeSinceLastAd >= AD_FREQUENCY_CONFIG.minTimeBetweenAds;
 
     if (shouldShow) {
-      gameViewCount.current = 0;
-      lastInterstitialTime.current = now;
+      logger.log(`[AdContext] Showing ad after game ${newDailyCount} (${newSinceLastAd} games since last ad)`);
+      // Will be reset after ad is actually shown via resetInterstitialCounter
       return true;
     }
 
+    logger.log(`[AdContext] Game ${newDailyCount}, ${newSinceLastAd}/${AD_FREQUENCY_CONFIG.gamesPerAdAfterFree} until next ad`);
+    saveTrackingData(newDailyCount, newSinceLastAd, trackingDate);
     return false;
-  }, [isPremium, adsEnabled]);
+  }, [
+    premiumStatus,
+    adsEnabled,
+    dailyGameCount,
+    gamesSinceLastAd,
+    trackingDate,
+    checkAndResetIfNewDay,
+    saveTrackingData,
+  ]);
 
+  /**
+   * Reset counter after ad is shown
+   */
   const resetInterstitialCounter = useCallback(() => {
-    gameViewCount.current = 0;
     lastInterstitialTime.current = Date.now();
-  }, []);
+    setGamesSinceLastAd(0);
+    saveTrackingData(dailyGameCount, 0, trackingDate);
+    logger.log('[AdContext] Ad shown, reset games-since-last-ad counter');
+  }, [dailyGameCount, trackingDate, saveTrackingData]);
 
-  const setPremiumStatus = useCallback((status) => {
-    setIsPremium(status);
-    if (!isExpoGo) {
-      setAdsEnabled(!status);
-    }
-  }, []);
-
+  /**
+   * Check if ads should currently be shown
+   */
   const shouldShowAds = useCallback(() => {
-    return isInitialized && adsEnabled && !isPremium && !isExpoGo;
-  }, [isInitialized, adsEnabled, isPremium]);
+    return isInitialized && adsEnabled && !premiumStatus && !isExpoGo;
+  }, [isInitialized, adsEnabled, premiumStatus]);
+
+  /**
+   * Get current ad status info (for debugging/UI)
+   */
+  const getAdStatus = useCallback(() => {
+    const gamesUntilFirstAd = Math.max(0, AD_FREQUENCY_CONFIG.freeGamesPerDay - dailyGameCount);
+    const gamesUntilNextAd = dailyGameCount < AD_FREQUENCY_CONFIG.freeGamesPerDay
+      ? gamesUntilFirstAd
+      : Math.max(0, AD_FREQUENCY_CONFIG.gamesPerAdAfterFree - gamesSinceLastAd);
+
+    return {
+      dailyGameCount,
+      gamesSinceLastAd,
+      freeGamesRemaining: gamesUntilFirstAd,
+      gamesUntilNextAd,
+      isInFreePeriod: dailyGameCount < AD_FREQUENCY_CONFIG.freeGamesPerDay,
+      config: AD_FREQUENCY_CONFIG,
+    };
+  }, [dailyGameCount, gamesSinceLastAd]);
 
   const value = {
     isInitialized,
-    isPremium,
+    isPremium: premiumStatus,
     adsEnabled,
     trackingStatus,
     isExpoGo,
     shouldShowAds,
     trackGameView,
     resetInterstitialCounter,
-    setPremiumStatus,
     initializeAds,
+    getAdStatus,
+    // Expose daily tracking for UI purposes
+    dailyGameCount,
+    freeGamesRemaining: Math.max(0, AD_FREQUENCY_CONFIG.freeGamesPerDay - dailyGameCount),
   };
 
   return <AdContext.Provider value={value}>{children}</AdContext.Provider>;

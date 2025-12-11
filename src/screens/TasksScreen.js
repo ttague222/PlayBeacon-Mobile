@@ -18,10 +18,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../services/api';
+import SoundManager from '../services/SoundManager';
 import SkeletonLoader from '../components/SkeletonLoader';
 import ProfileButton from '../components/ProfileButton';
 import { PlayBeaconBannerAd } from '../components/ads';
+import { useCollection } from '../context/CollectionContext';
 import { colors } from '../styles/colors';
+import logger from '../utils/logger';
+import { typography, radii, shadows } from '../styles/kidTheme';
 
 const TABS = [
   { key: 'all', label: 'All' },
@@ -51,6 +55,9 @@ export default function TasksScreen({ navigation }) {
   const [xpPopup, setXpPopup] = useState({ visible: false, xp: 0 });
   const xpOpacity = useState(new Animated.Value(0))[0];
 
+  // Badge collection hook for task completion tracking
+  const { triggerEvent } = useCollection();
+
   const fetchTasks = useCallback(async () => {
     try {
       setError(null);
@@ -61,11 +68,8 @@ export default function TasksScreen({ navigation }) {
       const data = await api.getTasks(filters);
       setTasks(data.tasks || []);
     } catch (error) {
-      console.error('Failed to fetch tasks:', error);
-      const errorMessage = error.response?.data?.detail ||
-                          error.message ||
-                          'Failed to load tasks. Please check your connection.';
-      setError(errorMessage);
+      logger.error('Failed to fetch tasks:', error);
+      setError('Failed to load tasks. Please check your connection.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -102,6 +106,7 @@ export default function TasksScreen({ navigation }) {
   };
 
   const handleCreateTask = async () => {
+    SoundManager.play('ui.tap');
     if (!newTaskTitle.trim()) {
       Alert.alert('Error', 'Please enter a task title');
       return;
@@ -123,17 +128,15 @@ export default function TasksScreen({ navigation }) {
       setCreateModalVisible(false);
       await fetchTasks();
     } catch (error) {
-      console.error('Failed to create task:', error);
-      const errorMessage = error.response?.data?.detail ||
-                          error.message ||
-                          'Failed to create task. Please try again.';
-      Alert.alert('Error', errorMessage);
+      logger.error('Failed to create task:', error);
+      Alert.alert('Error', 'Failed to create task. Please try again.');
     } finally {
       setCreating(false);
     }
   };
 
   const handleToggleComplete = async (task) => {
+    SoundManager.play('ui.tap');
     // Optimistically update UI first
     const wasCompleted = task.completed;
     setTasks(prevTasks =>
@@ -149,6 +152,9 @@ export default function TasksScreen({ navigation }) {
         await api.uncompleteTask(task.taskId);
       } else {
         const result = await api.completeTask(task.taskId);
+
+        // Track task completion for badges
+        triggerEvent('COMPLETE_TASK');
 
         // Show XP popup
         if (result.xp_gained > 0) {
@@ -168,7 +174,7 @@ export default function TasksScreen({ navigation }) {
         }
       }
     } catch (error) {
-      console.error('Failed to toggle task completion:', error);
+      logger.error('Failed to toggle task completion:', error);
 
       // Check if it's a sync issue (task already in desired state)
       const errorDetail = error.response?.data?.detail || '';
@@ -190,6 +196,7 @@ export default function TasksScreen({ navigation }) {
   };
 
   const handleDeleteTask = (task) => {
+    SoundManager.play('ui.tap');
     Alert.alert(
       'Delete Task',
       `Are you sure you want to delete "${task.title}"?`,
@@ -203,7 +210,7 @@ export default function TasksScreen({ navigation }) {
               await api.deleteTask(task.taskId);
               setTasks(prevTasks => prevTasks.filter(t => t.taskId !== task.taskId));
             } catch (error) {
-              console.error('Failed to delete task:', error);
+              logger.error('Failed to delete task:', error);
               Alert.alert('Error', 'Failed to delete task. Please try again.');
             }
           },
@@ -212,26 +219,26 @@ export default function TasksScreen({ navigation }) {
     );
   };
 
-  const renderTaskItem = ({ item }) => (
+  const renderTaskItem = useCallback(({ item }) => (
     <TouchableOpacity
       style={[
         styles.taskItem,
         item.completed && styles.taskItemCompleted,
       ]}
       onLongPress={() => handleDeleteTask(item)}
+      onPress={() => handleToggleComplete(item)}
       activeOpacity={0.7}
     >
-      <TouchableOpacity
+      <View
         style={[
           styles.checkbox,
           item.completed && styles.checkboxChecked,
         ]}
-        onPress={() => handleToggleComplete(item)}
       >
         {item.completed && (
           <Ionicons name="checkmark" size={18} color={colors.text.primary} />
         )}
-      </TouchableOpacity>
+      </View>
 
       <View style={styles.taskContent}>
         <Text
@@ -278,7 +285,7 @@ export default function TasksScreen({ navigation }) {
         )}
       </View>
     </TouchableOpacity>
-  );
+  ), [handleDeleteTask, handleToggleComplete]);
 
   const renderTabs = () => (
     <View style={styles.tabContainer}>
@@ -289,7 +296,10 @@ export default function TasksScreen({ navigation }) {
             styles.tab,
             activeTab === tab.key && styles.tabActive,
           ]}
-          onPress={() => setActiveTab(tab.key)}
+          onPress={() => {
+            SoundManager.play('ui.tab_change');
+            setActiveTab(tab.key);
+          }}
         >
           <Text
             style={[
@@ -317,7 +327,10 @@ export default function TasksScreen({ navigation }) {
             styles.typeOption,
             newTaskType === type.key && styles.typeOptionActive,
           ]}
-          onPress={() => setNewTaskType(type.key)}
+          onPress={() => {
+            SoundManager.play('ui.tap');
+            setNewTaskType(type.key);
+          }}
         >
           <Text
             style={[
@@ -344,7 +357,10 @@ export default function TasksScreen({ navigation }) {
               borderColor: PRIORITY_COLORS[priority],
             },
           ]}
-          onPress={() => setNewTaskPriority(priority)}
+          onPress={() => {
+            SoundManager.play('ui.tap');
+            setNewTaskPriority(priority);
+          }}
         >
           <Text
             style={[
@@ -359,9 +375,6 @@ export default function TasksScreen({ navigation }) {
     </View>
   );
 
-  // Separate completed and incomplete tasks
-  const incompleteTasks = tasks.filter(t => !t.completed);
-  const completedTasks = tasks.filter(t => t.completed);
 
   if (loading) {
     return (
@@ -397,7 +410,11 @@ export default function TasksScreen({ navigation }) {
         <View style={styles.headerRight}>
           <TouchableOpacity
             style={styles.createButton}
-            onPress={() => setCreateModalVisible(true)}
+            onPress={() => {
+              SoundManager.play('ui.tap');
+              SoundManager.play('ui.modal_open');
+              setCreateModalVisible(true);
+            }}
           >
             <Text style={styles.createButtonText}>+ New</Text>
           </TouchableOpacity>
@@ -416,14 +433,18 @@ export default function TasksScreen({ navigation }) {
           </Text>
           <TouchableOpacity
             style={styles.emptyCreateButton}
-            onPress={() => setCreateModalVisible(true)}
+            onPress={() => {
+              SoundManager.play('ui.tap');
+              SoundManager.play('ui.modal_open');
+              setCreateModalVisible(true);
+            }}
           >
             <Text style={styles.emptyCreateButtonText}>Create Task</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
-          data={[...incompleteTasks, ...completedTasks]}
+          data={tasks}
           renderItem={renderTaskItem}
           keyExtractor={(item) => item.taskId}
           contentContainerStyle={styles.listContent}
@@ -434,10 +455,7 @@ export default function TasksScreen({ navigation }) {
               tintColor={colors.accent.primary}
             />
           }
-          ListHeaderComponent={
-            completedTasks.length > 0 && incompleteTasks.length > 0 ? null : null
-          }
-          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
         />
       )}
 
@@ -454,6 +472,7 @@ export default function TasksScreen({ navigation }) {
         animationType="slide"
         transparent={true}
         onRequestClose={() => {
+          SoundManager.play('ui.modal_close');
           setCreateModalVisible(false);
           setNewTaskTitle('');
           setNewTaskType('one_time');
@@ -473,6 +492,7 @@ export default function TasksScreen({ navigation }) {
                   <TouchableOpacity
                     style={styles.modalCloseButton}
                     onPress={() => {
+                      SoundManager.play('ui.modal_close');
                       Keyboard.dismiss();
                       setCreateModalVisible(false);
                       setNewTaskTitle('');
@@ -559,8 +579,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.sizes.header,
+    fontWeight: typography.fontWeight.bold,
     color: colors.text.primary,
   },
   headerRight: {
@@ -572,12 +592,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.secondary,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    borderRadius: radii.s,
+    ...shadows.medium,
   },
   createButtonText: {
     color: colors.text.primary,
@@ -593,7 +609,7 @@ const styles = StyleSheet.create({
   tab: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: radii.l,
     backgroundColor: colors.background.secondary,
   },
   tabActive: {
@@ -614,7 +630,7 @@ const styles = StyleSheet.create({
   taskItem: {
     backgroundColor: colors.background.secondary,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: radii.s,
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
@@ -624,7 +640,7 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 6,
+    borderRadius: radii.xs,
     borderWidth: 2,
     borderColor: colors.accent.primary,
     marginRight: 12,
@@ -659,7 +675,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: radii.s,
     backgroundColor: colors.background.tertiary,
   },
   typeBadge: {
@@ -703,12 +719,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    borderRadius: radii.s,
+    ...shadows.medium,
   },
   emptyCreateButtonText: {
     color: colors.text.primary,
@@ -722,12 +734,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.success,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
+    borderRadius: radii.l,
+    ...shadows.xlarge,
   },
   xpPopupText: {
     fontSize: 24,
@@ -744,15 +752,11 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: colors.background.secondary,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
     padding: 24,
     paddingBottom: 40,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 10,
+    ...shadows.xlarge,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -782,7 +786,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radii.s,
     fontSize: 16,
     borderWidth: 1,
     borderColor: colors.border,
@@ -800,7 +804,7 @@ const styles = StyleSheet.create({
   typeOption: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: radii.xs,
     backgroundColor: colors.background.primary,
     alignItems: 'center',
     borderWidth: 2,
@@ -825,7 +829,7 @@ const styles = StyleSheet.create({
   priorityOption: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: radii.xs,
     backgroundColor: colors.background.primary,
     alignItems: 'center',
     borderWidth: 2,
@@ -842,7 +846,7 @@ const styles = StyleSheet.create({
   createTaskButton: {
     backgroundColor: colors.accent.primary,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: radii.s,
     alignItems: 'center',
     marginTop: 24,
   },
@@ -872,7 +876,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: radii.s,
   },
   buttonText: {
     color: colors.text.primary,

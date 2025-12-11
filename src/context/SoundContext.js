@@ -1,0 +1,293 @@
+/**
+ * Sound Context Provider
+ *
+ * Global sound settings management for PlayBeacon app.
+ * Persists user preferences and provides hooks for sound control.
+ */
+
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import SoundManager, { SoundCategory } from '../services/SoundManager';
+import logger from '../utils/logger';
+
+const STORAGE_KEY = '@playbeacon_sound_settings';
+
+const SoundContext = createContext(null);
+
+/**
+ * Default sound settings
+ */
+const DEFAULT_SETTINGS = {
+  soundEnabled: true,
+  bearSoundEnabled: true,
+  masterVolume: 0.7,
+  reduceLoudSounds: false,
+};
+
+export function SoundProvider({ children }) {
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(DEFAULT_SETTINGS.soundEnabled);
+  const [bearSoundEnabled, setBearSoundEnabled] = useState(DEFAULT_SETTINGS.bearSoundEnabled);
+  const [masterVolume, setMasterVolume] = useState(DEFAULT_SETTINGS.masterVolume);
+  const [reduceLoudSounds, setReduceLoudSounds] = useState(DEFAULT_SETTINGS.reduceLoudSounds);
+
+  /**
+   * Load saved settings on mount
+   */
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        // Initialize SoundManager
+        await SoundManager.initialize();
+
+        // Load saved settings
+        const savedSettings = await AsyncStorage.getItem(STORAGE_KEY);
+        if (savedSettings) {
+          const parsed = JSON.parse(savedSettings);
+          setSoundEnabled(parsed.soundEnabled ?? DEFAULT_SETTINGS.soundEnabled);
+          setBearSoundEnabled(parsed.bearSoundEnabled ?? DEFAULT_SETTINGS.bearSoundEnabled);
+          setMasterVolume(parsed.masterVolume ?? DEFAULT_SETTINGS.masterVolume);
+          setReduceLoudSounds(parsed.reduceLoudSounds ?? DEFAULT_SETTINGS.reduceLoudSounds);
+
+          // Apply to SoundManager
+          SoundManager.applySettings({
+            isEnabled: parsed.soundEnabled ?? DEFAULT_SETTINGS.soundEnabled,
+            isBearSoundEnabled: parsed.bearSoundEnabled ?? DEFAULT_SETTINGS.bearSoundEnabled,
+            masterVolume: parsed.masterVolume ?? DEFAULT_SETTINGS.masterVolume,
+            reduceLoudSounds: parsed.reduceLoudSounds ?? DEFAULT_SETTINGS.reduceLoudSounds,
+          });
+        }
+
+        setIsInitialized(true);
+      } catch (error) {
+        logger.warn('[SoundContext] Failed to load settings:', error);
+        setIsInitialized(true);
+      }
+    };
+
+    loadSettings();
+
+    return () => {
+      SoundManager.cleanup();
+    };
+  }, []);
+
+  /**
+   * Save settings when they change
+   */
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    const saveSettings = async () => {
+      try {
+        const settings = {
+          soundEnabled,
+          bearSoundEnabled,
+          masterVolume,
+          reduceLoudSounds,
+        };
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      } catch (error) {
+        logger.warn('[SoundContext] Failed to save settings:', error);
+      }
+    };
+
+    saveSettings();
+  }, [isInitialized, soundEnabled, bearSoundEnabled, masterVolume, reduceLoudSounds]);
+
+  /**
+   * Toggle all sounds on/off
+   */
+  const toggleSound = useCallback(() => {
+    setSoundEnabled((prev) => {
+      const newValue = !prev;
+      SoundManager.setEnabled(newValue);
+      return newValue;
+    });
+  }, []);
+
+  /**
+   * Toggle bear sounds on/off
+   */
+  const toggleBearSound = useCallback(() => {
+    setBearSoundEnabled((prev) => {
+      const newValue = !prev;
+      SoundManager.setBearSoundEnabled(newValue);
+      return newValue;
+    });
+  }, []);
+
+  /**
+   * Set sound enabled state
+   */
+  const setSoundEnabledValue = useCallback((enabled) => {
+    setSoundEnabled(enabled);
+    SoundManager.setEnabled(enabled);
+  }, []);
+
+  /**
+   * Set bear sound enabled state
+   */
+  const setBearSoundEnabledValue = useCallback((enabled) => {
+    setBearSoundEnabled(enabled);
+    SoundManager.setBearSoundEnabled(enabled);
+  }, []);
+
+  /**
+   * Set master volume (0-1)
+   */
+  const setMasterVolumeValue = useCallback((volume) => {
+    const clamped = Math.min(1, Math.max(0, volume));
+    setMasterVolume(clamped);
+    SoundManager.setMasterVolume(clamped);
+  }, []);
+
+  /**
+   * Toggle reduce loud sounds
+   */
+  const toggleReduceLoudSounds = useCallback(() => {
+    setReduceLoudSounds((prev) => {
+      const newValue = !prev;
+      SoundManager.setReduceLoudSounds(newValue);
+      return newValue;
+    });
+  }, []);
+
+  /**
+   * Set reduce loud sounds
+   */
+  const setReduceLoudSoundsValue = useCallback((enabled) => {
+    setReduceLoudSounds(enabled);
+    SoundManager.setReduceLoudSounds(enabled);
+  }, []);
+
+  /**
+   * Play a sound by key (e.g., 'ui.tap', 'bear.celebrate')
+   */
+  const playSound = useCallback((soundKey, options = {}) => {
+    return SoundManager.play(soundKey, options);
+  }, []);
+
+  /**
+   * Play a sound by event name (e.g., 'ADD_TO_WISHLIST')
+   */
+  const playSoundEvent = useCallback((eventName, options = {}) => {
+    return SoundManager.playEvent(eventName, options);
+  }, []);
+
+  /**
+   * Stop all sounds
+   */
+  const stopAllSounds = useCallback(() => {
+    return SoundManager.stopAll();
+  }, []);
+
+  /**
+   * Reset to default settings
+   */
+  const resetSettings = useCallback(async () => {
+    setSoundEnabled(DEFAULT_SETTINGS.soundEnabled);
+    setBearSoundEnabled(DEFAULT_SETTINGS.bearSoundEnabled);
+    setMasterVolume(DEFAULT_SETTINGS.masterVolume);
+    setReduceLoudSounds(DEFAULT_SETTINGS.reduceLoudSounds);
+
+    SoundManager.applySettings({
+      isEnabled: DEFAULT_SETTINGS.soundEnabled,
+      isBearSoundEnabled: DEFAULT_SETTINGS.bearSoundEnabled,
+      masterVolume: DEFAULT_SETTINGS.masterVolume,
+      reduceLoudSounds: DEFAULT_SETTINGS.reduceLoudSounds,
+    });
+
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+      logger.warn('[SoundContext] Failed to reset settings:', error);
+    }
+  }, []);
+
+  const value = {
+    // State
+    isInitialized,
+    soundEnabled,
+    bearSoundEnabled,
+    masterVolume,
+    reduceLoudSounds,
+
+    // Toggles
+    toggleSound,
+    toggleBearSound,
+    toggleReduceLoudSounds,
+
+    // Setters
+    setSoundEnabled: setSoundEnabledValue,
+    setBearSoundEnabled: setBearSoundEnabledValue,
+    setMasterVolume: setMasterVolumeValue,
+    setReduceLoudSounds: setReduceLoudSoundsValue,
+
+    // Actions
+    playSound,
+    playSoundEvent,
+    stopAllSounds,
+    resetSettings,
+  };
+
+  return (
+    <SoundContext.Provider value={value}>
+      {children}
+    </SoundContext.Provider>
+  );
+}
+
+/**
+ * Hook to access sound context
+ */
+export function useSound() {
+  const context = useContext(SoundContext);
+  if (!context) {
+    throw new Error('useSound must be used within a SoundProvider');
+  }
+  return context;
+}
+
+/**
+ * Hook for sound settings only
+ */
+export function useSoundSettings() {
+  const {
+    soundEnabled,
+    bearSoundEnabled,
+    masterVolume,
+    reduceLoudSounds,
+    toggleSound,
+    toggleBearSound,
+    toggleReduceLoudSounds,
+    setSoundEnabled,
+    setBearSoundEnabled,
+    setMasterVolume,
+    setReduceLoudSounds,
+    resetSettings,
+  } = useSound();
+
+  return {
+    soundEnabled,
+    bearSoundEnabled,
+    masterVolume,
+    reduceLoudSounds,
+    toggleSound,
+    toggleBearSound,
+    toggleReduceLoudSounds,
+    setSoundEnabled,
+    setBearSoundEnabled,
+    setMasterVolume,
+    setReduceLoudSounds,
+    resetSettings,
+  };
+}
+
+export default SoundContext;

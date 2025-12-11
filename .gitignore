@@ -60,3 +60,5 @@ credentials.json
 playbeacon-play-store-service-account.json
 google-services.json
 GoogleService-Info.plist
+
+.env.local

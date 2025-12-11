@@ -1,0 +1,232 @@
+rules_version = '2';
+
+/**
+ * Firestore Security Rules for PlayBeacon
+ *
+ * COPPA-compliant security rules for a children's app.
+ *
+ * Key principles:
+ * 1. Users can only read/write their own data
+ * 2. No personal data collection beyond anonymous UID
+ * 3. Rate limiting and size restrictions to prevent abuse
+ * 4. Error logs collection restricted to authenticated users
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if user owns this document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Check if the data size is within limits (to prevent abuse)
+    function isValidDataSize(maxFields, maxStringLength) {
+      return request.resource.data.keys().size() <= maxFields;
+    }
+
+    // Get the current timestamp
+    function currentTime() {
+      return request.time;
+    }
+
+    // Check if a field is a valid timestamp (not in the future)
+    function isValidTimestamp(timestamp) {
+      return timestamp <= currentTime();
+    }
+
+    // ============================================
+    // USER DOCUMENTS
+    // ============================================
+    match /users/{userId} {
+      // Users can only read their own document
+      allow read: if isOwner(userId);
+
+      // Users can create their own document
+      allow create: if isOwner(userId)
+        && isValidUserData(request.resource.data)
+        && request.resource.data.keys().hasOnly([
+          'createdAt', 'premium', 'linkedGoogle', 'deviceId',
+          'mergedFrom', 'mergedAt', 'linkedAt'
+        ]);
+
+      // Users can update their own document with restrictions
+      allow update: if isOwner(userId)
+        && isValidUserData(request.resource.data)
+        // Prevent users from giving themselves premium status
+        && (request.resource.data.premium == resource.data.premium
+            || request.resource.data.premium == false)
+        // Don't allow changing creation time
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      // Users can delete their own data (COPPA compliance)
+      allow delete: if isOwner(userId);
+
+      function isValidUserData(data) {
+        return data.get('premium', false) is bool
+          && data.get('linkedGoogle', false) is bool;
+      }
+
+      // ============================================
+      // USER SUBCOLLECTIONS
+      // ============================================
+
+      // Collections (wishlists, game lists)
+      match /collections/{collectionId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidCollectionData(request.resource.data);
+        allow update: if isOwner(userId)
+          && isValidCollectionData(request.resource.data);
+        allow delete: if isOwner(userId);
+
+        function isValidCollectionData(data) {
+          return data.name is string
+            && data.name.size() >= 1
+            && data.name.size() <= 100
+            // Description is optional
+            && (data.get('description', null) == null
+                || (data.description is string && data.description.size() <= 500));
+        }
+
+        // Games within a collection
+        match /games/{gameId} {
+          allow read: if isOwner(userId);
+          allow create: if isOwner(userId)
+            && request.resource.data.universeId is int
+            && request.resource.data.universeId > 0;
+          allow delete: if isOwner(userId);
+        }
+      }
+
+      // User feedback (likes, dislikes, skips)
+      match /feedback/{feedbackId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidFeedbackData(request.resource.data);
+        allow update: if isOwner(userId)
+          && isValidFeedbackData(request.resource.data);
+        allow delete: if isOwner(userId);
+
+        function isValidFeedbackData(data) {
+          return data.universeId is int
+            && data.universeId > 0
+            // Feedback must be -1, 0, or 1
+            && data.feedback in [-1, 0, 1];
+        }
+      }
+
+      // User stats and achievements
+      match /stats/{statDoc} {
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId)
+          && request.resource.data.keys().hasOnly([
+            'gamesViewed', 'gamesWishlisted', 'gamesSwiped',
+            'bearInteractions', 'dailyLogins', 'currentStreak',
+            'longestStreak', 'lastLoginDate', 'collectionsCreated',
+            'recommendationsTapped', 'totalPlayTime'
+          ]);
+      }
+
+      // User tasks
+      match /tasks/{taskId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidTaskData(request.resource.data);
+        allow update: if isOwner(userId)
+          && isValidTaskData(request.resource.data);
+        allow delete: if isOwner(userId);
+
+        function isValidTaskData(data) {
+          return data.get('completed', false) is bool
+            && data.get('taskType', '') is string;
+        }
+      }
+    }
+
+    // ============================================
+    // ERROR LOGS (for Crashlytics)
+    // ============================================
+    match /error_logs/{logId} {
+      // Only authenticated users can write error logs
+      allow create: if isAuthenticated()
+        && isValidErrorLog(request.resource.data);
+
+      // No read access - errors are written only, viewed via Firebase Console
+      allow read: if false;
+      allow update: if false;
+      allow delete: if false;
+
+      function isValidErrorLog(data) {
+        return data.keys().hasOnly([
+          'message', 'stack', 'name', 'context', 'breadcrumbs',
+          'user', 'sessionId', 'timestamp', 'environment', 'platform', 'appVersion', 'type', 'level'
+        ])
+        // Limit message size to prevent abuse
+        && data.get('message', '').size() <= 5000
+        // Limit stack trace size
+        && (data.get('stack', null) == null || data.stack.size() <= 10000)
+        // Only allow anonymous user info (COPPA compliant)
+        && (data.get('user', null) == null
+            || data.user.keys().hasOnly(['uid', 'isAnonymous']));
+      }
+    }
+
+    // ============================================
+    // GAMES CACHE (read-only for clients)
+    // ============================================
+    match /games/{gameId} {
+      // Anyone authenticated can read game data
+      allow read: if isAuthenticated();
+      // Only server can write game data
+      allow write: if false;
+    }
+
+    // ============================================
+    // APP CONFIGURATION (read-only)
+    // ============================================
+    match /config/{configId} {
+      // Anyone authenticated can read app config
+      allow read: if isAuthenticated();
+      // Only admin can write (done via Firebase Console or Cloud Functions)
+      allow write: if false;
+    }
+
+    // ============================================
+    // ANALYTICS (write-only, anonymous)
+    // ============================================
+    match /analytics/{eventId} {
+      // Authenticated users can write analytics events
+      allow create: if isAuthenticated()
+        && isValidAnalyticsEvent(request.resource.data);
+
+      allow read, update, delete: if false;
+
+      function isValidAnalyticsEvent(data) {
+        return data.keys().hasOnly([
+          'event', 'timestamp', 'sessionId', 'platform', 'appVersion', 'data'
+        ])
+        && data.event is string
+        && data.event.size() <= 100
+        // No PII in analytics
+        && !data.keys().hasAny(['email', 'name', 'phone', 'address']);
+      }
+    }
+
+    // ============================================
+    // DENY ALL OTHER ACCESS
+    // ============================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

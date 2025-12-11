@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../styles/colors';
+import { radii, shadows } from '../styles/kidTheme';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -94,7 +95,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radii.s,
     marginBottom: 16,
     fontSize: 16,
     borderWidth: 2,
@@ -103,14 +104,10 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: colors.accent.primary,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: radii.s,
     alignItems: 'center',
     marginTop: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    ...shadows.medium,
   },
   buttonText: {
     color: colors.text.primary,
@@ -141,16 +138,12 @@ const styles = StyleSheet.create({
   googleButton: {
     backgroundColor: colors.background.secondary,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: radii.s,
     alignItems: 'center',
     marginBottom: 8,
     borderWidth: 2,
     borderColor: colors.accent.tertiary,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    ...shadows.medium,
   },
   googleButtonText: {
     color: colors.text.primary,

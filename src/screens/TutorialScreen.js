@@ -3,7 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-nati
 import AppIntroSlider from 'react-native-app-intro-slider';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../styles/colors';
+import { radii, shadows } from '../styles/kidTheme';
 import { setTutorialCompleted } from '../utils/tutorialStorage';
+import { useCollection } from '../context/CollectionContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -19,21 +21,21 @@ const slides = [
     key: '2',
     title: 'Import Your Games',
     emoji: '⭐',
-    text: 'Just type your Roblox username to get started.',
+    text: 'Type your Roblox username to get personalized picks, or skip to explore right away!',
     backgroundColor: colors.accent.primary,  // Coral pink
   },
   {
     key: '3',
-    title: 'Swipe to Explore',
-    emoji: '🔍',
-    text: 'Scroll to find awesome new games you might love!',
+    title: 'Rate Games You See',
+    emoji: '🎯',
+    text: 'Tap ✗ to pass, → to skip, or ✓ to like games!',
     backgroundColor: colors.accent.secondary,  // Vibrant orange
   },
   {
     key: '4',
     title: 'Save Games to Collections',
-    emoji: '✨',
-    text: 'Tap the star to save games you like!',
+    emoji: '📚',
+    text: 'Tap the + button to save games to your collections!',
     backgroundColor: colors.action.like,  // Golden orange
   },
   {
@@ -45,13 +47,27 @@ const slides = [
   },
   {
     key: '6',
+    title: 'Daily Mystery Box',
+    emoji: '🎁',
+    text: 'Open your daily mystery box to discover a surprise game every day!',
+    backgroundColor: colors.accent.secondary,  // Vibrant orange
+  },
+  {
+    key: '7',
+    title: 'Track Your Goals',
+    emoji: '📋',
+    text: 'Create tasks to remember games to try and earn XP for completing them!',
+    backgroundColor: colors.action.info,  // Magenta-pink
+  },
+  {
+    key: '8',
     title: 'Earn Badges & Level Up',
     emoji: '🏆',
     text: 'Unlock achievements as you explore!',
     backgroundColor: colors.accent.tertiary,  // Purple-violet
   },
   {
-    key: '7',
+    key: '9',
     title: 'Let\'s Go!',
     emoji: '🚀',
     text: 'You\'re all set to start your adventure!',
@@ -61,9 +77,12 @@ const slides = [
 
 export default function TutorialScreen({ navigation, onComplete }) {
   const sliderRef = useRef(null);
+  const { triggerEvent } = useCollection();
 
   const handleDone = async () => {
     await setTutorialCompleted(true);
+    // Trigger badge event for completing tutorial
+    triggerEvent('COMPLETE_TUTORIAL');
     // Trigger AppNavigator re-render
     if (onComplete) {
       onComplete();
@@ -79,7 +98,7 @@ export default function TutorialScreen({ navigation, onComplete }) {
   };
 
   const renderSlide = ({ item }) => {
-    const isLastSlide = item.key === '7';
+    const isLastSlide = item.key === '9';
     return (
       <View style={[styles.slide, { backgroundColor: item.backgroundColor }]}>
         <View style={styles.contentContainer}>
@@ -174,13 +193,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.text.primary,
     paddingVertical: 16,
     paddingHorizontal: 48,
-    borderRadius: 30,
+    borderRadius: radii.pill,
     marginTop: 40,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
+    ...shadows.large,
     alignSelf: 'center',
   },
   inlineButtonText: {
@@ -193,7 +208,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 25,
+    borderRadius: radii.xl,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 20,
@@ -208,12 +223,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.text.primary,
     paddingVertical: 16,
     paddingHorizontal: 48,
-    borderRadius: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
+    borderRadius: radii.pill,
+    ...shadows.large,
   },
   doneButtonText: {
     color: colors.background.primary,
@@ -234,12 +245,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.text.primary,
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: radii.circle,
   },
   dot: {
     backgroundColor: 'rgba(255, 255, 255, 0.4)',
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: radii.circle,
   },
 });

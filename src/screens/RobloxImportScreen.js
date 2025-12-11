@@ -11,9 +11,14 @@ import {
 } from 'react-native';
 import { api } from '../services/api';
 import { colors } from '../styles/colors';
+import { radii, shadows } from '../styles/kidTheme';
 import { validateRobloxUsername, sanitizeRobloxUsername } from '../utils/validation';
+import { useAuth } from '../context/AuthContext';
+import { auth } from '../config/firebase';
+import logger from '../utils/logger';
 
 export default function RobloxImportScreen({ navigation, onImportComplete }) {
+  const { user } = useAuth();
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState('input'); // 'input', 'loading', 'success'
@@ -77,11 +82,8 @@ export default function RobloxImportScreen({ navigation, onImportComplete }) {
       });
       setStep('success');
     } catch (error) {
-      console.error('Import error:', error);
-      const errorMessage = error.response?.data?.message ||
-                          error.message ||
-                          'Failed to import Roblox data. Please check your connection and try again.';
-      Alert.alert('Import Failed', errorMessage);
+      logger.error('Import error:', error);
+      Alert.alert('Import Failed', 'Failed to import Roblox data. Please check your connection and try again.');
       setStep('input');
     } finally {
       setLoading(false);
@@ -91,16 +93,28 @@ export default function RobloxImportScreen({ navigation, onImportComplete }) {
   const handleSkip = async () => {
     try {
       setLoading(true);
+
+      // Ensure user is authenticated before making the API call
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        logger.error('No authenticated user found');
+        Alert.alert('Authentication Error', 'Please wait for authentication to complete and try again.');
+        return;
+      }
+
+      // Force refresh the token to ensure it's valid
+      await currentUser.getIdToken(true);
+
       await api.skipRobloxImport();
       // Trigger AppNavigator re-render to show Main tabs
       if (onImportComplete) {
         onImportComplete();
       }
     } catch (error) {
-      console.error('Error skipping import:', error);
+      logger.error('Error skipping import:', error);
       Alert.alert(
         'Connection Error',
-        'Unable to connect to the server. Please check your network connection and make sure the backend server is running.',
+        'Unable to skip import. Please check your connection and try again.',
         [{ text: 'OK' }]
       );
     } finally {
@@ -242,7 +256,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radii.s,
     fontSize: 16,
     borderWidth: 2,
     borderColor: colors.border,
@@ -250,14 +264,10 @@ const styles = StyleSheet.create({
   importButton: {
     backgroundColor: colors.accent.primary,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: radii.s,
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    ...shadows.medium,
   },
   importButtonDisabled: {
     opacity: 0.6,
@@ -279,7 +289,7 @@ const styles = StyleSheet.create({
   infoBox: {
     backgroundColor: colors.background.secondary,
     padding: 20,
-    borderRadius: 12,
+    borderRadius: radii.s,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -342,14 +352,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.primary,
     paddingHorizontal: 32,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: radii.s,
     minWidth: 200,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    ...shadows.medium,
   },
   continueButtonText: {
     color: colors.text.primary,

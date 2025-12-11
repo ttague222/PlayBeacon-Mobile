@@ -1,0 +1,66 @@
+{
+  "events": {
+    "ADD_TO_WISHLIST": "rewards.confetti",
+    "REMOVE_FROM_WISHLIST": "ui.remove",
+    "ADD_TO_COLLECTION": "rewards.confetti",
+    "TOGGLE_FAVORITE": "ui.favorite",
+
+    "TAP": "ui.tap",
+    "SWIPE_LEFT": "ui.swipe",
+    "SWIPE_RIGHT": "ui.swipe",
+    "TAB_CHANGE": "ui.tab_change",
+    "MODAL_OPEN": "ui.modal_open",
+    "MODAL_CLOSE": "ui.modal_close",
+
+    "BEAR_TAP": "bear.pawpop",
+    "BEAR_CELEBRATE": "bear.celebrate",
+    "BEAR_SAD": "bear.sad",
+    "BEAR_THINK": "bear.sniff",
+    "BEAR_SLEEP": "bear.sleep",
+    "BEAR_SURPRISE": "bear.surprise",
+    "BEAR_TAIL_WAG": "bear.tailwag",
+    "BEAR_EAR_WIGGLE": "bear.earwiggle",
+    "BEAR_HAPPY": "bear.happy",
+
+    "ACHIEVEMENT_UNLOCK": "rewards.achievement",
+    "BADGE_UNLOCK": "rewards.achievement",
+    "ANIMAL_UNLOCK": "rewards.confetti",
+    "STREAK_CONTINUE": "rewards.streak",
+    "DAILY_REWARD": "rewards.daily",
+    "XP_GAINED": "rewards.xp",
+    "LEVEL_UP": "rewards.streak",
+
+    "LOGIN_SUCCESS": "system.success",
+    "LOGOUT": "ui.tap",
+    "ERROR": "system.error",
+    "NETWORK_ERROR": "system.error",
+    "LOADING_START": "system.loading_ambient",
+    "LOADING_COMPLETE": "system.loading_complete",
+    "SEARCH_START": "ui.tap",
+    "SEARCH_COMPLETE": "system.ping",
+    "EMPTY_RESULTS": "system.no_results",
+    "NEW_RECOMMENDATIONS": "system.ping",
+
+    "CARD_TAP": "ui.tap",
+    "CARD_FLIP": "ui.swipe"
+  },
+
+  "categories": {
+    "ui": {
+      "volume": 0.5,
+      "rateLimit": 120
+    },
+    "bear": {
+      "volume": 0.4,
+      "rateLimit": 1000
+    },
+    "rewards": {
+      "volume": 0.6,
+      "rateLimit": 1500
+    },
+    "system": {
+      "volume": 0.5,
+      "rateLimit": 500
+    }
+  }
+}

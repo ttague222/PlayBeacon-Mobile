@@ -1,15 +1,51 @@
+/**
+ * Profile Screen
+ *
+ * COPPA-compliant profile management:
+ * - Shows account status (anonymous or Google-linked)
+ * - Parent-gated Google sign-in option for data sync
+ * - Premium/ad-free status
+ * - Roblox account linking
+ * - User stats and history
+ */
+
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Modal } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  ScrollView,
+  Modal,
+  TextInput,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useAuth } from '../context/AuthContext';
+import SoundManager from '../services/SoundManager';
+import { usePremium } from '../context/PremiumContext';
+import ParentalGate from '../components/ParentalGate';
 import { api } from '../services/api';
 import { colors } from '../styles/colors';
+import { typography, radii } from '../styles/kidTheme';
+import { validateRobloxUsername, sanitizeRobloxUsername } from '../utils/validation';
+import logger from '../utils/logger';
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
-  const { user, logout, upgradeAnonymousWithGoogle, resetTutorialProgress } = useAuth();
-  const [upgrading, setUpgrading] = useState(false);
+  const {
+    user,
+    logout,
+    linkWithGoogle,
+    disconnectGoogle,
+    isLinkingAccount,
+    getAccountStatus,
+  } = useAuth();
+  const { isPremium, restorePurchases } = usePremium();
+
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,6 +53,16 @@ export default function ProfileScreen() {
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [historyType, setHistoryType] = useState('liked');
   const [historyGames, setHistoryGames] = useState([]);
+  const [robloxModalVisible, setRobloxModalVisible] = useState(false);
+  const [robloxUsername, setRobloxUsername] = useState('');
+  const [linkingRoblox, setLinkingRoblox] = useState(false);
+
+  // Parental gate state
+  const [showParentalGate, setShowParentalGate] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
+
+  const accountStatus = getAccountStatus();
+  const appVersion = Constants.expoConfig?.version || '1.0.0';
 
   useEffect(() => {
     fetchUserStats();
@@ -29,32 +75,29 @@ export default function ProfileScreen() {
       const data = await api.getUserStats();
       setStats(data);
     } catch (error) {
-      console.error('Failed to fetch user stats:', error);
-      const errorMessage = error.response?.data?.message ||
-                          error.message ||
-                          'Failed to load profile data. Please check your connection.';
-      setError(errorMessage);
+      logger.error('Failed to fetch user stats:', error);
+      setError('Failed to load profile data. Please check your connection.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleViewHistory = async (type) => {
+    SoundManager.play('ui.tap');
     try {
       setHistoryType(type);
       const data = await api.getUserFeedback(type);
       setHistoryGames(data.games);
+      SoundManager.play('ui.modal_open');
       setHistoryModalVisible(true);
     } catch (error) {
-      console.error('Failed to load history:', error);
-      const errorMessage = error.response?.data?.message ||
-                          error.message ||
-                          'Failed to load rating history. Please try again.';
-      Alert.alert('Error', errorMessage);
+      logger.error('Failed to load history:', error);
+      Alert.alert('Error', 'Failed to load rating history. Please try again.');
     }
   };
 
   const handleResetProfile = () => {
+    SoundManager.play('ui.tap');
     Alert.alert(
       'Reset Recommendations',
       'This will clear all your ratings and reset your recommendations. This action cannot be undone. Are you sure?',
@@ -70,11 +113,8 @@ export default function ProfileScreen() {
               await fetchUserStats();
               Alert.alert('Success', 'Your recommendations have been reset');
             } catch (error) {
-              console.error('Failed to reset profile:', error);
-              const errorMessage = error.response?.data?.message ||
-                                  error.message ||
-                                  'Failed to reset profile. Please try again.';
-              Alert.alert('Error', errorMessage);
+              logger.error('Failed to reset profile:', error);
+              Alert.alert('Error', 'Failed to reset profile. Please try again.');
             } finally {
               setResetting(false);
             }
@@ -85,13 +125,14 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = async () => {
+    SoundManager.play('ui.tap');
     Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
+      'Start Fresh',
+      'This will create a new anonymous account. Your current data will be lost unless you have linked a Google account. Are you sure?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Logout',
+          text: 'Start Fresh',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -105,22 +146,121 @@ export default function ProfileScreen() {
     );
   };
 
-  const handleUpgradeAccount = async () => {
+  // Parent-gated actions
+  const handleGoogleSignInPress = () => {
+    SoundManager.play('ui.tap');
+    setPendingAction('link_google');
+    setShowParentalGate(true);
+  };
+
+  const handleDisconnectGooglePress = () => {
+    SoundManager.play('ui.tap');
+    setPendingAction('disconnect_google');
+    setShowParentalGate(true);
+  };
+
+  const handleRestorePurchasesPress = () => {
+    SoundManager.play('ui.tap');
+    setPendingAction('restore_purchases');
+    setShowParentalGate(true);
+  };
+
+  const handleParentalGatePass = async () => {
+    setShowParentalGate(false);
+
+    if (pendingAction === 'link_google') {
+      try {
+        const result = await linkWithGoogle();
+        if (result.success) {
+          if (result.merged) {
+            Alert.alert(
+              'Account Synced',
+              'Your data has been merged with your existing Google account.'
+            );
+          } else {
+            Alert.alert(
+              'Success',
+              'Your account is now linked to Google. Your data will sync across devices.'
+            );
+          }
+          await fetchUserStats();
+        }
+      } catch (error) {
+        logger.error('Link error:', error);
+        // Don't show error to child - just silently fail
+      }
+    } else if (pendingAction === 'disconnect_google') {
+      try {
+        await disconnectGoogle();
+        Alert.alert(
+          'Disconnected',
+          'Your Google account has been disconnected. A new anonymous account has been created.'
+        );
+      } catch (error) {
+        logger.error('Disconnect error:', error);
+      }
+    } else if (pendingAction === 'restore_purchases') {
+      await restorePurchases();
+    }
+
+    setPendingAction(null);
+  };
+
+  const handleParentalGateCancel = () => {
+    setShowParentalGate(false);
+    setPendingAction(null);
+  };
+
+  const handleLinkRoblox = async () => {
+    SoundManager.play('ui.tap');
+    const validation = validateRobloxUsername(robloxUsername);
+    if (!validation.valid) {
+      Alert.alert('Invalid Username', validation.error);
+      return;
+    }
+
     try {
-      setUpgrading(true);
-      await upgradeAnonymousWithGoogle();
+      setLinkingRoblox(true);
+      const sanitizedUsername = sanitizeRobloxUsername(robloxUsername);
+
+      const userData = await api.resolveRobloxUsername(sanitizedUsername);
+      if (!userData) {
+        Alert.alert(
+          'Error',
+          'Roblox user not found. Please check the username and try again.'
+        );
+        return;
+      }
+
+      const importData = await api.getRobloxImportData(userData.userId);
+
+      const gamesToImport = importData.aggregated_games
+        .slice(0, 50)
+        .map((game) => ({
+          universeId: game.universeId,
+          score: game.score,
+          source: game.source,
+        }));
+
+      const result = await api.importRobloxGames({
+        robloxUsername: userData.username,
+        robloxUserId: userData.userId,
+        selectedGames: gamesToImport,
+      });
+
+      setRobloxModalVisible(false);
+      setRobloxUsername('');
+      await fetchUserStats();
+
       Alert.alert(
-        'Success',
-        'Your account has been upgraded! Your progress is now saved to your Google account.'
+        'Success!',
+        `Linked Roblox account "${userData.username}" and imported ${result.games_imported} games!`
       );
     } catch (error) {
-      console.error('Upgrade error:', error);
-      Alert.alert(
-        'Upgrade Failed',
-        error.message || 'Failed to upgrade account. Please try again.'
-      );
+      logger.error('Roblox link error:', error);
+      Alert.alert('Link Failed', 'Failed to link Roblox account. Please try again.');
     } finally {
-      setUpgrading(false);
+      setLinkingRoblox(false);
     }
   };
 
@@ -137,7 +277,10 @@ export default function ProfileScreen() {
       <View style={[styles.container, styles.centerContent]}>
         <Text style={styles.errorTitle}>Oops!</Text>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.button} onPress={fetchUserStats}>
+        <TouchableOpacity style={styles.button} onPress={() => {
+          SoundManager.play('ui.tap');
+          fetchUserStats();
+        }}>
           <Text style={styles.buttonText}>Try Again</Text>
         </TouchableOpacity>
       </View>
@@ -145,141 +288,317 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header */}
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Profile</Text>
         <TouchableOpacity
           style={styles.closeButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            SoundManager.play('ui.tap');
+            navigation.goBack();
+          }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Ionicons name="close" size={28} color={colors.text.primary} />
         </TouchableOpacity>
       </View>
 
-      {user?.isAnonymous && (
-        <View style={styles.upgradeCard}>
-          <Text style={styles.upgradeTitle}>Save Your Progress</Text>
-          <Text style={styles.upgradeDescription}>
-            You're currently using a guest account. Link your Google account to save your preferences and ratings permanently.
-          </Text>
-          <TouchableOpacity
-            style={styles.upgradeButton}
-            onPress={handleUpgradeAccount}
-            disabled={upgrading}
-          >
-            {upgrading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.upgradeButtonText}>Link Google Account</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
-
+      {/* Profile Header Card - Account + Roblox combined */}
       <View style={styles.profileCard}>
-        <Text style={styles.label}>Account Type</Text>
-        <Text style={styles.value}>
-          {user?.isAnonymous ? 'Guest Account' : user?.email || 'Authenticated'}
-        </Text>
-      </View>
-
-      {stats && (
-        <View style={styles.statsCard}>
-          <Text style={styles.sectionTitle}>Your Activity</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{stats.liked_count}</Text>
-              <Text style={styles.statLabel}>Liked</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{stats.disliked_count}</Text>
-              <Text style={styles.statLabel}>Disliked</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{stats.skipped_count}</Text>
-              <Text style={styles.statLabel}>Skipped</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{stats.total_ratings}</Text>
-              <Text style={styles.statLabel}>Total Ratings</Text>
-            </View>
+        {/* Account Avatar & Info */}
+        <View style={styles.profileHeader}>
+          <View style={styles.avatarContainer}>
+            <Ionicons
+              name={accountStatus.type === 'google' ? 'person-circle' : 'person-circle-outline'}
+              size={64}
+              color={accountStatus.type === 'google' ? colors.accent.primary : colors.text.tertiary}
+            />
+            {accountStatus.type === 'google' && (
+              <View style={styles.verifiedBadge}>
+                <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+              </View>
+            )}
+          </View>
+          <View style={styles.profileInfo}>
+            {stats?.roblox_username ? (
+              <>
+                <Text style={styles.profileName}>{stats.roblox_username}</Text>
+                <View style={styles.profileBadges}>
+                  <View style={styles.robloxBadge}>
+                    <Ionicons name="game-controller" size={12} color={colors.accent.primary} />
+                    <Text style={styles.badgeText}>Roblox Linked</Text>
+                  </View>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.profileName}>PlayBeacon User</Text>
+                <Text style={styles.profileSubtext}>Link Roblox for personalized picks</Text>
+              </>
+            )}
           </View>
         </View>
-      )}
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>History</Text>
+        {/* Quick Stats Row */}
+        {stats && (
+          <View style={styles.quickStats}>
+            <View style={styles.quickStatItem}>
+              <Text style={styles.quickStatValue}>{stats.liked_count}</Text>
+              <Text style={styles.quickStatLabel}>Liked</Text>
+            </View>
+            <View style={styles.quickStatDivider} />
+            <View style={styles.quickStatItem}>
+              <Text style={styles.quickStatValue}>{stats.disliked_count}</Text>
+              <Text style={styles.quickStatLabel}>Passed</Text>
+            </View>
+            <View style={styles.quickStatDivider} />
+            <View style={styles.quickStatItem}>
+              <Text style={styles.quickStatValue}>{stats.total_ratings}</Text>
+              <Text style={styles.quickStatLabel}>Total</Text>
+            </View>
+          </View>
+        )}
 
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => handleViewHistory('liked')}
-        >
-          <Text style={styles.menuText}>View Liked Games</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => handleViewHistory('disliked')}
-        >
-          <Text style={styles.menuText}>View Disliked Games</Text>
-        </TouchableOpacity>
+        {/* Link Roblox CTA (if not linked) */}
+        {!stats?.roblox_username && (
+          <TouchableOpacity
+            style={styles.linkRobloxCTA}
+            onPress={() => {
+              SoundManager.play('ui.tap');
+              SoundManager.play('ui.modal_open');
+              setRobloxModalVisible(true);
+            }}
+          >
+            <Ionicons name="link" size={18} color={colors.text.primary} />
+            <Text style={styles.linkRobloxCTAText}>Link Roblox Account</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Data</Text>
-
-        <TouchableOpacity
-          style={[styles.menuItem, styles.dangerItem]}
-          onPress={handleResetProfile}
-          disabled={resetting}
-        >
-          {resetting ? (
-            <ActivityIndicator color={colors.error} />
-          ) : (
-            <Text style={styles.dangerText}>Reset Recommendations</Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={async () => {
-            Alert.alert(
-              'Reset Tutorial',
-              'This will show you the onboarding tutorial again next time you open the app.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Reset Tutorial',
-                  onPress: async () => {
-                    await resetTutorialProgress();
-                    Alert.alert('Success', 'Tutorial will show again next time you open the app');
-                  },
-                },
-              ]
-            );
-          }}
-        >
-          <Text style={styles.menuText}>Reset Tutorial</Text>
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Logout</Text>
+      {/* Premium Card */}
+      <TouchableOpacity
+        style={[styles.premiumCard, isPremium && styles.premiumCardActive]}
+        onPress={() => {
+          if (!isPremium) {
+            SoundManager.play('ui.tap');
+            navigation.navigate('Premium');
+          }
+        }}
+        activeOpacity={isPremium ? 1 : 0.8}
+      >
+        <View style={styles.premiumContent}>
+          <View style={[styles.premiumIconContainer, isPremium && styles.premiumIconActive]}>
+            <Ionicons
+              name={isPremium ? 'star' : 'star-outline'}
+              size={24}
+              color={isPremium ? colors.warning : colors.accent.primary}
+            />
+          </View>
+          <View style={styles.premiumTextContainer}>
+            <Text style={styles.premiumTitle}>
+              {isPremium ? 'Premium Active' : 'Go Ad-Free'}
+            </Text>
+            <Text style={styles.premiumDescription}>
+              {isPremium
+                ? 'Thank you for supporting PlayBeacon!'
+                : 'Remove all ads with a one-time purchase'}
+            </Text>
+          </View>
+        </View>
+        {!isPremium && (
+          <View style={styles.premiumArrow}>
+            <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
+          </View>
+        )}
       </TouchableOpacity>
 
+      {/* Settings Section */}
+      <View style={styles.settingsSection}>
+        <Text style={styles.sectionLabel}>HISTORY</Text>
+        <View style={styles.settingsCard}>
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={() => handleViewHistory('liked')}
+          >
+            <View style={styles.settingsRowLeft}>
+              <View style={[styles.settingsIcon, { backgroundColor: colors.success + '20' }]}>
+                <Ionicons name="heart" size={18} color={colors.success} />
+              </View>
+              <Text style={styles.settingsRowText}>Liked Games</Text>
+            </View>
+            <View style={styles.settingsRowRight}>
+              <Text style={styles.settingsRowCount}>{stats?.liked_count || 0}</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.settingsRowDivider} />
+
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={() => handleViewHistory('disliked')}
+          >
+            <View style={styles.settingsRowLeft}>
+              <View style={[styles.settingsIcon, { backgroundColor: colors.error + '20' }]}>
+                <Ionicons name="close-circle" size={18} color={colors.error} />
+              </View>
+              <Text style={styles.settingsRowText}>Passed Games</Text>
+            </View>
+            <View style={styles.settingsRowRight}>
+              <Text style={styles.settingsRowCount}>{stats?.disliked_count || 0}</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Account Section */}
+      <View style={styles.settingsSection}>
+        <Text style={styles.sectionLabel}>ACCOUNT</Text>
+        <View style={styles.settingsCard}>
+          {/* Account Status Row */}
+          <View style={styles.settingsRowStatic}>
+            <View style={styles.settingsRowLeft}>
+              <View style={[styles.settingsIcon, { backgroundColor: colors.accent.primary + '20' }]}>
+                <Ionicons name="person" size={18} color={colors.accent.primary} />
+              </View>
+              <View>
+                <Text style={styles.settingsRowText}>Account Type</Text>
+                <Text style={styles.settingsRowSubtext}>{accountStatus.label}</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.settingsRowDivider} />
+
+          {/* Google Sign-In / Disconnect */}
+          {accountStatus.type === 'anonymous' ? (
+            <TouchableOpacity
+              style={styles.settingsRow}
+              onPress={handleGoogleSignInPress}
+              disabled={isLinkingAccount}
+            >
+              <View style={styles.settingsRowLeft}>
+                <View style={[styles.settingsIcon, { backgroundColor: '#4285F420' }]}>
+                  <Ionicons name="logo-google" size={18} color="#4285F4" />
+                </View>
+                <View>
+                  <Text style={styles.settingsRowText}>Link Google Account</Text>
+                  <Text style={styles.settingsRowSubtext}>Sync data across devices</Text>
+                </View>
+              </View>
+              <View style={styles.parentBadgeSmall}>
+                <Text style={styles.parentBadgeText}>Parent</Text>
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.settingsRow}
+              onPress={handleDisconnectGooglePress}
+            >
+              <View style={styles.settingsRowLeft}>
+                <View style={[styles.settingsIcon, { backgroundColor: '#4285F420' }]}>
+                  <Ionicons name="logo-google" size={18} color="#4285F4" />
+                </View>
+                <View>
+                  <Text style={styles.settingsRowText}>Disconnect Google</Text>
+                  <Text style={styles.settingsRowSubtext}>Remove cloud sync</Text>
+                </View>
+              </View>
+              <View style={styles.parentBadgeSmall}>
+                <Text style={styles.parentBadgeText}>Parent</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+
+          <View style={styles.settingsRowDivider} />
+
+          {/* Restore Purchases */}
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={handleRestorePurchasesPress}
+          >
+            <View style={styles.settingsRowLeft}>
+              <View style={[styles.settingsIcon, { backgroundColor: colors.warning + '20' }]}>
+                <Ionicons name="refresh" size={18} color={colors.warning} />
+              </View>
+              <Text style={styles.settingsRowText}>Restore Purchases</Text>
+            </View>
+            <View style={styles.parentBadgeSmall}>
+              <Text style={styles.parentBadgeText}>Parent</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Data Section */}
+      <View style={styles.settingsSection}>
+        <Text style={styles.sectionLabel}>DATA</Text>
+        <View style={styles.settingsCard}>
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={handleResetProfile}
+            disabled={resetting}
+          >
+            <View style={styles.settingsRowLeft}>
+              <View style={[styles.settingsIcon, { backgroundColor: colors.error + '15' }]}>
+                {resetting ? (
+                  <ActivityIndicator size="small" color={colors.error} />
+                ) : (
+                  <Ionicons name="refresh-circle" size={18} color={colors.error} />
+                )}
+              </View>
+              <View>
+                <Text style={[styles.settingsRowText, { color: colors.error }]}>
+                  Reset Recommendations
+                </Text>
+                <Text style={styles.settingsRowSubtext}>Clear all ratings</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.settingsRowDivider} />
+
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={handleLogout}
+          >
+            <View style={styles.settingsRowLeft}>
+              <View style={[styles.settingsIcon, { backgroundColor: colors.text.tertiary + '20' }]}>
+                <Ionicons name="exit-outline" size={18} color={colors.text.tertiary} />
+              </View>
+              <View>
+                <Text style={styles.settingsRowText}>Start Fresh</Text>
+                <Text style={styles.settingsRowSubtext}>Create new anonymous account</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* App Version */}
+      <Text style={styles.versionText}>PlayBeacon v{appVersion}</Text>
+
+      {/* History Modal */}
       <Modal
         visible={historyModalVisible}
         animationType="slide"
-        onRequestClose={() => setHistoryModalVisible(false)}
+        onRequestClose={() => {
+          SoundManager.play('ui.modal_close');
+          setHistoryModalVisible(false);
+        }}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
               {historyType === 'liked' ? 'Liked Games' : 'Disliked Games'}
             </Text>
-            <TouchableOpacity onPress={() => setHistoryModalVisible(false)}>
-              <Text style={styles.closeButton}>Close</Text>
+            <TouchableOpacity onPress={() => {
+              SoundManager.play('ui.modal_close');
+              setHistoryModalVisible(false);
+            }}>
+              <Text style={styles.modalCloseText}>Close</Text>
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.modalContent}>
@@ -296,6 +615,74 @@ export default function ProfileScreen() {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Roblox Link Modal */}
+      <Modal
+        visible={robloxModalVisible}
+        animationType="slide"
+        onRequestClose={() => {
+          SoundManager.play('ui.modal_close');
+          setRobloxModalVisible(false);
+        }}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Link Roblox Account</Text>
+            <TouchableOpacity onPress={() => {
+              SoundManager.play('ui.modal_close');
+              setRobloxModalVisible(false);
+            }}>
+              <Text style={styles.modalCloseText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.robloxModalContent}>
+            <Text style={styles.robloxModalDescription}>
+              Enter your Roblox username to import your favorite games and get
+              personalized recommendations.
+            </Text>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Roblox Username</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your Roblox username"
+                placeholderTextColor={colors.text.placeholder}
+                value={robloxUsername}
+                onChangeText={setRobloxUsername}
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!linkingRoblox}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.linkButton, linkingRoblox && styles.linkButtonDisabled]}
+              onPress={handleLinkRoblox}
+              disabled={linkingRoblox}
+            >
+              {linkingRoblox ? (
+                <ActivityIndicator color={colors.text.primary} />
+              ) : (
+                <Text style={styles.linkButtonText}>Link & Import Games</Text>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.infoBox}>
+              <Text style={styles.infoTitle}>What we'll import:</Text>
+              <Text style={styles.infoText}>• Your favorite games</Text>
+              <Text style={styles.infoText}>• Games where you've earned badges</Text>
+              <Text style={styles.infoText}>• No personal data or passwords</Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Parental Gate */}
+      <ParentalGate
+        visible={showParentalGate}
+        onPass={handleParentalGatePass}
+        onCancel={handleParentalGateCancel}
+      />
     </ScrollView>
   );
 }
@@ -315,151 +702,261 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 24,
   },
   header: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.sizes.header,
+    fontWeight: typography.fontWeight.bold,
     color: colors.text.primary,
   },
   closeButton: {
     padding: 4,
   },
-  upgradeCard: {
-    backgroundColor: colors.background.secondary,
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: colors.accent.tertiary,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  upgradeTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text.primary,
-    marginBottom: 8,
-  },
-  upgradeDescription: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  upgradeButton: {
-    backgroundColor: colors.accent.tertiary,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  upgradeButtonText: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
+
+  // Profile Card (combined header)
   profileCard: {
     backgroundColor: colors.background.secondary,
+    borderRadius: radii.m,
     padding: 20,
-    borderRadius: 12,
-    marginBottom: 30,
+    marginBottom: 16,
   },
-  label: {
-    fontSize: 12,
-    color: colors.text.tertiary,
-    marginBottom: 4,
-    textTransform: 'uppercase',
-  },
-  value: {
-    fontSize: 16,
-    color: colors.text.primary,
-  },
-  section: {
-    marginBottom: 30,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: 12,
-  },
-  menuItem: {
-    backgroundColor: colors.background.secondary,
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  menuText: {
-    fontSize: 16,
-    color: colors.text.primary,
-  },
-  logoutButton: {
-    backgroundColor: colors.error,
-    padding: 16,
-    borderRadius: 12,
+  profileHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 'auto',
-    marginBottom: 40,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  logoutText: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  statsCard: {
-    backgroundColor: colors.background.secondary,
-    padding: 20,
-    borderRadius: 12,
     marginBottom: 20,
   },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginTop: 12,
+  avatarContainer: {
+    position: 'relative',
+    marginRight: 16,
   },
-  statItem: {
-    width: '48%',
-    backgroundColor: colors.background.tertiary,
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    alignItems: 'center',
+  verifiedBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: colors.background.secondary,
+    borderRadius: radii.xs,
   },
-  statValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.accent.primary,
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.text.primary,
     marginBottom: 4,
   },
-  statLabel: {
+  profileSubtext: {
+    fontSize: 14,
+    color: colors.text.tertiary,
+  },
+  profileBadges: {
+    flexDirection: 'row',
+    marginTop: 4,
+  },
+  robloxBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.accent.primary + '20',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radii.s,
+  },
+  badgeText: {
+    fontSize: 12,
+    color: colors.accent.primary,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+
+  // Quick Stats
+  quickStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: colors.background.tertiary,
+    borderRadius: radii.s,
+    paddingVertical: 16,
+    marginBottom: 16,
+  },
+  quickStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  quickStatValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: 2,
+  },
+  quickStatLabel: {
     fontSize: 12,
     color: colors.text.tertiary,
     textTransform: 'uppercase',
   },
-  dangerItem: {
-    backgroundColor: colors.background.tertiary,
-    borderWidth: 2,
-    borderColor: colors.error,
+  quickStatDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: colors.divider,
   },
-  dangerText: {
-    color: colors.error,
+
+  // Link Roblox CTA
+  linkRobloxCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accent.primary,
+    paddingVertical: 14,
+    borderRadius: radii.s,
+    gap: 8,
+  },
+  linkRobloxCTAText: {
+    color: colors.text.primary,
     fontSize: 16,
+    fontWeight: '600',
   },
+
+  // Premium Card
+  premiumCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.background.secondary,
+    padding: 16,
+    borderRadius: radii.m,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: colors.accent.primary + '40',
+  },
+  premiumCardActive: {
+    backgroundColor: colors.success + '15',
+    borderColor: colors.success + '40',
+  },
+  premiumContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  premiumIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.l,
+    backgroundColor: colors.accent.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  premiumIconActive: {
+    backgroundColor: colors.warning + '20',
+  },
+  premiumTextContainer: {
+    flex: 1,
+  },
+  premiumTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 2,
+  },
+  premiumDescription: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    lineHeight: 18,
+  },
+  premiumArrow: {
+    paddingLeft: 8,
+  },
+
+  // Settings Sections
+  settingsSection: {
+    marginBottom: 24,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text.tertiary,
+    marginBottom: 8,
+    marginLeft: 4,
+    letterSpacing: 0.5,
+  },
+  settingsCard: {
+    backgroundColor: colors.background.secondary,
+    borderRadius: radii.m,
+    overflow: 'hidden',
+  },
+  settingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    paddingHorizontal: 16,
+  },
+  settingsRowStatic: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    paddingHorizontal: 16,
+  },
+  settingsRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  settingsRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  settingsIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.xs,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  settingsRowText: {
+    fontSize: 16,
+    color: colors.text.primary,
+    fontWeight: '500',
+  },
+  settingsRowSubtext: {
+    fontSize: 12,
+    color: colors.text.tertiary,
+    marginTop: 1,
+  },
+  settingsRowCount: {
+    fontSize: 15,
+    color: colors.text.tertiary,
+    fontWeight: '500',
+  },
+  settingsRowDivider: {
+    height: 1,
+    backgroundColor: colors.divider,
+    marginLeft: 64,
+  },
+  parentBadgeSmall: {
+    backgroundColor: colors.background.tertiary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radii.xs,
+  },
+  parentBadgeText: {
+    fontSize: 10,
+    color: colors.text.tertiary,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+
+  // Version text
+  versionText: {
+    textAlign: 'center',
+    color: colors.text.tertiary,
+    fontSize: 12,
+    marginBottom: 40,
+    marginTop: 8,
+  },
+  // Modal styles
   modalContainer: {
     flex: 1,
     backgroundColor: colors.background.primary,
@@ -479,9 +976,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.text.primary,
   },
-  closeButton: {
+  modalCloseText: {
     fontSize: 16,
     color: colors.accent.primary,
+    fontWeight: '500',
   },
   modalContent: {
     flex: 1,
@@ -496,7 +994,7 @@ const styles = StyleSheet.create({
   gameItem: {
     backgroundColor: colors.background.secondary,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: radii.s,
     marginBottom: 12,
   },
   gameTitle: {
@@ -509,6 +1007,71 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text.secondary,
   },
+  // Roblox Modal styles
+  robloxModalContent: {
+    flex: 1,
+    padding: 20,
+  },
+  robloxModalDescription: {
+    fontSize: 16,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: colors.background.secondary,
+    borderRadius: radii.s,
+    padding: 16,
+    fontSize: 16,
+    color: colors.text.primary,
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  linkButton: {
+    backgroundColor: colors.accent.primary,
+    paddingVertical: 16,
+    borderRadius: radii.s,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  linkButtonDisabled: {
+    opacity: 0.6,
+  },
+  linkButtonText: {
+    color: colors.text.primary,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  infoBox: {
+    backgroundColor: colors.background.secondary,
+    padding: 16,
+    borderRadius: radii.s,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.accent.primary,
+  },
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 8,
+  },
+  infoText: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  // Error styles
   errorTitle: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -527,12 +1090,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    borderRadius: radii.s,
   },
   buttonText: {
     color: colors.text.primary,

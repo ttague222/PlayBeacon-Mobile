@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../styles/colors';
+import { radii, shadows } from '../styles/kidTheme';
+import logger from '../utils/logger';
 
 export default function OnboardingScreen({ navigation }) {
   const { loginAnonymously } = useAuth();
@@ -13,7 +15,7 @@ export default function OnboardingScreen({ navigation }) {
       await loginAnonymously();
       // Navigation will happen automatically via AuthContext
     } catch (error) {
-      console.error('Guest login error:', error);
+      logger.error('Guest login error:', error);
       Alert.alert('Error', 'Failed to continue as guest. Please try again.');
     } finally {
       setLoading(false);
@@ -96,14 +98,10 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: colors.accent.primary,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: radii.s,
     alignItems: 'center',
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    ...shadows.medium,
   },
   buttonText: {
     color: colors.text.primary,
@@ -113,7 +111,7 @@ const styles = StyleSheet.create({
   guestButton: {
     backgroundColor: 'transparent',
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: radii.s,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: colors.divider,
