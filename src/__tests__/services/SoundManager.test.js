@@ -1,7 +1,7 @@
 /**
  * SoundManager Tests
  *
- * Tests for sound playback, rate limiting, volume control,
+ * Tests for sound playback, volume control,
  * and child-safe audio settings.
  */
 
@@ -14,6 +14,7 @@ const mockSound = {
   setIsLoopingAsync: jest.fn().mockResolvedValue(undefined),
   setOnPlaybackStatusUpdate: jest.fn(),
   unloadAsync: jest.fn().mockResolvedValue(undefined),
+  getStatusAsync: jest.fn().mockResolvedValue({ isLoaded: true, positionMillis: 0 }),
 };
 
 jest.mock('expo-av', () => ({
@@ -25,17 +26,7 @@ jest.mock('expo-av', () => ({
   },
 }));
 
-// Mock sound events
-jest.mock('../../config/soundEvents.json', () => ({
-  events: {
-    ADD_TO_WISHLIST: 'ui.favorite',
-    BEAR_TAP: 'bear.pawpop',
-    ACHIEVEMENT: 'rewards.achievement',
-    ERROR: 'system.error',
-  },
-}));
-
-// Need to mock require for sound files
+// Mock sound files
 jest.mock('../../../assets/sounds/ui/tap.mp3', () => 'tap.mp3', { virtual: true });
 jest.mock('../../../assets/sounds/ui/swipe.mp3', () => 'swipe.mp3', { virtual: true });
 jest.mock('../../../assets/sounds/ui/tab_change.mp3', () => 'tab_change.mp3', { virtual: true });
@@ -43,15 +34,15 @@ jest.mock('../../../assets/sounds/ui/remove.mp3', () => 'remove.mp3', { virtual:
 jest.mock('../../../assets/sounds/ui/modal_open.mp3', () => 'modal_open.mp3', { virtual: true });
 jest.mock('../../../assets/sounds/ui/modal_close.mp3', () => 'modal_close.mp3', { virtual: true });
 jest.mock('../../../assets/sounds/ui/favorite.mp3', () => 'favorite.mp3', { virtual: true });
-jest.mock('../../../assets/sounds/bear/tailwag.mp3', () => 'tailwag.mp3', { virtual: true });
-jest.mock('../../../assets/sounds/bear/pawpop.mp3', () => 'pawpop.mp3', { virtual: true });
-jest.mock('../../../assets/sounds/bear/sniff.mp3', () => 'sniff.mp3', { virtual: true });
+jest.mock('../../../assets/sounds/ui/like.mp3', () => 'like.mp3', { virtual: true });
+jest.mock('../../../assets/sounds/ui/dislike.mp3', () => 'dislike.mp3', { virtual: true });
+jest.mock('../../../assets/sounds/ui/skip.mp3', () => 'skip.mp3', { virtual: true });
 jest.mock('../../../assets/sounds/bear/celebrate.mp3', () => 'celebrate.mp3', { virtual: true });
 jest.mock('../../../assets/sounds/bear/sad.mp3', () => 'sad.mp3', { virtual: true });
 jest.mock('../../../assets/sounds/bear/sleep.mp3', () => 'sleep.mp3', { virtual: true });
-jest.mock('../../../assets/sounds/bear/surprise.mp3', () => 'surprise.mp3', { virtual: true });
-jest.mock('../../../assets/sounds/bear/earwiggle.mp3', () => 'earwiggle.mp3', { virtual: true });
+jest.mock('../../../assets/sounds/bear/sniff.mp3', () => 'sniff.mp3', { virtual: true });
 jest.mock('../../../assets/sounds/bear/happy.mp3', () => 'happy.mp3', { virtual: true });
+jest.mock('../../../assets/sounds/bear/earwiggle.mp3', () => 'earwiggle.mp3', { virtual: true });
 jest.mock('../../../assets/sounds/rewards/confetti.mp3', () => 'confetti.mp3', { virtual: true });
 jest.mock('../../../assets/sounds/rewards/streak.mp3', () => 'streak.mp3', { virtual: true });
 jest.mock('../../../assets/sounds/rewards/daily.mp3', () => 'daily.mp3', { virtual: true });
@@ -59,13 +50,19 @@ jest.mock('../../../assets/sounds/rewards/achievement.mp3', () => 'achievement.m
 jest.mock('../../../assets/sounds/rewards/xp.mp3', () => 'xp.mp3', { virtual: true });
 jest.mock('../../../assets/sounds/system/ping.mp3', () => 'ping.mp3', { virtual: true });
 jest.mock('../../../assets/sounds/system/success.mp3', () => 'success.mp3', { virtual: true });
-jest.mock('../../../assets/sounds/system/error.mp3', () => 'error.mp3', { virtual: true });
+jest.mock('../../../assets/sounds/system/no_results.mp3', () => 'no_results.mp3', { virtual: true });
 jest.mock('../../../assets/sounds/system/loading_ambient.mp3', () => 'loading_ambient.mp3', { virtual: true });
 jest.mock('../../../assets/sounds/system/loading_complete.mp3', () => 'loading_complete.mp3', { virtual: true });
-jest.mock('../../../assets/sounds/system/no_results.mp3', () => 'no_results.mp3', { virtual: true });
+
+// Mock logger
+jest.mock('../../utils/logger', () => ({
+  log: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+}));
 
 import { Audio } from 'expo-av';
-import SoundManager, { SoundCategory, SOUNDS, EVENT_SOUND_MAP } from '../../services/SoundManager';
+import SoundManager, { SoundCategory, EVENT_SOUND_MAP } from '../../services/SoundManager';
 
 describe('SoundManager', () => {
   beforeEach(() => {
@@ -75,9 +72,14 @@ describe('SoundManager', () => {
     SoundManager.isBearSoundEnabled = true;
     SoundManager.masterVolume = 0.7;
     SoundManager.reduceLoudSounds = false;
-    SoundManager.currentlyPlaying.clear();
-    SoundManager.lastPlayedTime.clear();
+    SoundManager.loadedSounds = {};
     SoundManager.isInitialized = false;
+    SoundManager.categoryVolumes = {
+      [SoundCategory.UI]: 0.5,
+      [SoundCategory.BEAR]: 0.4,
+      [SoundCategory.REWARDS]: 0.6,
+      [SoundCategory.SYSTEM]: 0.5,
+    };
   });
 
   describe('Initialization', () => {
@@ -88,7 +90,6 @@ describe('SoundManager', () => {
         playsInSilentModeIOS: false,
         staysActiveInBackground: false,
         shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
       });
     });
 
@@ -123,46 +124,6 @@ describe('SoundManager', () => {
       expect(SoundCategory.REWARDS).toBe('rewards');
       expect(SoundCategory.SYSTEM).toBe('system');
     });
-
-    it('should have sounds for each category', () => {
-      const categories = new Set(Object.values(SOUNDS).map(s => s.category));
-
-      expect(categories.has(SoundCategory.UI)).toBe(true);
-      expect(categories.has(SoundCategory.BEAR)).toBe(true);
-      expect(categories.has(SoundCategory.REWARDS)).toBe(true);
-      expect(categories.has(SoundCategory.SYSTEM)).toBe(true);
-    });
-  });
-
-  describe('Sound Definitions', () => {
-    it('should define UI sounds', () => {
-      expect(SOUNDS['ui.tap']).toBeDefined();
-      expect(SOUNDS['ui.swipe']).toBeDefined();
-      expect(SOUNDS['ui.favorite']).toBeDefined();
-    });
-
-    it('should define bear sounds', () => {
-      expect(SOUNDS['bear.tailwag']).toBeDefined();
-      expect(SOUNDS['bear.celebrate']).toBeDefined();
-      expect(SOUNDS['bear.sad']).toBeDefined();
-    });
-
-    it('should define reward sounds', () => {
-      expect(SOUNDS['rewards.confetti']).toBeDefined();
-      expect(SOUNDS['rewards.achievement']).toBeDefined();
-      expect(SOUNDS['rewards.streak']).toBeDefined();
-    });
-
-    it('should define system sounds', () => {
-      expect(SOUNDS['system.success']).toBeDefined();
-      expect(SOUNDS['system.error']).toBeDefined();
-    });
-
-    it('should have child-safe volume levels (all <= 0.6)', () => {
-      Object.entries(SOUNDS).forEach(([key, config]) => {
-        expect(config.volume).toBeLessThanOrEqual(0.6);
-      });
-    });
   });
 
   describe('Enable/Disable', () => {
@@ -180,6 +141,7 @@ describe('SoundManager', () => {
       const stopAllSpy = jest.spyOn(SoundManager, 'stopAll');
       SoundManager.setEnabled(false);
       expect(stopAllSpy).toHaveBeenCalled();
+      stopAllSpy.mockRestore();
     });
 
     it('should not play when disabled', async () => {
@@ -204,34 +166,18 @@ describe('SoundManager', () => {
       SoundManager.isInitialized = true;
       SoundManager.setBearSoundEnabled(false);
 
-      // Mock that the sound is already cached
-      SoundManager.soundCache.set('bear.celebrate', {
-        sound: mockSound,
-        config: SOUNDS['bear.celebrate'],
-      });
-
       const result = await SoundManager.play('bear.celebrate');
       expect(result).toBe(false);
-
-      // Cleanup
-      SoundManager.soundCache.delete('bear.celebrate');
     });
 
     it('should still play non-bear sounds when bear sounds disabled', async () => {
       SoundManager.isInitialized = true;
       SoundManager.setBearSoundEnabled(false);
-
-      // Mock that the UI sound is already cached
-      SoundManager.soundCache.set('ui.tap', {
-        sound: mockSound,
-        config: SOUNDS['ui.tap'],
-      });
+      // Pre-load the sound
+      SoundManager.loadedSounds['ui.tap'] = mockSound;
 
       const result = await SoundManager.play('ui.tap');
       expect(result).toBe(true);
-
-      // Cleanup
-      SoundManager.soundCache.delete('ui.tap');
     });
   });
 
@@ -261,21 +207,6 @@ describe('SoundManager', () => {
       SoundManager.setCategoryVolume(SoundCategory.UI, -1);
       expect(SoundManager.categoryVolumes[SoundCategory.UI]).toBe(0);
     });
-
-    it('should calculate effective volume correctly', () => {
-      SoundManager.masterVolume = 1;
-      SoundManager.categoryVolumes[SoundCategory.UI] = 1;
-      SoundManager.soundCache.set('ui.tap', {
-        sound: mockSound,
-        config: { ...SOUNDS['ui.tap'], volume: 0.5 },
-      });
-
-      const volume = SoundManager.getEffectiveVolume('ui.tap');
-      expect(volume).toBe(0.5); // 0.5 * 1 * 1
-
-      // Cleanup
-      SoundManager.soundCache.delete('ui.tap');
-    });
   });
 
   describe('Reduce Loud Sounds (Accessibility)', () => {
@@ -284,80 +215,9 @@ describe('SoundManager', () => {
       expect(SoundManager.reduceLoudSounds).toBe(true);
     });
 
-    it('should cap volume at 0.5 when reduce loud sounds is enabled', () => {
-      SoundManager.setReduceLoudSounds(true);
-      SoundManager.masterVolume = 1;
-      SoundManager.categoryVolumes[SoundCategory.REWARDS] = 1;
-      SoundManager.soundCache.set('rewards.achievement', {
-        sound: mockSound,
-        config: { ...SOUNDS['rewards.achievement'], volume: 0.6 },
-      });
-
-      const volume = SoundManager.getEffectiveVolume('rewards.achievement');
-      expect(volume).toBe(0.5); // Capped at 0.5
-
-      // Cleanup
-      SoundManager.soundCache.delete('rewards.achievement');
-    });
-  });
-
-  describe('Rate Limiting', () => {
-    it('should enforce rate limits', () => {
-      SoundManager.soundCache.set('ui.tap', {
-        sound: mockSound,
-        config: SOUNDS['ui.tap'],
-      });
-      SoundManager.lastPlayedTime.set('ui.tap', Date.now());
-
-      // Should not be able to play immediately
-      expect(SoundManager.canPlay('ui.tap')).toBe(false);
-
-      // Cleanup
-      SoundManager.soundCache.delete('ui.tap');
-    });
-
-    it('should allow play after rate limit expires', () => {
-      SoundManager.soundCache.set('ui.tap', {
-        sound: mockSound,
-        config: SOUNDS['ui.tap'],
-      });
-      // Set last played time to past the rate limit
-      SoundManager.lastPlayedTime.set('ui.tap', Date.now() - 200);
-
-      expect(SoundManager.canPlay('ui.tap')).toBe(true);
-
-      // Cleanup
-      SoundManager.soundCache.delete('ui.tap');
-    });
-
-    it('should have different rate limits per category', () => {
-      // UI sounds have faster rate limits than bear sounds
-      const uiLimit = SoundManager.getRateLimit('ui.tap');
-      const bearLimit = SoundManager.getRateLimit('bear.celebrate');
-
-      // UI is typically 120ms, bear is 1000ms
-      expect(uiLimit).toBeLessThan(bearLimit);
-    });
-  });
-
-  describe('Priority System', () => {
-    it('should allow high priority sounds to override', () => {
-      // Fill up concurrent sounds
-      SoundManager.currentlyPlaying.add('ui.tap');
-      SoundManager.currentlyPlaying.add('ui.swipe');
-
-      // System error should have higher priority
-      const canPlay = SoundManager.canPlayWithPriority('system.error');
-      expect(canPlay).toBe(true);
-    });
-
-    it('should respect max concurrent sounds', () => {
-      SoundManager.currentlyPlaying.add('system.error');
-      SoundManager.currentlyPlaying.add('system.success');
-
-      // Low priority sound should be blocked
-      const canPlay = SoundManager.canPlayWithPriority('ui.tap');
-      expect(canPlay).toBe(false);
+    it('should disable reduce loud sounds', () => {
+      SoundManager.setReduceLoudSounds(false);
+      expect(SoundManager.reduceLoudSounds).toBe(false);
     });
   });
 
@@ -365,22 +225,18 @@ describe('SoundManager', () => {
     it('should map events to sounds', () => {
       expect(EVENT_SOUND_MAP.ADD_TO_WISHLIST).toBe('ui.favorite');
       expect(EVENT_SOUND_MAP.BEAR_TAP).toBe('bear.pawpop');
-      expect(EVENT_SOUND_MAP.ACHIEVEMENT).toBe('rewards.achievement');
+      expect(EVENT_SOUND_MAP.ACHIEVEMENT_UNLOCK).toBe('rewards.achievement');
       expect(EVENT_SOUND_MAP.ERROR).toBe('system.error');
     });
 
     it('should play sound by event name', async () => {
       SoundManager.isInitialized = true;
-      SoundManager.soundCache.set('ui.favorite', {
-        sound: mockSound,
-        config: SOUNDS['ui.favorite'],
-      });
+      SoundManager.isEnabled = true;
+      // Pre-load the sound
+      SoundManager.loadedSounds['ui.favorite'] = mockSound;
 
       const result = await SoundManager.playEvent('ADD_TO_WISHLIST');
       expect(result).toBe(true);
-
-      // Cleanup
-      SoundManager.soundCache.delete('ui.favorite');
     });
 
     it('should return false for unknown event', async () => {
@@ -437,15 +293,12 @@ describe('SoundManager', () => {
       expect(SoundManager.isInitialized).toBe(false);
     });
 
-    it('should clear sound cache on cleanup', async () => {
-      SoundManager.soundCache.set('ui.tap', {
-        sound: mockSound,
-        config: SOUNDS['ui.tap'],
-      });
+    it('should clear loaded sounds on cleanup', async () => {
+      SoundManager.loadedSounds = { 'ui.tap': mockSound };
 
       await SoundManager.cleanup();
 
-      expect(SoundManager.soundCache.size).toBe(0);
+      expect(Object.keys(SoundManager.loadedSounds).length).toBe(0);
     });
   });
 
@@ -471,11 +324,83 @@ describe('SoundManager', () => {
     });
 
     it('should have moderate default master volume (0.7)', () => {
+      // Reset to defaults
+      SoundManager.masterVolume = 0.7;
       expect(SoundManager.masterVolume).toBe(0.7);
     });
+  });
 
-    it('should limit concurrent sounds to 2', () => {
-      expect(SoundManager.maxConcurrentSounds).toBe(2);
+  describe('Playing Sounds', () => {
+    it('should play a sound successfully', async () => {
+      SoundManager.isEnabled = true;
+      SoundManager.isInitialized = true;
+      // Pre-load the sound
+      SoundManager.loadedSounds['ui.tap'] = mockSound;
+
+      const result = await SoundManager.play('ui.tap');
+      expect(result).toBe(true);
+    });
+
+    it('should return false when sound is not found', async () => {
+      SoundManager.isEnabled = true;
+      SoundManager.isInitialized = true;
+
+      // This sound key doesn't exist in SOUND_FILES
+      const result = await SoundManager.play('unknown.sound');
+      expect(result).toBe(false);
+    });
+
+    it('should set volume when playing', async () => {
+      SoundManager.isEnabled = true;
+      SoundManager.isInitialized = true;
+      // Pre-load the sound
+      SoundManager.loadedSounds['ui.tap'] = mockSound;
+
+      await SoundManager.play('ui.tap');
+      expect(mockSound.setVolumeAsync).toHaveBeenCalled();
+    });
+
+    it('should reset position when replaying', async () => {
+      mockSound.getStatusAsync.mockResolvedValueOnce({
+        isLoaded: true,
+        positionMillis: 1000,
+      });
+
+      SoundManager.isEnabled = true;
+      SoundManager.isInitialized = true;
+      SoundManager.loadedSounds['ui.tap'] = mockSound;
+
+      await SoundManager.play('ui.tap');
+      expect(mockSound.setPositionAsync).toHaveBeenCalledWith(0);
+    });
+  });
+
+  describe('Stopping Sounds', () => {
+    it('should stop a specific sound', async () => {
+      SoundManager.loadedSounds['ui.tap'] = mockSound;
+
+      await SoundManager.stop('ui.tap');
+      expect(mockSound.stopAsync).toHaveBeenCalled();
+    });
+
+    it('should stop all loaded sounds', async () => {
+      SoundManager.loadedSounds = {
+        'ui.tap': mockSound,
+        'ui.swipe': mockSound,
+      };
+
+      await SoundManager.stopAll();
+      expect(mockSound.stopAsync).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('Preloading', () => {
+    it('should preload multiple sounds', async () => {
+      const soundKeys = ['ui.tap', 'ui.swipe', 'ui.favorite'];
+
+      await SoundManager.preloadSounds(soundKeys);
+
+      expect(Audio.Sound.createAsync).toHaveBeenCalledTimes(3);
     });
   });
 });

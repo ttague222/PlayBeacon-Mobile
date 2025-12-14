@@ -1,76 +1,85 @@
-import React, { useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useRef, useCallback, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated } from 'react-native';
 import AppIntroSlider from 'react-native-app-intro-slider';
+import LottieView from 'lottie-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../styles/colors';
 import { radii, shadows } from '../styles/kidTheme';
 import { setTutorialCompleted } from '../utils/tutorialStorage';
 import { useCollection } from '../context/CollectionContext';
+import SoundManager from '../services/SoundManager';
+
+// Lottie animations for tutorial slides
+const TUTORIAL_ANIMATIONS = {
+  lightbulb: require('../../assets/lottie/onboarding/Lightbulb.json'),
+  giftBox: require('../../assets/lottie/onboarding/Gift box.json'),
+  trophy: require('../../assets/lottie/onboarding/trophy.json'),
+  rocket: require('../../assets/lottie/onboarding/rocket_launch.json'),
+};
 
 const { width, height } = Dimensions.get('window');
 
 const slides = [
   {
     key: '1',
-    title: 'Welcome to PlayBeacon!',
-    emoji: '🎮✨',
-    text: 'Discover fun new Roblox games picked just for you!',
-    backgroundColor: colors.accent.tertiary,  // Purple-violet
-  },
-  {
-    key: '2',
-    title: 'Import Your Games',
+    title: 'Connect Your Roblox',
     emoji: '⭐',
-    text: 'Type your Roblox username to get personalized picks, or skip to explore right away!',
+    text: 'Add your Roblox username to get games you\'ll love, or jump right in!',
     backgroundColor: colors.accent.primary,  // Coral pink
   },
   {
-    key: '3',
-    title: 'Rate Games You See',
+    key: '2',
+    title: 'Tell Us What You Think!',
     emoji: '🎯',
-    text: 'Tap ✗ to pass, → to skip, or ✓ to like games!',
+    text: "Not for you? Tap ✗. Love it? Tap ❤️!",
+    interactive: 'rateButtons',
     backgroundColor: colors.accent.secondary,  // Vibrant orange
+  },
+  {
+    key: '3',
+    title: 'Save Your Favorites',
+    emoji: '📚',
+    text: 'Tap + to save games you want to play later!',
+    interactive: 'addButton',
+    backgroundColor: colors.accent.tertiary,  // Purple-violet (better contrast)
   },
   {
     key: '4',
-    title: 'Save Games to Collections',
-    emoji: '📚',
-    text: 'Tap the + button to save games to your collections!',
-    backgroundColor: colors.action.like,  // Golden orange
+    title: 'We Get Smarter!',
+    emoji: '🤖',
+    animation: TUTORIAL_ANIMATIONS.lightbulb,
+    text: 'The more you play, the better we get at finding games you\'ll love!',
+    backgroundColor: colors.action.info,  // Magenta-pink
   },
   {
     key: '5',
-    title: 'Smart AI Picks',
-    emoji: '🤖',
-    text: 'PlayBeacon learns what you like and finds better games over time!',
-    backgroundColor: colors.action.info,  // Magenta-pink
-  },
-  {
-    key: '6',
-    title: 'Daily Mystery Box',
+    title: 'Daily Surprise!',
     emoji: '🎁',
-    text: 'Open your daily mystery box to discover a surprise game every day!',
+    animation: TUTORIAL_ANIMATIONS.giftBox,
+    text: 'Open your mystery box every day for a cool new game!',
     backgroundColor: colors.accent.secondary,  // Vibrant orange
   },
   {
-    key: '7',
-    title: 'Track Your Goals',
+    key: '6',
+    title: 'Make a Game Plan',
     emoji: '📋',
-    text: 'Create tasks to remember games to try and earn XP for completing them!',
+    text: 'Add games to your to-do list and earn XP when you try them!',
     backgroundColor: colors.action.info,  // Magenta-pink
   },
   {
-    key: '8',
-    title: 'Earn Badges & Level Up',
+    key: '7',
+    title: 'Collect Badges!',
     emoji: '🏆',
-    text: 'Unlock achievements as you explore!',
+    animation: TUTORIAL_ANIMATIONS.trophy,
+    text: 'Earn cool badges and level up as you discover games!',
     backgroundColor: colors.accent.tertiary,  // Purple-violet
   },
   {
-    key: '9',
-    title: 'Let\'s Go!',
+    key: '8',
+    title: 'Ready to Play?',
     emoji: '🚀',
-    text: 'You\'re all set to start your adventure!',
+    animation: TUTORIAL_ANIMATIONS.rocket,
+    text: 'Your adventure starts now!',
     backgroundColor: colors.accent.primary,  // Coral pink
   },
 ];
@@ -78,8 +87,23 @@ const slides = [
 export default function TutorialScreen({ navigation, onComplete }) {
   const sliderRef = useRef(null);
   const { triggerEvent } = useCollection();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [practiceComplete, setPracticeComplete] = useState({});
+
+  // Animation refs for interactive elements
+  const dislikeScale = useRef(new Animated.Value(1)).current;
+  const likeScale = useRef(new Animated.Value(1)).current;
+  const addScale = useRef(new Animated.Value(1)).current;
+
+  // Handle slide change - play swipe sound
+  const handleSlideChange = useCallback((index) => {
+    setCurrentIndex(index);
+    SoundManager.play('ui.swipe');
+  }, []);
 
   const handleDone = async () => {
+    // Play celebration sound for completing tutorial
+    SoundManager.play('rewards.confetti');
     await setTutorialCompleted(true);
     // Trigger badge event for completing tutorial
     triggerEvent('COMPLETE_TUTORIAL');
@@ -90,6 +114,7 @@ export default function TutorialScreen({ navigation, onComplete }) {
   };
 
   const handleSkip = async () => {
+    SoundManager.play('ui.tap');
     await setTutorialCompleted(true);
     // Trigger AppNavigator re-render
     if (onComplete) {
@@ -97,16 +122,157 @@ export default function TutorialScreen({ navigation, onComplete }) {
     }
   };
 
-  const renderSlide = ({ item }) => {
-    const isLastSlide = item.key === '9';
+  // Handle practice button presses
+  const handlePracticeDislike = () => {
+    SoundManager.play('ui.dislike');
+    Animated.sequence([
+      Animated.timing(dislikeScale, { toValue: 1.3, duration: 100, useNativeDriver: true }),
+      Animated.timing(dislikeScale, { toValue: 1, duration: 100, useNativeDriver: true }),
+    ]).start();
+    setPracticeComplete(prev => ({ ...prev, dislike: true }));
+  };
+
+  const handlePracticeLike = () => {
+    SoundManager.play('ui.like');
+    Animated.sequence([
+      Animated.timing(likeScale, { toValue: 1.3, duration: 100, useNativeDriver: true }),
+      Animated.timing(likeScale, { toValue: 1, duration: 100, useNativeDriver: true }),
+    ]).start();
+    setPracticeComplete(prev => ({ ...prev, like: true }));
+  };
+
+  const handlePracticeAdd = () => {
+    SoundManager.play('ui.tap');
+    Animated.sequence([
+      Animated.timing(addScale, { toValue: 1.3, duration: 100, useNativeDriver: true }),
+      Animated.timing(addScale, { toValue: 1, duration: 100, useNativeDriver: true }),
+    ]).start();
+    setPracticeComplete(prev => ({ ...prev, add: true }));
+  };
+
+  // Render interactive practice buttons for rating slide
+  const renderRateButtons = () => {
+    const dislikePressed = practiceComplete.dislike;
+    const likePressed = practiceComplete.like;
+    const allDone = dislikePressed && likePressed;
+
+    return (
+      <View style={styles.practiceContainer}>
+        <Text style={styles.practiceLabel}>
+          {allDone ? 'Great job! 🎉' : 'Try it out!'}
+        </Text>
+        <View style={styles.practiceButtons}>
+          <Animated.View style={{ transform: [{ scale: dislikeScale }] }}>
+            <TouchableOpacity
+              style={[
+                styles.practiceButton,
+                styles.dislikeButton,
+                dislikePressed && styles.practiceButtonDone,
+              ]}
+              onPress={handlePracticeDislike}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="close"
+                size={32}
+                color={colors.text.primary}
+              />
+              {dislikePressed && <Text style={styles.checkMark}>✓</Text>}
+            </TouchableOpacity>
+          </Animated.View>
+          <Animated.View style={{ transform: [{ scale: likeScale }] }}>
+            <TouchableOpacity
+              style={[
+                styles.practiceButton,
+                styles.likeButton,
+                likePressed && styles.practiceButtonDone,
+              ]}
+              onPress={handlePracticeLike}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="heart"
+                size={28}
+                color={colors.text.primary}
+              />
+              {likePressed && <Text style={styles.checkMark}>✓</Text>}
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </View>
+    );
+  };
+
+  // Render interactive add button for favorites slide
+  const renderAddButton = () => {
+    const addPressed = practiceComplete.add;
+
+    return (
+      <View style={styles.practiceContainer}>
+        <Text style={styles.practiceLabel}>
+          {addPressed ? 'Saved! 🎉' : 'Try it out!'}
+        </Text>
+        <Animated.View style={{ transform: [{ scale: addScale }] }}>
+          <TouchableOpacity
+            style={[
+              styles.practiceButton,
+              styles.addButton,
+              addPressed && styles.practiceButtonDone,
+            ]}
+            onPress={handlePracticeAdd}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name={addPressed ? 'checkmark' : 'add'}
+              size={32}
+              color={colors.text.primary}
+            />
+            {addPressed && <Text style={styles.checkMark}>✓</Text>}
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+    );
+  };
+
+  const renderSlide = ({ item, index }) => {
+    const isLastSlide = item.key === '8';
+    const slideIndex = parseInt(item.key) - 1;
+
     return (
       <View style={[styles.slide, { backgroundColor: item.backgroundColor }]}>
+        {/* Progress indicator */}
+        <View style={styles.progressContainer}>
+          <Text style={styles.progressText}>
+            {item.key} of {slides.length}
+          </Text>
+        </View>
+
         <View style={styles.contentContainer}>
-          <Text style={styles.emoji}>{item.emoji}</Text>
+          {item.animation ? (
+            <View style={styles.animationContainer}>
+              <LottieView
+                source={item.animation}
+                autoPlay
+                loop
+                style={styles.animation}
+              />
+            </View>
+          ) : (
+            <Text style={styles.emoji}>{item.emoji}</Text>
+          )}
           <Text style={styles.title}>{item.title}</Text>
           <Text style={styles.text}>{item.text}</Text>
+
+          {/* Interactive practice elements */}
+          {item.interactive === 'rateButtons' && renderRateButtons()}
+          {item.interactive === 'addButton' && renderAddButton()}
+
           {isLastSlide && (
-            <TouchableOpacity style={styles.inlineButton} onPress={handleDone}>
+            <TouchableOpacity
+              style={styles.inlineButton}
+              onPress={handleDone}
+              activeOpacity={0.8}
+            >
               <Text style={styles.inlineButtonText}>Start Exploring</Text>
             </TouchableOpacity>
           )}
@@ -130,7 +296,11 @@ export default function TutorialScreen({ navigation, onComplete }) {
 
   const renderSkipButton = () => {
     return (
-      <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+      <TouchableOpacity
+        style={styles.skipButton}
+        onPress={handleSkip}
+        activeOpacity={0.7}
+      >
         <Text style={styles.skipButtonText}>Skip</Text>
       </TouchableOpacity>
     );
@@ -143,6 +313,7 @@ export default function TutorialScreen({ navigation, onComplete }) {
         data={slides}
         renderItem={renderSlide}
         onDone={handleDone}
+        onSlideChange={handleSlideChange}
         renderNextButton={renderNextButton}
         renderDoneButton={renderDoneButton}
         showSkipButton={true}
@@ -164,6 +335,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 30,
   },
+  progressContainer: {
+    position: 'absolute',
+    top: 60,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: radii.pill,
+  },
+  progressText: {
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
   contentContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -173,6 +358,17 @@ const styles = StyleSheet.create({
     fontSize: 100,
     marginBottom: 30,
     textAlign: 'center',
+  },
+  animationContainer: {
+    width: 200,
+    height: 200,
+    marginBottom: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  animation: {
+    width: '100%',
+    height: '100%',
   },
   title: {
     fontSize: 32,
@@ -252,5 +448,60 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: radii.circle,
+  },
+  // Practice button styles
+  practiceContainer: {
+    marginTop: 30,
+    alignItems: 'center',
+  },
+  practiceLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 16,
+  },
+  practiceButtons: {
+    flexDirection: 'row',
+    gap: 40,
+    alignItems: 'center',
+  },
+  practiceButton: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  dislikeButton: {
+    backgroundColor: colors.action.dislike,
+  },
+  likeButton: {
+    backgroundColor: colors.action.like,
+  },
+  addButton: {
+    backgroundColor: colors.action.info,
+  },
+  practiceButtonDone: {
+    opacity: 0.7,
+  },
+  checkMark: {
+    position: 'absolute',
+    bottom: -8,
+    right: -8,
+    backgroundColor: colors.success,
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: 'bold',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    textAlign: 'center',
+    lineHeight: 24,
+    overflow: 'hidden',
   },
 });

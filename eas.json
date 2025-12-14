@@ -40,9 +40,9 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "YOUR_APPLE_ID@example.com",
-        "ascAppId": "YOUR_ASC_APP_ID",
-        "appleTeamId": "YOUR_APPLE_TEAM_ID"
+        "appleId": "ttague222@gmail.com",
+        "ascAppId": "6756545114",
+        "appleTeamId": "B6NRXB2NBV"
       },
       "android": {
         "serviceAccountKeyPath": "./playbeacon-play-store-service-account.json",

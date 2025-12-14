@@ -56,16 +56,16 @@ ANIMALS.forEach(animal => {
 const EVENT_TO_STAT: Record<BadgeEventType, keyof CollectionStats> = {
   VIEW_GAME: 'gamesViewed',
   ADD_TO_WISHLIST: 'gamesWishlisted',
-  REMOVE_FROM_WISHLIST: 'gamesWishlisted', // Special handling
+  REMOVE_FROM_WISHLIST: 'gamesWishlisted', // Special handling (decrements)
   SWIPE_DISCOVERY: 'gamesSwiped',
   BEAR_INTERACTION: 'bearInteractions',
   DAILY_LOGIN: 'dailyLogins',
   CREATE_COLLECTION: 'collectionsCreated',
   TAP_RECOMMENDATION: 'recommendationsTapped',
-  COMPLETE_TUTORIAL: 'gamesViewed', // No specific stat
-  SHARE_GAME: 'gamesViewed', // No specific stat
+  COMPLETE_TUTORIAL: 'tutorialsCompleted',
+  SHARE_GAME: 'gamesShared',
   FIRST_FAVORITE: 'gamesWishlisted',
-  EXPLORE_CATEGORY: 'gamesViewed',
+  EXPLORE_CATEGORY: 'categoriesExplored',
   COMPLETE_TASK: 'tasksCompleted',
   OPEN_MYSTERY_BOX: 'mysteryBoxOpened',
 };
@@ -85,6 +85,9 @@ const DEFAULT_STATS: CollectionStats = {
   totalPlayTime: 0,
   tasksCompleted: 0,
   mysteryBoxOpened: 0,
+  tutorialsCompleted: 0,
+  gamesShared: 0,
+  categoriesExplored: 0,
 };
 
 // Default progress

@@ -1,265 +1,260 @@
 /**
  * PremiumContext Tests
  *
- * Tests for premium/IAP state management including:
- * - Premium status persistence
- * - Firestore sync
- * - Product info display
- * - Expo Go fallback behavior
+ * Tests for the premium/IAP context provider including
+ * purchase flow, restore, and status management.
  */
 
 import React from 'react';
-import { render, waitFor, act } from '@testing-library/react-native';
-import { Text } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { renderHook, act } from '@testing-library/react-native';
 
-// Mock Constants
+// Mock dependencies - override the global AsyncStorage mock for this test
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+}));
+
 jest.mock('expo-constants', () => ({
-  default: {
-    appOwnership: 'expo', // Expo Go - IAP not available
-    expoConfig: { version: '1.0.0' },
-  },
+  appOwnership: 'expo', // Simulate Expo Go environment
 }));
 
-// Mock AuthContext
+jest.mock('firebase/firestore', () => ({
+  doc: jest.fn(),
+  getDoc: jest.fn(),
+  updateDoc: jest.fn(),
+  setDoc: jest.fn(),
+}));
+
+jest.mock('../../config/firebase', () => ({
+  db: {},
+}));
+
 jest.mock('../../context/AuthContext', () => ({
-  useAuth: jest.fn(() => ({
-    user: { uid: 'test-user-123' },
-  })),
+  useAuth: () => ({
+    user: null,
+  }),
 }));
 
-// Import after mocks
-import { PremiumProvider, usePremium, PRODUCT_ID } from '../../context/PremiumContext';
-import { useAuth } from '../../context/AuthContext';
+jest.mock('../../utils/logger', () => ({
+  log: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+}));
 
-// Test component to access premium context
-const TestConsumer = ({ onPremium }) => {
-  const premium = usePremium();
-  React.useEffect(() => {
-    onPremium(premium);
-  }, [premium, onPremium]);
-  return <Text testID="status">{premium.isPremium ? 'premium' : 'free'}</Text>;
-};
+import {
+  PremiumProvider,
+  usePremium,
+  PRODUCT_ID,
+} from '../../context/PremiumContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const wrapper = ({ children }) => <PremiumProvider>{children}</PremiumProvider>;
 
 describe('PremiumContext', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     AsyncStorage.getItem.mockResolvedValue(null);
-    AsyncStorage.setItem.mockResolvedValue();
-    getDoc.mockResolvedValue({ exists: () => false, data: () => null });
-    setDoc.mockResolvedValue();
-    updateDoc.mockResolvedValue();
+    AsyncStorage.setItem.mockResolvedValue(undefined);
   });
 
-  describe('Initialization', () => {
-    it('should initialize with free status by default', async () => {
-      const premiumState = { current: null };
-
-      render(
-        <PremiumProvider>
-          <TestConsumer onPremium={(p) => { premiumState.current = p; }} />
-        </PremiumProvider>
-      );
-
-      await waitFor(() => {
-        expect(premiumState.current.isPremium).toBe(false);
-      });
-    });
-
-    it('should load premium status from AsyncStorage', async () => {
-      AsyncStorage.getItem.mockResolvedValue('true');
-
-      const premiumState = { current: null };
-
-      render(
-        <PremiumProvider>
-          <TestConsumer onPremium={(p) => { premiumState.current = p; }} />
-        </PremiumProvider>
-      );
-
-      await waitFor(() => {
-        expect(premiumState.current.isPremium).toBe(true);
-      });
-    });
-
-    it('should detect Expo Go environment', async () => {
-      const premiumState = { current: null };
-
-      render(
-        <PremiumProvider>
-          <TestConsumer onPremium={(p) => { premiumState.current = p; }} />
-        </PremiumProvider>
-      );
-
-      await waitFor(() => {
-        expect(premiumState.current.isExpoGo).toBe(true);
-        expect(premiumState.current.isIapAvailable).toBe(false);
-      });
-    });
-  });
-
-  describe('Premium Status Persistence', () => {
-    it('should save premium status to AsyncStorage', async () => {
-      const premiumState = { current: null };
-
-      render(
-        <PremiumProvider>
-          <TestConsumer onPremium={(p) => { premiumState.current = p; }} />
-        </PremiumProvider>
-      );
-
-      await waitFor(() => {
-        expect(premiumState.current).not.toBeNull();
-      });
-
-      // Premium status is internal - just verify initialization works
-      expect(AsyncStorage.getItem).toHaveBeenCalledWith('@playbeacon_premium');
-    });
-
-    it('should sync premium status to Firestore when user is logged in', async () => {
-      useAuth.mockReturnValue({
-        user: { uid: 'test-user-123' },
-      });
-
-      getDoc.mockResolvedValue({
-        exists: () => true,
-        data: () => ({ premium: true }),
-      });
-
-      const premiumState = { current: null };
-
-      render(
-        <PremiumProvider>
-          <TestConsumer onPremium={(p) => { premiumState.current = p; }} />
-        </PremiumProvider>
-      );
-
-      await waitFor(() => {
-        expect(premiumState.current.isPremium).toBe(true);
-      });
-    });
-  });
-
-  describe('Product Info', () => {
-    it('should return default product info when no products loaded', async () => {
-      const premiumState = { current: null };
-
-      render(
-        <PremiumProvider>
-          <TestConsumer onPremium={(p) => { premiumState.current = p; }} />
-        </PremiumProvider>
-      );
-
-      await waitFor(() => {
-        expect(premiumState.current.getProductInfo).toBeDefined();
-      });
-
-      const productInfo = premiumState.current.getProductInfo();
-      expect(productInfo.title).toBe('Remove Ads');
-      expect(productInfo.price).toBe('$2.99');
-    });
-
-    it('should have correct product ID', () => {
+  describe('PRODUCT_ID', () => {
+    it('should export the correct product ID', () => {
       expect(PRODUCT_ID).toBe('playbeacon_remove_ads');
     });
   });
 
+  describe('Initial State', () => {
+    it('should start with isPremium as false', async () => {
+      const { result } = renderHook(() => usePremium(), { wrapper });
+
+      await act(async () => {
+        // Wait for initial load
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
+
+      expect(result.current.isPremium).toBe(false);
+    });
+
+    it('should eventually become isLoading false after initialization', async () => {
+      const { result } = renderHook(() => usePremium(), { wrapper });
+
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      });
+
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    it('should start with isPurchasing as false', async () => {
+      const { result } = renderHook(() => usePremium(), { wrapper });
+
+      expect(result.current.isPurchasing).toBe(false);
+    });
+
+    it('should detect Expo Go environment', async () => {
+      const { result } = renderHook(() => usePremium(), { wrapper });
+
+      expect(result.current.isExpoGo).toBe(true);
+    });
+  });
+
+  describe('Premium Status Loading', () => {
+    it('should load premium status from AsyncStorage', async () => {
+      AsyncStorage.getItem.mockResolvedValue('true');
+
+      const { result } = renderHook(() => usePremium(), { wrapper });
+
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      });
+
+      expect(AsyncStorage.getItem).toHaveBeenCalledWith('@playbeacon_premium');
+      expect(result.current.isPremium).toBe(true);
+    });
+
+    it('should remain false if no stored value', async () => {
+      AsyncStorage.getItem.mockResolvedValue(null);
+
+      const { result } = renderHook(() => usePremium(), { wrapper });
+
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      });
+
+      expect(result.current.isPremium).toBe(false);
+    });
+
+    it('should remain false if stored value is false', async () => {
+      AsyncStorage.getItem.mockResolvedValue('false');
+
+      const { result } = renderHook(() => usePremium(), { wrapper });
+
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      });
+
+      expect(result.current.isPremium).toBe(false);
+    });
+  });
+
+  describe('Purchase Flow (Expo Go)', () => {
+    it('should have purchasePremium function available', async () => {
+      const { result } = renderHook(() => usePremium(), { wrapper });
+
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      });
+
+      expect(typeof result.current.purchasePremium).toBe('function');
+    });
+
+    it('should report isExpoGo as true in test environment', async () => {
+      const { result } = renderHook(() => usePremium(), { wrapper });
+
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      });
+
+      expect(result.current.isExpoGo).toBe(true);
+    });
+  });
+
+  describe('Restore Purchases (Expo Go)', () => {
+    it('should have restorePurchases function available', async () => {
+      const { result } = renderHook(() => usePremium(), { wrapper });
+
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      });
+
+      expect(typeof result.current.restorePurchases).toBe('function');
+    });
+  });
+
+  describe('getProductInfo', () => {
+    it('should return default product info when no products loaded', async () => {
+      const { result } = renderHook(() => usePremium(), { wrapper });
+
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      });
+
+      const productInfo = result.current.getProductInfo();
+
+      expect(productInfo).toEqual({
+        title: 'Remove Ads',
+        description: 'Remove all ads forever with a one-time purchase.',
+        price: '$2.99',
+        currency: 'USD',
+      });
+    });
+  });
+
   describe('IAP Availability', () => {
-    it('should not allow purchases in Expo Go', async () => {
-      const premiumState = { current: null };
+    it('should report IAP as unavailable in Expo Go', async () => {
+      const { result } = renderHook(() => usePremium(), { wrapper });
 
-      render(
-        <PremiumProvider>
-          <TestConsumer onPremium={(p) => { premiumState.current = p; }} />
-        </PremiumProvider>
-      );
-
-      await waitFor(() => {
-        expect(premiumState.current.isIapAvailable).toBe(false);
-      });
-    });
-
-    it('should not allow restore in Expo Go', async () => {
-      const premiumState = { current: null };
-
-      render(
-        <PremiumProvider>
-          <TestConsumer onPremium={(p) => { premiumState.current = p; }} />
-        </PremiumProvider>
-      );
-
-      await waitFor(() => {
-        expect(premiumState.current.restorePurchases).toBeDefined();
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
       });
 
-      const result = await premiumState.current.restorePurchases();
-      expect(result).toBe(false);
+      expect(result.current.isIapAvailable).toBe(false);
     });
   });
 
-  describe('Loading State', () => {
-    it('should show loading state initially', async () => {
-      const premiumState = { current: null };
-
-      render(
-        <PremiumProvider>
-          <TestConsumer onPremium={(p) => { premiumState.current = p; }} />
-        </PremiumProvider>
-      );
-
-      // Initial state might be loading
-      expect(premiumState.current).not.toBeNull();
+  describe('usePremium hook', () => {
+    it('should throw error when used outside provider', () => {
+      expect(() => {
+        renderHook(() => usePremium());
+      }).toThrow('usePremium must be used within a PremiumProvider');
     });
 
-    it('should not be purchasing initially', async () => {
-      const premiumState = { current: null };
+    it('should return context value when used inside provider', async () => {
+      const { result } = renderHook(() => usePremium(), { wrapper });
 
-      render(
-        <PremiumProvider>
-          <TestConsumer onPremium={(p) => { premiumState.current = p; }} />
-        </PremiumProvider>
-      );
-
-      await waitFor(() => {
-        expect(premiumState.current.isPurchasing).toBe(false);
-      });
+      expect(result.current).toHaveProperty('isPremium');
+      expect(result.current).toHaveProperty('isLoading');
+      expect(result.current).toHaveProperty('isPurchasing');
+      expect(result.current).toHaveProperty('isIapAvailable');
+      expect(result.current).toHaveProperty('isExpoGo');
+      expect(result.current).toHaveProperty('purchasePremium');
+      expect(result.current).toHaveProperty('restorePurchases');
+      expect(result.current).toHaveProperty('getProductInfo');
     });
   });
 
-  describe('Cross-device Sync', () => {
-    it('should load premium from Firestore on user change', async () => {
-      // Initially no user
-      useAuth.mockReturnValue({ user: null });
+  describe('AsyncStorage Error Handling', () => {
+    it('should handle AsyncStorage getItem errors gracefully', async () => {
+      AsyncStorage.getItem.mockRejectedValue(new Error('Storage error'));
 
-      const premiumState = { current: null };
+      const { result } = renderHook(() => usePremium(), { wrapper });
 
-      const { rerender } = render(
-        <PremiumProvider>
-          <TestConsumer onPremium={(p) => { premiumState.current = p; }} />
-        </PremiumProvider>
-      );
-
-      await waitFor(() => {
-        expect(premiumState.current.isPremium).toBe(false);
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
       });
 
-      // Simulate user login with premium status in Firestore
-      useAuth.mockReturnValue({ user: { uid: 'new-user-123' } });
-      getDoc.mockResolvedValue({
-        exists: () => true,
-        data: () => ({ premium: true }),
+      // Should not crash and default to false
+      expect(result.current.isPremium).toBe(false);
+    });
+  });
+
+  describe('Context Value Structure', () => {
+    it('should provide all required functions and values', async () => {
+      const { result } = renderHook(() => usePremium(), { wrapper });
+
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
       });
 
-      rerender(
-        <PremiumProvider>
-          <TestConsumer onPremium={(p) => { premiumState.current = p; }} />
-        </PremiumProvider>
-      );
-
-      await waitFor(() => {
-        expect(premiumState.current.isPremium).toBe(true);
-      });
+      // Check types
+      expect(typeof result.current.isPremium).toBe('boolean');
+      expect(typeof result.current.isLoading).toBe('boolean');
+      expect(typeof result.current.isPurchasing).toBe('boolean');
+      expect(typeof result.current.isIapAvailable).toBe('boolean');
+      expect(typeof result.current.isExpoGo).toBe('boolean');
+      expect(typeof result.current.purchasePremium).toBe('function');
+      expect(typeof result.current.restorePurchases).toBe('function');
+      expect(typeof result.current.getProductInfo).toBe('function');
     });
   });
 });

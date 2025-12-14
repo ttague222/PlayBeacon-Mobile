@@ -10,7 +10,7 @@
  * - Explains privacy protections in kid-friendly language
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -19,12 +19,18 @@ import {
   ScrollView,
   Alert,
   Modal,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import LottieView from 'lottie-react-native';
 import { colors } from '../styles/colors';
 import { radii, shadows } from '../styles/kidTheme';
 import { setAgeVerificationStatus } from '../utils/ageVerification';
 import PrivacyPolicyScreen from './PrivacyPolicyScreen';
+import SoundManager from '../services/SoundManager';
+
+// Lighthouse animation for welcome screen
+const lighthouseAnimation = require('../../assets/lottie/onboarding/Lighthouse Animation.json');
 
 // Generate birth years (ages roughly 5-100)
 const currentYear = new Date().getFullYear();
@@ -39,6 +45,34 @@ export default function AgeVerificationScreen({ onComplete }) {
   const [selectedYear, setSelectedYear] = useState(null);
   const [isChild, setIsChild] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+
+  // Animation values for welcome screen
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const buttonScale = useRef(new Animated.Value(0.9)).current;
+
+  useEffect(() => {
+    // Entrance animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(buttonScale, {
+        toValue: 1,
+        friction: 4,
+        tension: 40,
+        useNativeDriver: true,
+        delay: 400,
+      }),
+    ]).start();
+  }, []);
 
   const handleYearSelect = (year) => {
     setSelectedYear(year);
@@ -73,31 +107,69 @@ export default function AgeVerificationScreen({ onComplete }) {
     onComplete();
   };
 
+  const handleGetStarted = () => {
+    SoundManager.play('ui.tap');
+    setStep('birth_year');
+  };
+
   // Welcome screen
   if (step === 'welcome') {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
-          <Text style={styles.emoji}>🐻</Text>
-          <Text style={styles.title}>Welcome to PlayBeacon!</Text>
-          <Text style={styles.subtitle}>
-            Let's get you started with discovering awesome Roblox games!
-          </Text>
-
-          <View style={styles.infoBox}>
-            <Text style={styles.infoTitle}>Before we begin...</Text>
-            <Text style={styles.infoText}>
-              We need to know a little about you to make sure PlayBeacon is set up just right.
-              Don't worry - we keep your information safe!
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={() => setStep('birth_year')}
+        <View style={styles.welcomeContent}>
+          {/* Lighthouse Animation */}
+          <Animated.View
+            style={[
+              styles.animationContainer,
+              { opacity: fadeAnim }
+            ]}
           >
-            <Text style={styles.primaryButtonText}>Let's Go!</Text>
-          </TouchableOpacity>
+            <LottieView
+              source={lighthouseAnimation}
+              autoPlay
+              loop
+              style={styles.lighthouseAnimation}
+            />
+          </Animated.View>
+
+          {/* Text Content */}
+          <Animated.View
+            style={[
+              styles.textContent,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
+            <Text style={styles.welcomeTitle}>PlayBeacon</Text>
+            <Text style={styles.welcomeTagline}>
+              Find your next favorite Roblox game!
+            </Text>
+          </Animated.View>
+
+          {/* Get Started Button */}
+          <Animated.View
+            style={[
+              styles.buttonContainer,
+              {
+                opacity: fadeAnim,
+                transform: [{ scale: buttonScale }],
+              },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.getStartedButton}
+              onPress={handleGetStarted}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.getStartedButtonText}>Get Started</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.safetyNote}>
+              🔒 Safe & kid-friendly
+            </Text>
+          </Animated.View>
         </View>
       </SafeAreaView>
     );
@@ -235,6 +307,67 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
   },
+  // Welcome screen styles
+  welcomeContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingBottom: 60, // Offset to visually center content better
+  },
+  animationContainer: {
+    width: 250,
+    height: 250,
+    marginBottom: 30,
+  },
+  lighthouseAnimation: {
+    width: '100%',
+    height: '100%',
+  },
+  textContent: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  welcomeTitle: {
+    fontSize: 42,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    textAlign: 'center',
+    marginBottom: 12,
+    letterSpacing: 1,
+  },
+  welcomeTagline: {
+    fontSize: 18,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 26,
+  },
+  buttonContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  getStartedButton: {
+    backgroundColor: colors.accent.primary,
+    paddingHorizontal: 60,
+    paddingVertical: 18,
+    borderRadius: radii.pill,
+    ...shadows.large,
+    width: '100%',
+    maxWidth: 300,
+  },
+  getStartedButtonText: {
+    color: colors.text.primary,
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  safetyNote: {
+    marginTop: 20,
+    fontSize: 14,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+  },
+  // Legacy styles for other steps
   content: {
     flex: 1,
     justifyContent: 'center',

@@ -1,8 +1,7 @@
 /**
- * Unit Tests for Validation Utilities
+ * Validation Utility Tests
  *
- * Tests input sanitization and validation functions
- * to ensure security and data integrity.
+ * Comprehensive tests for input validation and sanitization functions.
  */
 
 import {
@@ -21,17 +20,22 @@ import {
 } from '../../utils/validation';
 
 describe('Validation Utilities', () => {
-  // ==========================================
-  // Collection Name Tests
-  // ==========================================
   describe('sanitizeCollectionName', () => {
-    it('should trim whitespace', () => {
-      expect(sanitizeCollectionName('  My Collection  ')).toBe('My Collection');
+    it('should return empty string for null/undefined', () => {
+      expect(sanitizeCollectionName(null)).toBe('');
+      expect(sanitizeCollectionName(undefined)).toBe('');
     });
 
-    it('should remove dangerous characters', () => {
-      expect(sanitizeCollectionName('My <script>alert("xss")</script> Collection')).toBe('My scriptalert("xss")/script Collection');
-      expect(sanitizeCollectionName('Test {injection}')).toBe('Test injection');
+    it('should return empty string for non-string values', () => {
+      expect(sanitizeCollectionName(123)).toBe('');
+      expect(sanitizeCollectionName({})).toBe('');
+      expect(sanitizeCollectionName([])).toBe('');
+    });
+
+    it('should trim whitespace', () => {
+      expect(sanitizeCollectionName('  Test  ')).toBe('Test');
+      expect(sanitizeCollectionName('\tTabbed\t')).toBe('Tabbed');
+      expect(sanitizeCollectionName('\n\nNewlines\n\n')).toBe('Newlines');
     });
 
     it('should limit length to 100 characters', () => {
@@ -39,52 +43,54 @@ describe('Validation Utilities', () => {
       expect(sanitizeCollectionName(longName).length).toBe(100);
     });
 
-    it('should return empty string for null/undefined', () => {
-      expect(sanitizeCollectionName(null)).toBe('');
-      expect(sanitizeCollectionName(undefined)).toBe('');
+    it('should remove dangerous characters', () => {
+      expect(sanitizeCollectionName('<script>alert(1)</script>')).toBe('scriptalert(1)/script');
+      expect(sanitizeCollectionName('Test{inject}')).toBe('Testinject');
+      expect(sanitizeCollectionName('Valid Name')).toBe('Valid Name');
     });
 
-    it('should return empty string for non-string inputs', () => {
-      expect(sanitizeCollectionName(123)).toBe('');
-      expect(sanitizeCollectionName({})).toBe('');
-      expect(sanitizeCollectionName([])).toBe('');
+    it('should handle XSS attempts', () => {
+      const result = sanitizeCollectionName('<img src=x onerror=alert(1)>');
+      expect(result).not.toContain('<');
+      expect(result).not.toContain('>');
     });
   });
 
   describe('validateCollectionName', () => {
-    it('should accept valid names', () => {
-      expect(validateCollectionName('My Games').valid).toBe(true);
-      expect(validateCollectionName('A').valid).toBe(true);
-      expect(validateCollectionName('RPG Games 2024').valid).toBe(true);
+    it('should return invalid for empty names', () => {
+      expect(validateCollectionName('').valid).toBe(false);
+      expect(validateCollectionName('').error).toBe('Collection name is required');
     });
 
-    it('should reject empty names', () => {
-      const result = validateCollectionName('');
-      expect(result.valid).toBe(false);
-      expect(result.error).toBe('Collection name is required');
-    });
-
-    it('should reject whitespace-only names', () => {
-      const result = validateCollectionName('   ');
-      expect(result.valid).toBe(false);
-    });
-
-    it('should reject null/undefined', () => {
+    it('should return invalid for null/undefined', () => {
       expect(validateCollectionName(null).valid).toBe(false);
       expect(validateCollectionName(undefined).valid).toBe(false);
     });
-  });
 
-  // ==========================================
-  // Collection Description Tests
-  // ==========================================
-  describe('sanitizeCollectionDescription', () => {
-    it('should trim whitespace', () => {
-      expect(sanitizeCollectionDescription('  Description  ')).toBe('Description');
+    it('should return invalid for whitespace-only names', () => {
+      expect(validateCollectionName('   ').valid).toBe(false);
+      expect(validateCollectionName('\t\t').valid).toBe(false);
     });
 
-    it('should remove dangerous characters', () => {
-      expect(sanitizeCollectionDescription('Desc <script>bad</script>')).toBe('Desc scriptbad/script');
+    it('should return valid for proper names', () => {
+      expect(validateCollectionName('My Collection').valid).toBe(true);
+      expect(validateCollectionName('My Collection').error).toBeNull();
+    });
+
+    it('should accept names at boundary lengths', () => {
+      expect(validateCollectionName('A').valid).toBe(true);
+      expect(validateCollectionName('a'.repeat(100)).valid).toBe(true);
+    });
+  });
+
+  describe('sanitizeCollectionDescription', () => {
+    it('should return empty string for null/undefined', () => {
+      expect(sanitizeCollectionDescription(null)).toBe('');
+      expect(sanitizeCollectionDescription(undefined)).toBe('');
+    });
+
+    it('should trim whitespace', () => {
+      expect(sanitizeCollectionDescription('  Description  ')).toBe('Description');
     });
 
     it('should limit length to 500 characters', () => {
@@ -92,234 +98,230 @@ describe('Validation Utilities', () => {
       expect(sanitizeCollectionDescription(longDesc).length).toBe(500);
     });
 
-    it('should return empty string for null/undefined', () => {
-      expect(sanitizeCollectionDescription(null)).toBe('');
-      expect(sanitizeCollectionDescription(undefined)).toBe('');
+    it('should remove dangerous characters', () => {
+      expect(sanitizeCollectionDescription('<script>bad</script>')).toBe('scriptbad/script');
     });
   });
 
   describe('validateCollectionDescription', () => {
-    it('should accept valid descriptions', () => {
-      expect(validateCollectionDescription('A collection of games').valid).toBe(true);
-    });
-
-    it('should accept empty/null descriptions (optional field)', () => {
+    it('should return valid for empty/null (optional field)', () => {
       expect(validateCollectionDescription('').valid).toBe(true);
       expect(validateCollectionDescription(null).valid).toBe(true);
       expect(validateCollectionDescription(undefined).valid).toBe(true);
     });
+
+    it('should return valid for normal descriptions', () => {
+      expect(validateCollectionDescription('A nice collection of games').valid).toBe(true);
+    });
+
+    it('should handle descriptions at max length', () => {
+      expect(validateCollectionDescription('a'.repeat(500)).valid).toBe(true);
+    });
   });
 
-  // ==========================================
-  // Roblox Username Tests
-  // ==========================================
   describe('sanitizeRobloxUsername', () => {
-    it('should trim whitespace', () => {
-      expect(sanitizeRobloxUsername('  Player123  ')).toBe('Player123');
-    });
-
-    it('should remove special characters', () => {
-      expect(sanitizeRobloxUsername('Player@123!')).toBe('Player123');
-      expect(sanitizeRobloxUsername('Player<script>')).toBe('Playerscript');
-    });
-
-    it('should allow underscores', () => {
-      expect(sanitizeRobloxUsername('Player_Name')).toBe('Player_Name');
-    });
-
-    it('should limit length to 20 characters', () => {
-      const longName = 'a'.repeat(30);
-      expect(sanitizeRobloxUsername(longName).length).toBe(20);
-    });
-
     it('should return empty string for null/undefined', () => {
       expect(sanitizeRobloxUsername(null)).toBe('');
       expect(sanitizeRobloxUsername(undefined)).toBe('');
     });
+
+    it('should trim whitespace', () => {
+      expect(sanitizeRobloxUsername('  Player123  ')).toBe('Player123');
+    });
+
+    it('should limit length to 20 characters', () => {
+      const longUsername = 'a'.repeat(30);
+      expect(sanitizeRobloxUsername(longUsername).length).toBe(20);
+    });
+
+    it('should only allow alphanumeric and underscore', () => {
+      expect(sanitizeRobloxUsername('Player_123')).toBe('Player_123');
+      expect(sanitizeRobloxUsername('Player@123')).toBe('Player123');
+      expect(sanitizeRobloxUsername('Player 123')).toBe('Player123');
+      expect(sanitizeRobloxUsername('Player-123')).toBe('Player123');
+    });
+
+    it('should handle special characters', () => {
+      expect(sanitizeRobloxUsername('<script>')).toBe('script');
+      expect(sanitizeRobloxUsername("'; DROP TABLE users;--")).toBe('DROPTABLEusers');
+    });
   });
 
   describe('validateRobloxUsername', () => {
-    it('should accept valid usernames', () => {
-      expect(validateRobloxUsername('Player123').valid).toBe(true);
-      expect(validateRobloxUsername('Cool_Player').valid).toBe(true);
-      expect(validateRobloxUsername('ABC').valid).toBe(true);
-    });
-
-    it('should reject usernames starting with numbers', () => {
-      const result = validateRobloxUsername('123Player');
-      expect(result.valid).toBe(false);
-      expect(result.error).toContain('cannot start with a number');
-    });
-
-    it('should reject usernames shorter than 3 characters', () => {
-      const result = validateRobloxUsername('AB');
-      expect(result.valid).toBe(false);
-      expect(result.error).toContain('at least 3 characters');
-    });
-
-    it('should reject empty usernames', () => {
+    it('should return invalid for empty usernames', () => {
       expect(validateRobloxUsername('').valid).toBe(false);
-      expect(validateRobloxUsername(null).valid).toBe(false);
+      expect(validateRobloxUsername('').error).toBe('Username is required');
+    });
+
+    it('should return invalid for usernames less than 3 characters', () => {
+      expect(validateRobloxUsername('AB').valid).toBe(false);
+      expect(validateRobloxUsername('AB').error).toBe('Username must be at least 3 characters');
+    });
+
+    it('should return invalid for usernames starting with number', () => {
+      expect(validateRobloxUsername('123Player').valid).toBe(false);
+      expect(validateRobloxUsername('123Player').error).toBe('Username cannot start with a number');
+    });
+
+    it('should return valid for proper usernames', () => {
+      expect(validateRobloxUsername('Player123').valid).toBe(true);
+      expect(validateRobloxUsername('Cool_Gamer').valid).toBe(true);
+      expect(validateRobloxUsername('ABC').valid).toBe(true);
     });
   });
 
-  // ==========================================
-  // Numeric ID Tests
-  // ==========================================
   describe('sanitizeNumericId', () => {
-    it('should accept valid numbers', () => {
-      expect(sanitizeNumericId(12345)).toBe(12345);
-      expect(sanitizeNumericId('67890')).toBe(67890);
+    it('should return number for valid positive numbers', () => {
+      expect(sanitizeNumericId(123)).toBe(123);
+      expect(sanitizeNumericId(1)).toBe(1);
+    });
+
+    it('should apply Math.abs for negative numbers', () => {
+      expect(sanitizeNumericId(-123)).toBe(123);
+      expect(sanitizeNumericId(-1)).toBe(1);
     });
 
     it('should floor decimal numbers', () => {
-      expect(sanitizeNumericId(123.456)).toBe(123);
+      expect(sanitizeNumericId(123.7)).toBe(123);
+      expect(sanitizeNumericId(1.9)).toBe(1);
     });
 
-    it('should convert negative to positive', () => {
-      expect(sanitizeNumericId(-123)).toBe(123);
+    it('should parse string numbers', () => {
+      expect(sanitizeNumericId('123')).toBe(123);
+      expect(sanitizeNumericId('-456')).toBe(456);
     });
 
     it('should return null for invalid inputs', () => {
-      expect(sanitizeNumericId('abc')).toBe(null);
-      expect(sanitizeNumericId(null)).toBe(null);
-      expect(sanitizeNumericId(undefined)).toBe(null);
-      expect(sanitizeNumericId({})).toBe(null);
+      expect(sanitizeNumericId(null)).toBeNull();
+      expect(sanitizeNumericId(undefined)).toBeNull();
+      expect(sanitizeNumericId('abc')).toBeNull();
+      expect(sanitizeNumericId('')).toBeNull();
+      expect(sanitizeNumericId({})).toBeNull();
+    });
+
+    it('should handle zero', () => {
+      expect(sanitizeNumericId(0)).toBe(0);
+      expect(sanitizeNumericId('0')).toBe(0);
     });
   });
 
   describe('validateNumericId', () => {
-    it('should accept valid positive IDs', () => {
-      expect(validateNumericId(12345).valid).toBe(true);
-      expect(validateNumericId('67890').valid).toBe(true);
+    it('should return valid for positive numbers', () => {
+      expect(validateNumericId(123).valid).toBe(true);
+      expect(validateNumericId(1).valid).toBe(true);
     });
 
-    it('should reject zero', () => {
-      const result = validateNumericId(0);
+    it('should return valid for negative numbers (abs applied)', () => {
+      // sanitizeNumericId converts -1 to 1, which is valid
+      expect(validateNumericId(-1).valid).toBe(true);
+    });
+
+    it('should return invalid for null', () => {
+      const result = validateNumericId(null, 'User ID');
       expect(result.valid).toBe(false);
-      expect(result.error).toContain('greater than 0');
+      expect(result.error).toBe('User ID must be a valid number');
     });
 
-    it('should reject invalid inputs', () => {
-      expect(validateNumericId('abc').valid).toBe(false);
-      expect(validateNumericId(null).valid).toBe(false);
+    it('should return invalid for non-numeric strings', () => {
+      const result = validateNumericId('abc', 'Game ID');
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Game ID must be a valid number');
     });
 
-    it('should use custom field name in error', () => {
-      const result = validateNumericId('abc', 'Universe ID');
-      expect(result.error).toContain('Universe ID');
+    it('should return invalid for zero (after sanitization)', () => {
+      const result = validateNumericId(0, 'Universe ID');
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Universe ID must be greater than 0');
+    });
+
+    it('should use default field name', () => {
+      const result = validateNumericId(null);
+      expect(result.error).toBe('ID must be a valid number');
     });
   });
 
-  // ==========================================
-  // Feedback Tests
-  // ==========================================
   describe('sanitizeFeedback', () => {
-    it('should accept valid feedback values', () => {
+    it('should accept -1, 0, 1', () => {
       expect(sanitizeFeedback(-1)).toBe(-1);
       expect(sanitizeFeedback(0)).toBe(0);
       expect(sanitizeFeedback(1)).toBe(1);
     });
 
-    it('should accept string feedback values', () => {
+    it('should parse string values', () => {
       expect(sanitizeFeedback('-1')).toBe(-1);
       expect(sanitizeFeedback('0')).toBe(0);
       expect(sanitizeFeedback('1')).toBe(1);
     });
 
     it('should return null for invalid values', () => {
-      expect(sanitizeFeedback(2)).toBe(null);
-      expect(sanitizeFeedback(-2)).toBe(null);
-      expect(sanitizeFeedback('abc')).toBe(null);
-      expect(sanitizeFeedback(null)).toBe(null);
+      expect(sanitizeFeedback(2)).toBeNull();
+      expect(sanitizeFeedback(-2)).toBeNull();
+      expect(sanitizeFeedback(10)).toBeNull();
+      expect(sanitizeFeedback('like')).toBeNull();
+      expect(sanitizeFeedback(null)).toBeNull();
     });
   });
 
   describe('validateFeedback', () => {
-    it('should accept valid feedback', () => {
+    it('should return valid for -1, 0, 1', () => {
       expect(validateFeedback(-1).valid).toBe(true);
       expect(validateFeedback(0).valid).toBe(true);
       expect(validateFeedback(1).valid).toBe(true);
     });
 
-    it('should reject invalid feedback', () => {
-      expect(validateFeedback(5).valid).toBe(false);
-      expect(validateFeedback('invalid').valid).toBe(false);
+    it('should return invalid for other values', () => {
+      expect(validateFeedback(2).valid).toBe(false);
+      expect(validateFeedback(2).error).toBe('Feedback must be -1, 0, or 1');
     });
   });
 
-  // ==========================================
-  // Pagination Tests
-  // ==========================================
   describe('sanitizeLimit', () => {
-    it('should accept valid limits', () => {
-      expect(sanitizeLimit(50)).toBe(50);
-      expect(sanitizeLimit('25')).toBe(25);
+    it('should return the limit if within max', () => {
+      expect(sanitizeLimit(10, 100)).toBe(10);
+      expect(sanitizeLimit(50, 100)).toBe(50);
     });
 
-    it('should enforce maximum limit', () => {
-      expect(sanitizeLimit(200)).toBe(100);
-      expect(sanitizeLimit(500, 50)).toBe(50);
+    it('should cap at max limit', () => {
+      expect(sanitizeLimit(150, 100)).toBe(100);
+      expect(sanitizeLimit(200, 50)).toBe(50);
     });
 
-    it('should return default for invalid inputs', () => {
-      expect(sanitizeLimit('abc')).toBe(10);
-      expect(sanitizeLimit(-5)).toBe(10);
-      expect(sanitizeLimit(0)).toBe(10);
+    it('should return default (10) for invalid values', () => {
+      expect(sanitizeLimit(-1, 100)).toBe(10);
+      expect(sanitizeLimit(0, 100)).toBe(10);
+      expect(sanitizeLimit('abc', 100)).toBe(10);
+      expect(sanitizeLimit(null, 100)).toBe(10);
+    });
+
+    it('should parse string numbers', () => {
+      expect(sanitizeLimit('25', 100)).toBe(25);
+    });
+
+    it('should use default max of 100', () => {
+      expect(sanitizeLimit(150)).toBe(100);
     });
   });
 
   describe('sanitizeOffset', () => {
-    it('should accept valid offsets', () => {
-      expect(sanitizeOffset(10)).toBe(10);
-      expect(sanitizeOffset('50')).toBe(50);
+    it('should return the offset for valid values', () => {
       expect(sanitizeOffset(0)).toBe(0);
+      expect(sanitizeOffset(10)).toBe(10);
+      expect(sanitizeOffset(100)).toBe(100);
     });
 
-    it('should return 0 for invalid inputs', () => {
+    it('should return 0 for negative values', () => {
+      expect(sanitizeOffset(-1)).toBe(0);
+      expect(sanitizeOffset(-100)).toBe(0);
+    });
+
+    it('should return 0 for invalid values', () => {
       expect(sanitizeOffset('abc')).toBe(0);
-      expect(sanitizeOffset(-5)).toBe(0);
       expect(sanitizeOffset(null)).toBe(0);
-    });
-  });
-
-  // ==========================================
-  // Security Tests (XSS Prevention)
-  // ==========================================
-  describe('XSS Prevention', () => {
-    const xssAttempts = [
-      '<script>alert("xss")</script>',
-      '<img src=x onerror=alert("xss")>',
-      '"><script>alert("xss")</script>',
-      "'; DROP TABLE users; --",
-      '${process.env.SECRET}',
-      '{{constructor.constructor("return this")()}}',
-    ];
-
-    it('should sanitize XSS attempts in collection names', () => {
-      xssAttempts.forEach(attempt => {
-        const sanitized = sanitizeCollectionName(attempt);
-        expect(sanitized).not.toContain('<');
-        expect(sanitized).not.toContain('>');
-        expect(sanitized).not.toContain('{');
-        expect(sanitized).not.toContain('}');
-      });
+      expect(sanitizeOffset(undefined)).toBe(0);
     });
 
-    it('should sanitize XSS attempts in descriptions', () => {
-      xssAttempts.forEach(attempt => {
-        const sanitized = sanitizeCollectionDescription(attempt);
-        expect(sanitized).not.toContain('<');
-        expect(sanitized).not.toContain('>');
-      });
-    });
-
-    it('should sanitize XSS attempts in usernames', () => {
-      xssAttempts.forEach(attempt => {
-        const sanitized = sanitizeRobloxUsername(attempt);
-        // Username should only contain alphanumeric and underscore
-        expect(sanitized).toMatch(/^[a-zA-Z0-9_]*$/);
-      });
+    it('should parse string numbers', () => {
+      expect(sanitizeOffset('50')).toBe(50);
     });
   });
 });

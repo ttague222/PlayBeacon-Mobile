@@ -21,7 +21,7 @@ import logger from '../utils/logger';
 const isExpoGo = Constants.appOwnership === 'expo';
 
 // Product ID - must match App Store Connect and Google Play Console
-export const PRODUCT_ID = 'playbeacon_remove_ads';
+export const PRODUCT_ID = 'com.playbeacon.app.removeads';
 
 // Storage key for local premium cache
 const PREMIUM_STORAGE_KEY = '@playbeacon_premium';

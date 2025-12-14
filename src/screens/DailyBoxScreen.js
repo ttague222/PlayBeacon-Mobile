@@ -116,6 +116,9 @@ export default function DailyBoxScreen({ onClose }) {
     // Run shake while calling API
     shakeAnimation.start();
 
+    // Play opening sound when box starts shaking
+    SoundManager.play('ui.tap');
+
     try {
       const result = await api.openDailyBox();
 
@@ -144,6 +147,9 @@ export default function DailyBoxScreen({ onClose }) {
 
       // Wait for box to disappear, then reveal game
       setTimeout(() => {
+        // Play reveal sound (confetti for the exciting reveal!)
+        SoundManager.play('rewards.confetti');
+
         setRevealedGame(result.game);
         setXpGained(result.xp_gained);
         setNewAchievements(result.new_achievements || []);
@@ -270,6 +276,9 @@ export default function DailyBoxScreen({ onClose }) {
 
     shakeAnimation.start();
 
+    // Play opening sound when box starts shaking
+    SoundManager.play('ui.tap');
+
     try {
       // Get a random game from queue for bonus box
       const queueData = await api.getQueue(1);
@@ -300,6 +309,9 @@ export default function DailyBoxScreen({ onClose }) {
       ]).start();
 
       setTimeout(() => {
+        // Play reveal sound (confetti for the exciting reveal!)
+        SoundManager.play('rewards.confetti');
+
         setRevealedGame(bonusGame);
         setXpGained(5); // Bonus XP for watching ad
         setNewAchievements([]);

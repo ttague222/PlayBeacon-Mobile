@@ -10,7 +10,6 @@ import {
   Alert,
 } from 'react-native';
 import { api } from '../services/api';
-import { useCollection } from '../context/CollectionContext';
 import { colors } from '../styles/colors';
 import logger from '../utils/logger';
 
@@ -18,9 +17,6 @@ export default function CollectionPickerModal({ visible, onClose, gameId, gameNa
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(null);
-
-  // Badge collection hook
-  const { triggerEvent } = useCollection();
 
   useEffect(() => {
     if (visible) {
@@ -45,10 +41,8 @@ export default function CollectionPickerModal({ visible, onClose, gameId, gameNa
     try {
       setAdding(collection.id);
       await api.addGameToCollection(collection.id, gameId);
-
-      // Trigger badge event for adding to collection
-      triggerEvent('ADD_TO_WISHLIST');
-
+      // Note: ADD_TO_WISHLIST is tracked when liking a game in the queue,
+      // not when organizing into collections (to avoid double-counting)
       Alert.alert('Success', `Added to "${collection.name}"`);
       onClose();
     } catch (error) {

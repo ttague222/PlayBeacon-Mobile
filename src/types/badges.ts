@@ -74,6 +74,9 @@ export interface CollectionStats {
   totalPlayTime: number; // minutes
   tasksCompleted: number;
   mysteryBoxOpened: number;
+  tutorialsCompleted: number;
+  gamesShared: number;
+  categoriesExplored: number;
 }
 
 // Badge event types

@@ -9,7 +9,7 @@
  * - User stats and history
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -28,10 +28,13 @@ import { useAuth } from '../context/AuthContext';
 import SoundManager from '../services/SoundManager';
 import { usePremium } from '../context/PremiumContext';
 import ParentalGate from '../components/ParentalGate';
+import ProfileAvatar from '../components/ProfileAvatar';
+import AnimalPickerModal from '../components/AnimalPickerModal';
 import { api } from '../services/api';
 import { colors } from '../styles/colors';
 import { typography, radii } from '../styles/kidTheme';
 import { validateRobloxUsername, sanitizeRobloxUsername } from '../utils/validation';
+import { clearAllLocalData } from '../utils/resetApp';
 import logger from '../utils/logger';
 
 export default function ProfileScreen() {
@@ -61,6 +64,10 @@ export default function ProfileScreen() {
   const [showParentalGate, setShowParentalGate] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
 
+  // Animal picker state
+  const [animalPickerVisible, setAnimalPickerVisible] = useState(false);
+  const [selectedAnimalId, setSelectedAnimalId] = useState(null);
+
   const accountStatus = getAccountStatus();
   const appVersion = Constants.expoConfig?.version || '1.0.0';
 
@@ -74,6 +81,10 @@ export default function ProfileScreen() {
       setError(null);
       const data = await api.getUserStats();
       setStats(data);
+      // Set selected animal from user stats
+      if (data.selected_animal_id) {
+        setSelectedAnimalId(data.selected_animal_id);
+      }
     } catch (error) {
       logger.error('Failed to fetch user stats:', error);
       setError('Failed to load profile data. Please check your connection.');
@@ -81,6 +92,16 @@ export default function ProfileScreen() {
       setLoading(false);
     }
   };
+
+  const handleAvatarPress = useCallback(() => {
+    SoundManager.play('ui.tap');
+    SoundManager.play('ui.modal_open');
+    setAnimalPickerVisible(true);
+  }, []);
+
+  const handleAnimalSelect = useCallback((animalId) => {
+    setSelectedAnimalId(animalId === 'none' ? null : animalId);
+  }, []);
 
   const handleViewHistory = async (type) => {
     SoundManager.play('ui.tap');
@@ -128,7 +149,7 @@ export default function ProfileScreen() {
     SoundManager.play('ui.tap');
     Alert.alert(
       'Start Fresh',
-      'This will create a new anonymous account. Your current data will be lost unless you have linked a Google account. Are you sure?',
+      'This will completely reset the app - clearing all progress, badges, settings, and starting from the tutorial. Are you sure?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -136,7 +157,11 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              // Clear all local data (badges, tutorial, age verification, etc.)
+              await clearAllLocalData();
+              // Sign out and create new anonymous account
               await logout();
+              // The app will restart at age verification/tutorial
             } catch (error) {
               Alert.alert('Error', error.message);
             }
@@ -309,16 +334,13 @@ export default function ProfileScreen() {
         {/* Account Avatar & Info */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
-            <Ionicons
-              name={accountStatus.type === 'google' ? 'person-circle' : 'person-circle-outline'}
+            <ProfileAvatar
+              animalId={selectedAnimalId}
               size={64}
-              color={accountStatus.type === 'google' ? colors.accent.primary : colors.text.tertiary}
+              onPress={handleAvatarPress}
+              showEditBadge={true}
+              isGoogleLinked={accountStatus.type === 'google'}
             />
-            {accountStatus.type === 'google' && (
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-              </View>
-            )}
           </View>
           <View style={styles.profileInfo}>
             {stats?.roblox_username ? (
@@ -570,7 +592,7 @@ export default function ProfileScreen() {
               </View>
               <View>
                 <Text style={styles.settingsRowText}>Start Fresh</Text>
-                <Text style={styles.settingsRowSubtext}>Create new anonymous account</Text>
+                <Text style={styles.settingsRowSubtext}>Reset app and restart tutorial</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -682,6 +704,17 @@ export default function ProfileScreen() {
         visible={showParentalGate}
         onPass={handleParentalGatePass}
         onCancel={handleParentalGateCancel}
+      />
+
+      {/* Animal Picker Modal */}
+      <AnimalPickerModal
+        visible={animalPickerVisible}
+        onClose={() => {
+          SoundManager.play('ui.modal_close');
+          setAnimalPickerVisible(false);
+        }}
+        selectedAnimalId={selectedAnimalId}
+        onSelect={handleAnimalSelect}
       />
     </ScrollView>
   );

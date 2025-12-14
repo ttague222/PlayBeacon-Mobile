@@ -65,11 +65,7 @@ export default function QueueScreen() {
       setError(null);
       const data = await api.getQueue(10);
       setGames(data.games || []);
-
-      // Track game views for badges
-      if (data.games && data.games.length > 0) {
-        triggerEvent('VIEW_GAME', data.games.length);
-      }
+      // Note: VIEW_GAME is tracked per swipe interaction, not on queue load
     } catch (error) {
       logger.error('Error loading queue:', error);
       setError('Failed to load games. Please check your connection.');
@@ -91,7 +87,8 @@ export default function QueueScreen() {
       SoundManager.playEvent('SKIP_GAME');
     }
 
-    // Track swipe for badge progress
+    // Track game view and swipe for badge progress
+    triggerEvent('VIEW_GAME');
     triggerEvent('SWIPE_DISCOVERY');
 
     // Track wishlist add if user liked the game
@@ -127,6 +124,9 @@ export default function QueueScreen() {
   const openRobloxGame = async () => {
     const currentGame = games[currentIndex];
     if (!currentGame || !currentGame.root_place_id) return;
+
+    // Track recommendation tap for badge progress (user acted on our recommendation)
+    triggerEvent('TAP_RECOMMENDATION');
 
     const url = `https://www.roblox.com/games/${currentGame.root_place_id}`;
 
@@ -189,7 +189,10 @@ export default function QueueScreen() {
                 styles.dailyBoxButton,
                 dailyBoxStatus.is_available && styles.dailyBoxButtonAvailable,
               ]}
-              onPress={() => setDailyBoxModalVisible(true)}
+              onPress={() => {
+                SoundManager.play('ui.tap');
+                setDailyBoxModalVisible(true);
+              }}
             >
               <Text style={styles.dailyBoxButtonEmoji}>🎁</Text>
               {dailyBoxStatus.is_available && <View style={styles.dailyBoxDot} />}

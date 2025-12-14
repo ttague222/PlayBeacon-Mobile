@@ -218,6 +218,16 @@ export const api = {
     return response.data;
   },
 
+  updateProfileAnimal: async (animalId) => {
+    if (!animalId || typeof animalId !== 'string') {
+      throw new Error('Invalid animal ID');
+    }
+    const response = await apiClient.put('/user/profile-animal', {
+      animal_id: animalId.trim().toLowerCase(),
+    });
+    return response.data;
+  },
+
   // Collections
   getCollections: async () => {
     const response = await apiClient.get('/collections');

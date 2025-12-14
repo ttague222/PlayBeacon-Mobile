@@ -2,10 +2,10 @@
  * AnimatedDislikeButton
  *
  * A dislike button with Lottie animation support.
- * Plays a thumbs down animation when pressed.
+ * Shows an X icon by default, plays animation on press, then returns to X.
  */
-import React, { useRef, useCallback } from 'react';
-import { TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useRef, useCallback, useState } from 'react';
+import { TouchableOpacity, StyleSheet, View } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../styles/colors';
@@ -25,10 +25,12 @@ const AnimatedDislikeButton = ({
   iconSize = 32,
 }) => {
   const animationRef = useRef(null);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const handlePress = useCallback(() => {
     // Play animation if available
     if (animationRef.current && dislikeAnimation) {
+      setIsAnimating(true);
       animationRef.current.reset();
       animationRef.current.play();
     }
@@ -38,6 +40,10 @@ const AnimatedDislikeButton = ({
       onPress();
     }
   }, [onPress]);
+
+  const handleAnimationFinish = useCallback(() => {
+    setIsAnimating(false);
+  }, []);
 
   const buttonSize = {
     width: size,
@@ -52,17 +58,24 @@ const AnimatedDislikeButton = ({
       disabled={disabled}
       activeOpacity={0.8}
     >
-      {dislikeAnimation ? (
+      {/* Static X icon - visible when not animating */}
+      {!isAnimating && (
+        <View style={styles.iconContainer}>
+          <Ionicons name="close" size={iconSize} color={colors.text.primary} />
+        </View>
+      )}
+
+      {/* Lottie animation - plays on press, hidden when complete */}
+      {dislikeAnimation && (
         <LottieView
           ref={animationRef}
           source={dislikeAnimation}
-          style={styles.animation}
+          style={[styles.animation, !isAnimating && styles.hidden]}
           autoPlay={false}
           loop={false}
           speed={1.5}
+          onAnimationFinish={handleAnimationFinish}
         />
-      ) : (
-        <Ionicons name="close" size={iconSize} color={colors.text.primary} />
       )}
     </TouchableOpacity>
   );
@@ -80,9 +93,18 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
+  iconContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   animation: {
+    ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
+  },
+  hidden: {
+    opacity: 0,
   },
 });
 
