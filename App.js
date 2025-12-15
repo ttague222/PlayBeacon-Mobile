@@ -14,40 +14,49 @@ import { ErrorBoundary } from './src/components';
 import { initializeSentry } from './src/config/sentry';
 import * as Sentry from '@sentry/react-native';
 
+// Track if Sentry initialized successfully
+let sentryInitialized = false;
+
 // Only initialize Sentry if DSN is provided via environment variable
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
 if (sentryDsn) {
-  Sentry.init({
-    dsn: sentryDsn,
+  try {
+    Sentry.init({
+      dsn: sentryDsn,
 
-    // COPPA Compliance: Do NOT send PII (IP address, cookies, user data, etc.)
-    // This app is intended for children under 13
-    sendDefaultPii: false,
+      // COPPA Compliance: Do NOT send PII (IP address, cookies, user data, etc.)
+      // This app is intended for children under 13
+      sendDefaultPii: false,
 
-    // Enable error logging only (not verbose)
-    enableLogs: false,
+      // Enable error logging only (not verbose)
+      enableLogs: false,
 
-    // Configure Session Replay - disabled for privacy (COPPA compliance)
-    replaysSessionSampleRate: 0,
-    replaysOnErrorSampleRate: 0,
-    integrations: [Sentry.mobileReplayIntegration()],
+      // Disable Session Replay entirely for COPPA compliance and stability
+      // mobileReplayIntegration can cause iOS crashes if not properly configured
+      replaysSessionSampleRate: 0,
+      replaysOnErrorSampleRate: 0,
 
-    // Filter sensitive data from breadcrumbs
-    beforeBreadcrumb(breadcrumb) {
-      // Don't send navigation breadcrumbs with user data
-      if (breadcrumb.category === 'navigation') {
-        return null;
-      }
-      return breadcrumb;
-    },
-  });
+      // Filter sensitive data from breadcrumbs
+      beforeBreadcrumb(breadcrumb) {
+        // Don't send navigation breadcrumbs with user data
+        if (breadcrumb.category === 'navigation') {
+          return null;
+        }
+        return breadcrumb;
+      },
+    });
+    sentryInitialized = true;
+  } catch (error) {
+    // Silently fail Sentry initialization to prevent app crashes
+    console.warn('Sentry initialization failed:', error);
+  }
 }
 
 // Initialize error tracking
 // Logs errors to Firestore in production for monitoring
 initializeSentry();
 
-export default Sentry.wrap(function App() {
+function App() {
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
@@ -73,10 +82,14 @@ export default Sentry.wrap(function App() {
       </SafeAreaProvider>
     </ErrorBoundary>
   );
-});
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
 });
+
+// Only wrap with Sentry if it initialized successfully
+// This prevents white screen crashes on iOS if Sentry has issues
+export default sentryInitialized ? Sentry.wrap(App) : App;
