@@ -27,6 +27,7 @@ import { colors } from '../styles/colors';
 import { radii, shadows } from '../styles/kidTheme';
 import { setAgeVerificationStatus } from '../utils/ageVerification';
 import PrivacyPolicyScreen from './PrivacyPolicyScreen';
+import TermsOfServiceScreen from './TermsOfServiceScreen';
 import SoundManager from '../services/SoundManager';
 
 // Lighthouse animation for welcome screen
@@ -45,6 +46,7 @@ export default function AgeVerificationScreen({ onComplete }) {
   const [selectedYear, setSelectedYear] = useState(null);
   const [isChild, setIsChild] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showTermsOfService, setShowTermsOfService] = useState(false);
 
   // Animation values for welcome screen
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -280,11 +282,29 @@ export default function AgeVerificationScreen({ onComplete }) {
             <Text style={styles.secondaryButtonText}>Go Back</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => setShowPrivacyPolicy(true)}>
-            <Text style={styles.policyLink}>
-              📜 Read our Privacy Policy
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.legalLinks}>
+            <TouchableOpacity
+              onPress={() => setShowPrivacyPolicy(true)}
+              accessible={true}
+              accessibilityLabel="Read our Privacy Policy"
+              accessibilityRole="link"
+            >
+              <Text style={styles.policyLink}>
+                📜 Privacy Policy
+              </Text>
+            </TouchableOpacity>
+            <Text style={styles.linkSeparator}>|</Text>
+            <TouchableOpacity
+              onPress={() => setShowTermsOfService(true)}
+              accessible={true}
+              accessibilityLabel="Read our Terms of Service"
+              accessibilityRole="link"
+            >
+              <Text style={styles.policyLink}>
+                📋 Terms of Service
+              </Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
 
         {/* Privacy Policy Modal */}
@@ -294,6 +314,15 @@ export default function AgeVerificationScreen({ onComplete }) {
           presentationStyle="pageSheet"
         >
           <PrivacyPolicyScreen onClose={() => setShowPrivacyPolicy(false)} />
+        </Modal>
+
+        {/* Terms of Service Modal */}
+        <Modal
+          visible={showTermsOfService}
+          animationType="slide"
+          presentationStyle="pageSheet"
+        >
+          <TermsOfServiceScreen onClose={() => setShowTermsOfService(false)} />
         </Modal>
       </SafeAreaView>
     );
@@ -511,8 +540,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.accent.primary,
     textAlign: 'center',
+    textDecorationLine: 'underline',
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginTop: 20,
     paddingHorizontal: 32,
-    textDecorationLine: 'underline',
+    gap: 12,
+  },
+  linkSeparator: {
+    fontSize: 14,
+    color: colors.text.tertiary,
   },
 });
