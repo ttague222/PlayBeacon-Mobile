@@ -16,7 +16,6 @@ const SOUNDS_ENABLED = true;
  */
 export const SoundCategory = {
   UI: 'ui',
-  BEAR: 'bear',
   REWARDS: 'rewards',
   SYSTEM: 'system',
 };
@@ -39,18 +38,6 @@ const SOUND_FILES = {
   'ui.like': require('../../assets/sounds/ui/like.mp3'),
   'ui.dislike': require('../../assets/sounds/ui/dislike.mp3'),
   'ui.skip': require('../../assets/sounds/ui/skip.mp3'),
-
-  // Bear sounds
-  'bear.celebrate': require('../../assets/sounds/bear/celebrate.mp3'),
-  'bear.sad': require('../../assets/sounds/bear/sad.mp3'),
-  'bear.sleep': require('../../assets/sounds/bear/sleep.mp3'),
-  'bear.sniff': require('../../assets/sounds/bear/sniff.mp3'),
-  'bear.happy': require('../../assets/sounds/bear/happy.mp3'),
-  'bear.earwiggle': require('../../assets/sounds/bear/earwiggle.mp3'),
-  // Aliases for bear sounds referenced in Bear.js
-  'bear.surprise': require('../../assets/sounds/bear/happy.mp3'), // Use happy as surprise
-  'bear.pawpop': require('../../assets/sounds/ui/tap.mp3'), // Use tap for paw pop
-  'bear.tailwag': require('../../assets/sounds/bear/happy.mp3'), // Use happy for tail wag
 
   // Reward sounds
   'rewards.achievement': require('../../assets/sounds/rewards/achievement.mp3'),
@@ -85,14 +72,6 @@ export const EVENT_SOUND_MAP = {
   'DISLIKE_GAME': 'ui.dislike',
   'SKIP_GAME': 'ui.skip',
 
-  // Bear events
-  'BEAR_TAP': 'bear.pawpop',
-  'BEAR_CELEBRATE': 'bear.celebrate',
-  'BEAR_SAD': 'bear.sad',
-  'BEAR_SLEEP': 'bear.sleep',
-  'BEAR_SURPRISE': 'bear.surprise',
-  'BEAR_HAPPY': 'bear.happy',
-
   // Reward events
   'ACHIEVEMENT_UNLOCK': 'rewards.achievement',
   'STREAK_MILESTONE': 'rewards.streak',
@@ -107,20 +86,30 @@ export const EVENT_SOUND_MAP = {
   'LOADING_COMPLETE': 'system.loading_complete',
 };
 
+/**
+ * Rate limits per category (in milliseconds)
+ * Prevents audio issues from rapid repeated plays
+ */
+const CATEGORY_RATE_LIMITS = {
+  [SoundCategory.UI]: 100,      // 100ms - allow fairly rapid UI feedback
+  [SoundCategory.REWARDS]: 500, // 500ms - rewards shouldn't overlap
+  [SoundCategory.SYSTEM]: 300,  // 300ms - system sounds need some gap
+};
+
 class SoundManagerClass {
   constructor() {
     this.isEnabled = true;
-    this.isBearSoundEnabled = false; // Disabled - bear animation files not working
     this.masterVolume = 0.7;
     this.isInitialized = false;
     this.loadedSounds = {};
     this.categoryVolumes = {
       [SoundCategory.UI]: 0.5,
-      [SoundCategory.BEAR]: 0.4,
       [SoundCategory.REWARDS]: 0.6,
       [SoundCategory.SYSTEM]: 0.5,
     };
     this.reduceLoudSounds = false;
+    // Rate limiting: track last play time per sound key
+    this.lastPlayTime = {};
   }
 
   /**
@@ -144,6 +133,23 @@ class SoundManagerClass {
     }
 
     return Math.min(1, Math.max(0, volume));
+  }
+
+  /**
+   * Check if sound can be played based on rate limiting
+   */
+  _canPlaySound(soundKey) {
+    const now = Date.now();
+    const lastTime = this.lastPlayTime[soundKey] || 0;
+    const category = this._getCategoryFromKey(soundKey);
+    const rateLimit = CATEGORY_RATE_LIMITS[category] || 100;
+
+    if (now - lastTime < rateLimit) {
+      return false;
+    }
+
+    this.lastPlayTime[soundKey] = now;
+    return true;
   }
 
   /**
@@ -204,13 +210,16 @@ class SoundManagerClass {
 
   /**
    * Play a sound by key
+   * @param {string} soundKey - The sound key to play
+   * @param {Object} options - Options object
+   * @param {number} options.volume - Override volume (0-1)
+   * @param {boolean} options.bypassRateLimit - Skip rate limiting check
    */
   async play(soundKey, options = {}) {
     if (!SOUNDS_ENABLED || !this.isEnabled) return false;
 
-    // Check if bear sounds are disabled
-    const category = this._getCategoryFromKey(soundKey);
-    if (category === SoundCategory.BEAR && !this.isBearSoundEnabled) {
+    // Check rate limiting unless bypassed
+    if (!options.bypassRateLimit && !this._canPlaySound(soundKey)) {
       return false;
     }
 
@@ -303,13 +312,6 @@ class SoundManagerClass {
   }
 
   /**
-   * Enable/disable bear sounds only
-   */
-  setBearSoundEnabled(enabled) {
-    this.isBearSoundEnabled = enabled;
-  }
-
-  /**
    * Set master volume (0-1)
    */
   setMasterVolume(volume) {
@@ -336,7 +338,6 @@ class SoundManagerClass {
   getSettings() {
     return {
       isEnabled: this.isEnabled,
-      isBearSoundEnabled: this.isBearSoundEnabled,
       masterVolume: this.masterVolume,
       categoryVolumes: { ...this.categoryVolumes },
       reduceLoudSounds: this.reduceLoudSounds,
@@ -348,7 +349,6 @@ class SoundManagerClass {
    */
   applySettings(settings) {
     if (settings.isEnabled !== undefined) this.isEnabled = settings.isEnabled;
-    if (settings.isBearSoundEnabled !== undefined) this.isBearSoundEnabled = settings.isBearSoundEnabled;
     if (settings.masterVolume !== undefined) this.masterVolume = settings.masterVolume;
     if (settings.categoryVolumes) this.categoryVolumes = { ...this.categoryVolumes, ...settings.categoryVolumes };
     if (settings.reduceLoudSounds !== undefined) this.reduceLoudSounds = settings.reduceLoudSounds;

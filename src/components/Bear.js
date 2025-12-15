@@ -21,8 +21,28 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LottieView from 'lottie-react-native';
-import { ANIMATIONS } from '../config/animations';
 import SoundManager from '../services/SoundManager';
+
+// Bear mascot animations are disabled - return null for all
+const MASCOT_ANIMATIONS = {
+  idle: null,
+  blink: null,
+  sleep: null,
+  point_left: null,
+  point_right: null,
+  wave: null,
+  celebrate: null,
+  sad: null,
+  think: null,
+  surprise: null,
+  jump: null,
+  yes: null,
+  no: null,
+  tail_wag: null,
+  ear_wiggle: null,
+  tap_bounce: null,
+  paw_pop: null,
+};
 
 /**
  * Bear animation states
@@ -49,25 +69,26 @@ export const BearState = {
 
 /**
  * Maps state names to animation sources
+ * Note: All animations are currently disabled
  */
 const STATE_TO_ANIMATION = {
-  [BearState.IDLE]: ANIMATIONS.mascot.idle,
-  [BearState.BLINK]: ANIMATIONS.mascot.blink,
-  [BearState.CELEBRATE]: ANIMATIONS.mascot.celebrate,
-  [BearState.SAD]: ANIMATIONS.mascot.sad,
-  [BearState.THINK]: ANIMATIONS.mascot.think,
-  [BearState.POINT_LEFT]: ANIMATIONS.mascot.point_left,
-  [BearState.POINT_RIGHT]: ANIMATIONS.mascot.point_right,
-  [BearState.WAVE]: ANIMATIONS.mascot.wave,
-  [BearState.SLEEP]: ANIMATIONS.mascot.sleep,
-  [BearState.JUMP]: ANIMATIONS.mascot.jump,
-  [BearState.PAW_POP]: ANIMATIONS.mascot.paw_pop,
-  [BearState.NO]: ANIMATIONS.mascot.no,
-  [BearState.YES]: ANIMATIONS.mascot.yes,
-  [BearState.TAP_BOUNCE]: ANIMATIONS.mascot.tap_bounce,
-  [BearState.SURPRISE]: ANIMATIONS.mascot.surprise,
-  [BearState.EAR_WIGGLE]: ANIMATIONS.mascot.ear_wiggle,
-  [BearState.TAIL_WAG]: ANIMATIONS.mascot.tail_wag,
+  [BearState.IDLE]: MASCOT_ANIMATIONS.idle,
+  [BearState.BLINK]: MASCOT_ANIMATIONS.blink,
+  [BearState.CELEBRATE]: MASCOT_ANIMATIONS.celebrate,
+  [BearState.SAD]: MASCOT_ANIMATIONS.sad,
+  [BearState.THINK]: MASCOT_ANIMATIONS.think,
+  [BearState.POINT_LEFT]: MASCOT_ANIMATIONS.point_left,
+  [BearState.POINT_RIGHT]: MASCOT_ANIMATIONS.point_right,
+  [BearState.WAVE]: MASCOT_ANIMATIONS.wave,
+  [BearState.SLEEP]: MASCOT_ANIMATIONS.sleep,
+  [BearState.JUMP]: MASCOT_ANIMATIONS.jump,
+  [BearState.PAW_POP]: MASCOT_ANIMATIONS.paw_pop,
+  [BearState.NO]: MASCOT_ANIMATIONS.no,
+  [BearState.YES]: MASCOT_ANIMATIONS.yes,
+  [BearState.TAP_BOUNCE]: MASCOT_ANIMATIONS.tap_bounce,
+  [BearState.SURPRISE]: MASCOT_ANIMATIONS.surprise,
+  [BearState.EAR_WIGGLE]: MASCOT_ANIMATIONS.ear_wiggle,
+  [BearState.TAIL_WAG]: MASCOT_ANIMATIONS.tail_wag,
 };
 
 /**
@@ -379,13 +400,18 @@ export default function Bear({
 
   // Entrance animation
   useEffect(() => {
-    Animated.spring(scaleAnim, {
+    const animation = Animated.spring(scaleAnim, {
       toValue: 1,
       friction: 8,
       tension: 40,
       useNativeDriver: true,
-    }).start();
-  }, []);
+    });
+    animation.start();
+
+    return () => {
+      animation.stop();
+    };
+  }, [scaleAnim]);
 
   if (!animationSource) {
     return <View style={[styles.placeholder, { width: size, height: size }, style]} />;

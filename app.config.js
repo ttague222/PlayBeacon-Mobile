@@ -63,9 +63,9 @@ export default ({ config }) => {
       [
         'react-native-google-mobile-ads',
         {
-          // Google's official test app IDs - replace with real IDs for production
-          androidAppId: 'ca-app-pub-3940256099942544~3347511713',
-          iosAppId: 'ca-app-pub-3940256099942544~1458002511',
+          // Use production App IDs from env vars, fall back to test IDs for development
+          androidAppId: process.env.EXPO_PUBLIC_ADMOB_APP_ID_ANDROID || 'ca-app-pub-3940256099942544~3347511713',
+          iosAppId: process.env.EXPO_PUBLIC_ADMOB_APP_ID_IOS || 'ca-app-pub-3940256099942544~1458002511',
           userTrackingUsageDescription: 'This identifier will be used to deliver personalized ads to you.',
         },
       ],

@@ -23,11 +23,9 @@ import { colors } from '../styles/colors';
 export default function SoundSettings() {
   const {
     soundEnabled,
-    bearSoundEnabled,
     masterVolume,
     reduceLoudSounds,
     toggleSound,
-    toggleBearSound,
     toggleReduceLoudSounds,
     setMasterVolume,
     resetSettings,
@@ -50,25 +48,6 @@ export default function SoundSettings() {
           onValueChange={toggleSound}
           trackColor={{ false: colors.background.tertiary, true: colors.accent.primary }}
           thumbColor={soundEnabled ? colors.text.primary : colors.text.secondary}
-        />
-      </View>
-
-      {/* Bear Sounds Toggle */}
-      <View style={[styles.settingRow, !soundEnabled && styles.disabled]}>
-        <View style={styles.settingInfo}>
-          <Text style={[styles.settingLabel, !soundEnabled && styles.disabledText]}>
-            Bear Sounds
-          </Text>
-          <Text style={[styles.settingDescription, !soundEnabled && styles.disabledText]}>
-            Sound effects when Bear reacts
-          </Text>
-        </View>
-        <Switch
-          value={bearSoundEnabled && soundEnabled}
-          onValueChange={toggleBearSound}
-          disabled={!soundEnabled}
-          trackColor={{ false: colors.background.tertiary, true: colors.accent.secondary }}
-          thumbColor={bearSoundEnabled ? colors.text.primary : colors.text.secondary}
         />
       </View>
 
@@ -144,28 +123,6 @@ export function SoundToggle({ label = 'Sound Effects' }) {
         onValueChange={toggleSound}
         trackColor={{ false: colors.background.tertiary, true: colors.accent.primary }}
         thumbColor={soundEnabled ? colors.text.primary : colors.text.secondary}
-      />
-    </View>
-  );
-}
-
-/**
- * Compact bear sound toggle
- */
-export function BearSoundToggle({ label = 'Bear Sounds' }) {
-  const { soundEnabled, bearSoundEnabled, toggleBearSound } = useSoundSettings();
-
-  return (
-    <View style={[styles.compactRow, !soundEnabled && styles.disabled]}>
-      <Text style={[styles.compactLabel, !soundEnabled && styles.disabledText]}>
-        {label}
-      </Text>
-      <Switch
-        value={bearSoundEnabled && soundEnabled}
-        onValueChange={toggleBearSound}
-        disabled={!soundEnabled}
-        trackColor={{ false: colors.background.tertiary, true: colors.accent.secondary }}
-        thumbColor={bearSoundEnabled ? colors.text.primary : colors.text.secondary}
       />
     </View>
   );

@@ -2,10 +2,10 @@
  * LoadingOverlay Component
  *
  * Full-screen loading overlay for blocking operations.
- * Kid-friendly with Bear mascot animation.
+ * Kid-friendly design with optional sound feedback.
  */
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,13 +14,30 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { colors } from '../styles/colors';
+import SoundManager from '../services/SoundManager';
 
 export default function LoadingOverlay({
   visible,
   message = 'Loading...',
   showBear = true,
   transparent = true,
+  playSound = true,
 }) {
+  const wasVisible = useRef(false);
+
+  useEffect(() => {
+    if (playSound) {
+      if (visible && !wasVisible.current) {
+        // Loading started
+        SoundManager.playEvent('LOADING_START');
+      } else if (!visible && wasVisible.current) {
+        // Loading completed
+        SoundManager.playEvent('LOADING_COMPLETE');
+      }
+    }
+    wasVisible.current = visible;
+  }, [visible, playSound]);
+
   if (!visible) return null;
 
   return (
@@ -32,7 +49,7 @@ export default function LoadingOverlay({
     >
       <View style={styles.overlay}>
         <View style={styles.content}>
-          {showBear && <Text style={styles.bear}>🐻</Text>}
+          {showBear && <Text style={styles.bear}>✨</Text>}
           <ActivityIndicator size="large" color={colors.accent.primary} />
           {message && <Text style={styles.message}>{message}</Text>}
         </View>
@@ -61,12 +78,27 @@ export function ButtonLoader({ color = colors.text.primary }) {
 }
 
 /**
- * Full screen centered loader
+ * Full screen centered loader with optional sound
  */
-export function FullScreenLoader({ message }) {
+export function FullScreenLoader({ message, playSound = true }) {
+  const hasPlayedSound = useRef(false);
+
+  useEffect(() => {
+    if (playSound && !hasPlayedSound.current) {
+      SoundManager.playEvent('LOADING_START');
+      hasPlayedSound.current = true;
+    }
+
+    return () => {
+      if (playSound && hasPlayedSound.current) {
+        SoundManager.playEvent('LOADING_COMPLETE');
+      }
+    };
+  }, [playSound]);
+
   return (
     <View style={styles.fullScreen}>
-      <Text style={styles.fullScreenBear}>🐻</Text>
+      <Text style={styles.fullScreenBear}>✨</Text>
       <ActivityIndicator size="large" color={colors.accent.primary} />
       {message && <Text style={styles.fullScreenMessage}>{message}</Text>}
     </View>

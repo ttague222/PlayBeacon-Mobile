@@ -9,12 +9,17 @@ export default function XPProgressBar({ currentXP, showDetails = true, compact =
 
   useEffect(() => {
     // Animate progress bar
-    Animated.timing(progressAnim, {
+    const animation = Animated.timing(progressAnim, {
       toValue: levelProgress.progressPercentage,
       duration: 500,
       useNativeDriver: false,
-    }).start();
-  }, [levelProgress.progressPercentage]);
+    });
+    animation.start();
+
+    return () => {
+      animation.stop();
+    };
+  }, [levelProgress.progressPercentage, progressAnim]);
 
   const progressWidth = progressAnim.interpolate({
     inputRange: [0, 100],

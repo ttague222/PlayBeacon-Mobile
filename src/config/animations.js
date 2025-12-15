@@ -54,38 +54,6 @@ export const ANIMATIONS = {
   },
 
   // ============================================
-  // BEAR MASCOT ANIMATIONS
-  // ============================================
-  mascot: {
-    // Idle states
-    idle: require('../../assets/lottie/mascot/bear_idle.json'),
-    blink: require('../../assets/lottie/mascot/bear_blink.json'),
-    sleep: require('../../assets/lottie/mascot/bear_sleep.json'),
-
-    // Helpful animations
-    point_left: require('../../assets/lottie/mascot/bear_point_left.json'),
-    point_right: require('../../assets/lottie/mascot/bear_point_right.json'),
-    wave: require('../../assets/lottie/mascot/bear_wave.json'),
-
-    // Emotional animations
-    celebrate: require('../../assets/lottie/mascot/bear_celebrate.json'),
-    sad: require('../../assets/lottie/mascot/bear_sad.json'),
-    think: require('../../assets/lottie/mascot/bear_think.json'),
-    surprise: require('../../assets/lottie/mascot/bear_surprise.json'),
-    jump: require('../../assets/lottie/mascot/bear_jump.json'),
-
-    // Reaction animations
-    yes: require('../../assets/lottie/mascot/bear_yes.json'),
-    no: require('../../assets/lottie/mascot/bear_no.json'),
-    tail_wag: require('../../assets/lottie/mascot/bear_tail_wag.json'),
-    ear_wiggle: require('../../assets/lottie/mascot/bear_ear_wiggle.json'),
-
-    // Micro-interactions
-    tap_bounce: require('../../assets/lottie/mascot/bear_tap_bounce.json'),
-    paw_pop: require('../../assets/lottie/mascot/bear_paw_pop.json'),
-  },
-
-  // ============================================
   // EMPTY STATE ANIMATIONS
   // ============================================
   emptyStates: {
@@ -125,21 +93,6 @@ export const EVENT_ANIMATIONS = {
   EMPTY_SEARCH: { source: ANIMATIONS.emptyStates.search, type: 'empty' },
   EMPTY_COLLECTIONS: { source: ANIMATIONS.emptyStates.collections, type: 'empty' },
   EMPTY_QUEUE: { source: ANIMATIONS.emptyStates.queue, type: 'empty' },
-
-  // Mascot reactions
-  MASCOT_WELCOME: { source: ANIMATIONS.mascot.wave, type: 'mascot' },
-  MASCOT_CELEBRATE: { source: ANIMATIONS.mascot.celebrate, type: 'mascot' },
-  MASCOT_SAD: { source: ANIMATIONS.mascot.sad, type: 'mascot' },
-  MASCOT_THINK: { source: ANIMATIONS.mascot.think, type: 'mascot' },
-  MASCOT_POINT_LEFT: { source: ANIMATIONS.mascot.point_left, type: 'mascot' },
-  MASCOT_POINT_RIGHT: { source: ANIMATIONS.mascot.point_right, type: 'mascot' },
-  MASCOT_YES: { source: ANIMATIONS.mascot.yes, type: 'mascot' },
-  MASCOT_NO: { source: ANIMATIONS.mascot.no, type: 'mascot' },
-  MASCOT_JUMP: { source: ANIMATIONS.mascot.jump, type: 'mascot' },
-  MASCOT_SURPRISE: { source: ANIMATIONS.mascot.surprise, type: 'mascot' },
-  MASCOT_TAIL_WAG: { source: ANIMATIONS.mascot.tail_wag, type: 'mascot' },
-  MASCOT_TAP: { source: ANIMATIONS.mascot.tap_bounce, type: 'micro' },
-  MASCOT_PAW_POP: { source: ANIMATIONS.mascot.paw_pop, type: 'micro' },
 };
 
 /**
@@ -161,11 +114,6 @@ export const ANIMATION_CONFIG = {
     duration: null, // infinite
     loop: true,
     speed: 1,
-  },
-  mascot: {
-    duration: null,
-    loop: true,
-    speed: 0.8,
   },
   empty: {
     duration: null,

@@ -3,12 +3,14 @@
  *
  * A dislike button with Lottie animation support.
  * Shows an X icon by default, plays animation on press, then returns to X.
+ * Includes haptic feedback for better UX.
  */
 import React, { useRef, useCallback, useState } from 'react';
 import { TouchableOpacity, StyleSheet, View } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../styles/colors';
+import { triggerHaptic, HapticType } from '../hooks/useHaptics';
 
 // Try to load the dislike animation, fallback to null if not found
 let dislikeAnimation = null;
@@ -23,11 +25,18 @@ const AnimatedDislikeButton = ({
   disabled = false,
   size = 64,
   iconSize = 32,
+  accessibilityLabel = 'Not interested in this game',
+  enableHaptics = true,
 }) => {
   const animationRef = useRef(null);
   const [isAnimating, setIsAnimating] = useState(false);
 
   const handlePress = useCallback(() => {
+    // Trigger haptic feedback
+    if (enableHaptics) {
+      triggerHaptic(HapticType.MEDIUM);
+    }
+
     // Play animation if available
     if (animationRef.current && dislikeAnimation) {
       setIsAnimating(true);
@@ -39,7 +48,7 @@ const AnimatedDislikeButton = ({
     if (onPress) {
       onPress();
     }
-  }, [onPress]);
+  }, [onPress, enableHaptics]);
 
   const handleAnimationFinish = useCallback(() => {
     setIsAnimating(false);
@@ -57,6 +66,10 @@ const AnimatedDislikeButton = ({
       onPress={handlePress}
       disabled={disabled}
       activeOpacity={0.8}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      accessibilityHint="Double tap to skip"
     >
       {/* Static X icon - visible when not animating */}
       {!isAnimating && (

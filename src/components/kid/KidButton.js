@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { kidTheme } from '../../styles/kidTheme';
 import SoundManager from '../../services/SoundManager';
+import { triggerHaptic, HapticType } from '../../hooks/useHaptics';
 
 const {
   radii,
@@ -127,6 +128,8 @@ export default function KidButton({
   textStyle,
   soundKey = 'ui.tap',
   haptic = true,
+  accessibilityLabel,
+  accessibilityHint,
   ...props
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -158,10 +161,15 @@ export default function KidButton({
   }, [scaleAnim]);
 
   /**
-   * Handle press - play sound and trigger callback
+   * Handle press - play sound, haptic feedback, and trigger callback
    */
   const handlePress = useCallback(() => {
     if (disabled || loading) return;
+
+    // Trigger haptic feedback
+    if (haptic) {
+      triggerHaptic(HapticType.LIGHT);
+    }
 
     // Play sound
     if (soundKey) {
@@ -170,7 +178,7 @@ export default function KidButton({
 
     // Call onPress
     onPress?.();
-  }, [disabled, loading, soundKey, onPress]);
+  }, [disabled, loading, soundKey, haptic, onPress]);
 
   /**
    * Render icon
@@ -294,6 +302,10 @@ export default function KidButton({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={disabled || loading}
+        accessibilityLabel={accessibilityLabel || label}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: disabled || loading }}
+        accessibilityHint={accessibilityHint}
         {...props}
       >
         {renderButton()}
@@ -313,6 +325,9 @@ export function KidIconButton({
   onPress,
   style,
   soundKey = 'ui.tap',
+  haptic = true,
+  accessibilityLabel,
+  accessibilityHint,
   ...props
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -355,9 +370,10 @@ export function KidIconButton({
 
   const handlePress = useCallback(() => {
     if (disabled) return;
+    if (haptic) triggerHaptic(HapticType.LIGHT);
     if (soundKey) SoundManager.play(soundKey);
     onPress?.();
-  }, [disabled, soundKey, onPress]);
+  }, [disabled, soundKey, haptic, onPress]);
 
   const renderButton = () => {
     const buttonStyle = [
@@ -416,6 +432,10 @@ export function KidIconButton({
         onPressOut={handlePressOut}
         disabled={disabled}
         hitSlop={8}
+        accessibilityLabel={accessibilityLabel || icon}
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
+        accessibilityHint={accessibilityHint}
         {...props}
       >
         {renderButton()}
@@ -457,6 +477,8 @@ export function KidPillButton({
   selected = false,
   onPress,
   style,
+  haptic = true,
+  accessibilityHint,
   ...props
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -480,9 +502,10 @@ export function KidPillButton({
   }, [scaleAnim]);
 
   const handlePress = useCallback(() => {
+    if (haptic) triggerHaptic(HapticType.SELECTION);
     SoundManager.play('ui.tap');
     onPress?.();
-  }, [onPress]);
+  }, [haptic, onPress]);
 
   return (
     <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, style]}>
@@ -490,6 +513,10 @@ export function KidPillButton({
         onPress={handlePress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        accessibilityLabel={label}
+        accessibilityRole="button"
+        accessibilityState={{ selected }}
+        accessibilityHint={accessibilityHint}
         {...props}
       >
         <View style={[

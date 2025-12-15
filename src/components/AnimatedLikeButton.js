@@ -2,13 +2,14 @@
  * AnimatedLikeButton
  *
  * A like button with Lottie animation support.
- * Plays a heart animation when pressed.
+ * Plays a heart animation when pressed with haptic feedback.
  */
 import React, { useRef, useCallback } from 'react';
 import { TouchableOpacity, StyleSheet, View } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../styles/colors';
+import { triggerHaptic, HapticType } from '../hooks/useHaptics';
 
 // Try to load the heart animation, fallback to null if not found
 let heartAnimation = null;
@@ -23,10 +24,17 @@ const AnimatedLikeButton = ({
   disabled = false,
   size = 64,
   iconSize = 28,
+  accessibilityLabel = 'Like this game',
+  enableHaptics = true,
 }) => {
   const animationRef = useRef(null);
 
   const handlePress = useCallback(() => {
+    // Trigger haptic feedback
+    if (enableHaptics) {
+      triggerHaptic(HapticType.SUCCESS);
+    }
+
     // Play animation if available
     if (animationRef.current && heartAnimation) {
       animationRef.current.reset();
@@ -37,7 +45,7 @@ const AnimatedLikeButton = ({
     if (onPress) {
       onPress();
     }
-  }, [onPress]);
+  }, [onPress, enableHaptics]);
 
   const buttonSize = {
     width: size,
@@ -51,6 +59,10 @@ const AnimatedLikeButton = ({
       onPress={handlePress}
       disabled={disabled}
       activeOpacity={0.8}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      accessibilityHint="Double tap to like"
     >
       {heartAnimation ? (
         <LottieView

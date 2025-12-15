@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { kidTheme } from '../../styles/kidTheme';
 import SoundManager from '../../services/SoundManager';
+import { triggerHaptic, HapticType } from '../../hooks/useHaptics';
 
 const {
   radii,
@@ -86,6 +87,9 @@ export default function KidGameCard({
   const handleFavorite = useCallback((e) => {
     e?.stopPropagation?.();
 
+    // Trigger haptic feedback
+    triggerHaptic(isFavorite ? HapticType.LIGHT : HapticType.SUCCESS);
+
     // Play appropriate sound
     if (isFavorite) {
       SoundManager.play('ui.remove');
@@ -137,6 +141,8 @@ export default function KidGameCard({
   const playerCount = formatPlayers(game?.playing || game?.visits);
   const rating = getRatingEmoji(game?.rating);
 
+  const gameName = game?.name || 'Untitled Game';
+
   return (
     <Animated.View
       style={[
@@ -151,6 +157,9 @@ export default function KidGameCard({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         style={styles.pressable}
+        accessibilityLabel={`${gameName}${game?.genre ? `, ${game.genre} game` : ''}`}
+        accessibilityRole="button"
+        accessibilityHint="Double tap to view game details"
       >
         {/* Thumbnail */}
         <View style={[styles.imageContainer, { height: config.imageHeight }]}>
@@ -176,6 +185,9 @@ export default function KidGameCard({
               onPress={handleFavorite}
               hitSlop={12}
               style={styles.favoritePressable}
+              accessibilityLabel={isFavorite ? `Remove ${gameName} from favorites` : `Add ${gameName} to favorites`}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isFavorite }}
             >
               <View style={[
                 styles.favoriteCircle,
@@ -203,7 +215,7 @@ export default function KidGameCard({
         <View style={styles.content}>
           {/* Game title */}
           <Text style={styles.title} numberOfLines={2}>
-            {game?.name || 'Untitled Game'}
+            {gameName}
           </Text>
 
           {/* Rating with emoji */}
@@ -239,6 +251,7 @@ export function KidGameCardCompact({
   style,
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const gameName = game?.name || 'Untitled Game';
 
   const handlePressIn = useCallback(() => {
     Animated.spring(scaleAnim, {
@@ -264,6 +277,7 @@ export function KidGameCardCompact({
   }, [game, onPress]);
 
   const handleFavorite = useCallback(() => {
+    triggerHaptic(isFavorite ? HapticType.LIGHT : HapticType.SUCCESS);
     SoundManager.play(isFavorite ? 'ui.remove' : 'ui.favorite');
     onFavorite?.(game);
   }, [game, isFavorite, onFavorite]);
@@ -282,18 +296,22 @@ export function KidGameCardCompact({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         style={styles.compactPressable}
+        accessibilityLabel={`${gameName}${game?.genre ? `, ${game.genre} game` : ''}`}
+        accessibilityRole="button"
+        accessibilityHint="Double tap to view game details"
       >
         {/* Thumbnail */}
         <Image
           source={{ uri: game?.thumbnailUrl || game?.imageUrl }}
           style={styles.compactImage}
           resizeMode="cover"
+          accessibilityElementsHidden
         />
 
         {/* Content */}
         <View style={styles.compactContent}>
           <Text style={styles.compactTitle} numberOfLines={2}>
-            {game?.name || 'Untitled Game'}
+            {gameName}
           </Text>
           {game?.genre && (
             <Text style={styles.compactGenre} numberOfLines={1}>
@@ -303,7 +321,14 @@ export function KidGameCardCompact({
         </View>
 
         {/* Favorite button */}
-        <Pressable onPress={handleFavorite} hitSlop={12} style={styles.compactFavorite}>
+        <Pressable
+          onPress={handleFavorite}
+          hitSlop={12}
+          style={styles.compactFavorite}
+          accessibilityLabel={isFavorite ? `Remove ${gameName} from favorites` : `Add ${gameName} to favorites`}
+          accessibilityRole="button"
+          accessibilityState={{ selected: isFavorite }}
+        >
           <Ionicons
             name={isFavorite ? 'heart' : 'heart-outline'}
             size={28}
@@ -326,6 +351,7 @@ export function KidGameCardFeatured({
   style,
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const gameName = game?.name || 'Untitled Game';
 
   const handlePressIn = useCallback(() => {
     Animated.spring(scaleAnim, {
@@ -364,11 +390,15 @@ export function KidGameCardFeatured({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         style={styles.featuredPressable}
+        accessibilityLabel={`Featured game: ${gameName}`}
+        accessibilityRole="button"
+        accessibilityHint="Double tap to view game details"
       >
         <Image
           source={{ uri: game?.thumbnailUrl || game?.imageUrl }}
           style={styles.featuredImage}
           resizeMode="cover"
+          accessibilityElementsHidden
         />
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.7)']}
@@ -380,7 +410,7 @@ export function KidGameCardFeatured({
               <Text style={styles.featuredBadgeText}>Featured</Text>
             </View>
             <Text style={styles.featuredTitle} numberOfLines={2}>
-              {game?.name || 'Untitled Game'}
+              {gameName}
             </Text>
             {game?.description && (
               <Text style={styles.featuredDescription} numberOfLines={2}>

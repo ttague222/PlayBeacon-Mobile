@@ -25,7 +25,6 @@ const SoundContext = createContext(null);
  */
 const DEFAULT_SETTINGS = {
   soundEnabled: true,
-  bearSoundEnabled: true,
   masterVolume: 0.7,
   reduceLoudSounds: false,
 };
@@ -33,7 +32,6 @@ const DEFAULT_SETTINGS = {
 export function SoundProvider({ children }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(DEFAULT_SETTINGS.soundEnabled);
-  const [bearSoundEnabled, setBearSoundEnabled] = useState(DEFAULT_SETTINGS.bearSoundEnabled);
   const [masterVolume, setMasterVolume] = useState(DEFAULT_SETTINGS.masterVolume);
   const [reduceLoudSounds, setReduceLoudSounds] = useState(DEFAULT_SETTINGS.reduceLoudSounds);
 
@@ -51,14 +49,12 @@ export function SoundProvider({ children }) {
         if (savedSettings) {
           const parsed = JSON.parse(savedSettings);
           setSoundEnabled(parsed.soundEnabled ?? DEFAULT_SETTINGS.soundEnabled);
-          setBearSoundEnabled(parsed.bearSoundEnabled ?? DEFAULT_SETTINGS.bearSoundEnabled);
           setMasterVolume(parsed.masterVolume ?? DEFAULT_SETTINGS.masterVolume);
           setReduceLoudSounds(parsed.reduceLoudSounds ?? DEFAULT_SETTINGS.reduceLoudSounds);
 
           // Apply to SoundManager
           SoundManager.applySettings({
             isEnabled: parsed.soundEnabled ?? DEFAULT_SETTINGS.soundEnabled,
-            isBearSoundEnabled: parsed.bearSoundEnabled ?? DEFAULT_SETTINGS.bearSoundEnabled,
             masterVolume: parsed.masterVolume ?? DEFAULT_SETTINGS.masterVolume,
             reduceLoudSounds: parsed.reduceLoudSounds ?? DEFAULT_SETTINGS.reduceLoudSounds,
           });
@@ -88,7 +84,6 @@ export function SoundProvider({ children }) {
       try {
         const settings = {
           soundEnabled,
-          bearSoundEnabled,
           masterVolume,
           reduceLoudSounds,
         };
@@ -99,7 +94,7 @@ export function SoundProvider({ children }) {
     };
 
     saveSettings();
-  }, [isInitialized, soundEnabled, bearSoundEnabled, masterVolume, reduceLoudSounds]);
+  }, [isInitialized, soundEnabled, masterVolume, reduceLoudSounds]);
 
   /**
    * Toggle all sounds on/off
@@ -113,30 +108,11 @@ export function SoundProvider({ children }) {
   }, []);
 
   /**
-   * Toggle bear sounds on/off
-   */
-  const toggleBearSound = useCallback(() => {
-    setBearSoundEnabled((prev) => {
-      const newValue = !prev;
-      SoundManager.setBearSoundEnabled(newValue);
-      return newValue;
-    });
-  }, []);
-
-  /**
    * Set sound enabled state
    */
   const setSoundEnabledValue = useCallback((enabled) => {
     setSoundEnabled(enabled);
     SoundManager.setEnabled(enabled);
-  }, []);
-
-  /**
-   * Set bear sound enabled state
-   */
-  const setBearSoundEnabledValue = useCallback((enabled) => {
-    setBearSoundEnabled(enabled);
-    SoundManager.setBearSoundEnabled(enabled);
   }, []);
 
   /**
@@ -193,13 +169,11 @@ export function SoundProvider({ children }) {
    */
   const resetSettings = useCallback(async () => {
     setSoundEnabled(DEFAULT_SETTINGS.soundEnabled);
-    setBearSoundEnabled(DEFAULT_SETTINGS.bearSoundEnabled);
     setMasterVolume(DEFAULT_SETTINGS.masterVolume);
     setReduceLoudSounds(DEFAULT_SETTINGS.reduceLoudSounds);
 
     SoundManager.applySettings({
       isEnabled: DEFAULT_SETTINGS.soundEnabled,
-      isBearSoundEnabled: DEFAULT_SETTINGS.bearSoundEnabled,
       masterVolume: DEFAULT_SETTINGS.masterVolume,
       reduceLoudSounds: DEFAULT_SETTINGS.reduceLoudSounds,
     });
@@ -215,18 +189,15 @@ export function SoundProvider({ children }) {
     // State
     isInitialized,
     soundEnabled,
-    bearSoundEnabled,
     masterVolume,
     reduceLoudSounds,
 
     // Toggles
     toggleSound,
-    toggleBearSound,
     toggleReduceLoudSounds,
 
     // Setters
     setSoundEnabled: setSoundEnabledValue,
-    setBearSoundEnabled: setBearSoundEnabledValue,
     setMasterVolume: setMasterVolumeValue,
     setReduceLoudSounds: setReduceLoudSoundsValue,
 
@@ -261,14 +232,11 @@ export function useSound() {
 export function useSoundSettings() {
   const {
     soundEnabled,
-    bearSoundEnabled,
     masterVolume,
     reduceLoudSounds,
     toggleSound,
-    toggleBearSound,
     toggleReduceLoudSounds,
     setSoundEnabled,
-    setBearSoundEnabled,
     setMasterVolume,
     setReduceLoudSounds,
     resetSettings,
@@ -276,14 +244,11 @@ export function useSoundSettings() {
 
   return {
     soundEnabled,
-    bearSoundEnabled,
     masterVolume,
     reduceLoudSounds,
     toggleSound,
-    toggleBearSound,
     toggleReduceLoudSounds,
     setSoundEnabled,
-    setBearSoundEnabled,
     setMasterVolume,
     setReduceLoudSounds,
     resetSettings,

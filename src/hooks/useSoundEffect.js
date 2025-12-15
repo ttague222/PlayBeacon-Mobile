@@ -71,31 +71,6 @@ export function useSounds(soundKeys) {
 }
 
 /**
- * Hook for Bear mascot sounds
- * Provides all Bear-related sounds in one object
- *
- * Usage:
- *   const bearSounds = useBearSounds();
- *   bearSounds.celebrate(); // Play celebrate sound
- *   bearSounds.sad(); // Play sad sound
- */
-export function useBearSounds() {
-  return {
-    celebrate: useCallback(() => SoundManager.play('bear.celebrate'), []),
-    sad: useCallback(() => SoundManager.play('bear.sad'), []),
-    think: useCallback(() => SoundManager.play('bear.sniff'), []),
-    sniff: useCallback(() => SoundManager.play('bear.sniff'), []),
-    sleep: useCallback(() => SoundManager.play('bear.sleep'), []),
-    surprise: useCallback(() => SoundManager.play('bear.surprise'), []),
-    tap: useCallback(() => SoundManager.play('bear.pawpop'), []),
-    pawpop: useCallback(() => SoundManager.play('bear.pawpop'), []),
-    tailwag: useCallback(() => SoundManager.play('bear.tailwag'), []),
-    earwiggle: useCallback(() => SoundManager.play('bear.earwiggle'), []),
-    happy: useCallback(() => SoundManager.play('bear.happy'), []),
-  };
-}
-
-/**
  * Hook for UI interaction sounds
  *
  * Usage:

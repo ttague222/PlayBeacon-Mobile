@@ -16,10 +16,11 @@ export default function OfflineBanner() {
 
   // Track when we come back online
   useEffect(() => {
+    let animation = null;
     if (wasOfflineRef.current && !isOffline) {
       // Show "Back online!" message briefly
       setShowReconnected(true);
-      Animated.sequence([
+      animation = Animated.sequence([
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 200,
@@ -31,12 +32,19 @@ export default function OfflineBanner() {
           duration: 500,
           useNativeDriver: true,
         }),
-      ]).start(() => {
+      ]);
+      animation.start(() => {
         setShowReconnected(false);
         fadeAnim.setValue(1);
       });
     }
     wasOfflineRef.current = isOffline;
+
+    return () => {
+      if (animation) {
+        animation.stop();
+      }
+    };
   }, [isOffline, fadeAnim]);
 
   // Show reconnected message

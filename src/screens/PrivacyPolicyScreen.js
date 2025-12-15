@@ -55,7 +55,7 @@ export default function PrivacyPolicyScreen({ navigation, onClose }) {
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         {/* Kid-Friendly Summary */}
         <View style={styles.summaryBox}>
-          <Text style={styles.summaryTitle}>🐻 Hey there!</Text>
+          <Text style={styles.summaryTitle}>👋 Hey there!</Text>
           <Text style={styles.summaryText}>
             Here's what you need to know about how PlayBeacon keeps your information safe:
           </Text>
