@@ -15,25 +15,33 @@ import logger from '../utils/logger';
 // Check if we're running in Expo Go
 const isExpoGo = Constants.appOwnership === 'expo';
 
-// Dynamically import InterstitialAd only when not in Expo Go
-let InterstitialAd = null;
-let AdEventType = null;
+// Flag to track if module load failed (prevents repeated attempts)
+let nativeModuleLoadFailed = false;
 
-if (!isExpoGo) {
+// Lazy load ad components to prevent crashes at module initialization
+// Called inside the hook, not at module import time
+const getAdComponents = () => {
+  if (isExpoGo || nativeModuleLoadFailed) {
+    return { InterstitialAd: null, AdEventType: null };
+  }
   try {
     const ads = require('react-native-google-mobile-ads');
-    InterstitialAd = ads.InterstitialAd;
-    AdEventType = ads.AdEventType;
+    return { InterstitialAd: ads.InterstitialAd, AdEventType: ads.AdEventType };
   } catch (error) {
-    logger.log('InterstitialAd not available - running in Expo Go');
+    logger.warn('InterstitialAd not available:', error?.message);
+    nativeModuleLoadFailed = true;
+    return { InterstitialAd: null, AdEventType: null };
   }
-}
+};
 
 export function useInterstitial() {
   const { shouldShowAds, trackGameView, resetInterstitialCounter, isExpoGo: contextIsExpoGo } = useAds();
   const [isLoaded, setIsLoaded] = useState(false);
   const [isShowing, setIsShowing] = useState(false);
   const interstitialRef = useRef(null);
+
+  // Lazy load ad components on first hook call
+  const { InterstitialAd, AdEventType } = getAdComponents();
 
   // Check if ads are available
   const adsAvailable = !isExpoGo && !contextIsExpoGo && InterstitialAd !== null;
