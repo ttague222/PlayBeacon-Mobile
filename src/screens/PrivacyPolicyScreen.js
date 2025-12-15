@@ -19,11 +19,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../styles/colors';
 import { radii } from '../styles/kidTheme';
 
-const SUPPORT_EMAIL = 'support@playbeacon.app';
+const SUPPORT_EMAIL = 'support@watchlightinteractive.com';
 const COMPANY_NAME = 'Watchlight Interactive LLC';
-const COMPANY_ADDRESS = ''; // Optional - email contact is sufficient for COPPA compliance
 const EFFECTIVE_DATE = 'December 15, 2024';
-const WEBSITE_URL = 'https://playbeacon.app';
 
 export default function PrivacyPolicyScreen({ navigation, onClose }) {
   const handleClose = () => {
@@ -38,10 +36,6 @@ export default function PrivacyPolicyScreen({ navigation, onClose }) {
     Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=PlayBeacon Privacy Question`);
   };
 
-  const handleWebsitePress = () => {
-    Linking.openURL(WEBSITE_URL);
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -54,15 +48,16 @@ export default function PrivacyPolicyScreen({ navigation, onClose }) {
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         {/* Kid-Friendly Summary */}
         <View style={styles.summaryBox}>
-          <Text style={styles.summaryTitle}>👋 Hey there!</Text>
+          <Text style={styles.summaryTitle}>👋 Kid-Friendly Summary (For Families)</Text>
           <Text style={styles.summaryText}>
             Here's what you need to know about how PlayBeacon keeps your information safe:
           </Text>
           <View style={styles.summaryPoints}>
-            <Text style={styles.summaryPoint}>✅ We save your favorite games so you can find them later</Text>
-            <Text style={styles.summaryPoint}>✅ We don't share your information with anyone</Text>
-            <Text style={styles.summaryPoint}>✅ We don't show you ads based on what you do</Text>
-            <Text style={styles.summaryPoint}>✅ Your parents can ask us any questions</Text>
+            <Text style={styles.summaryPoint}>✅ We save your favorite games so you can find them again</Text>
+            <Text style={styles.summaryPoint}>✅ We don't sell or share your personal information</Text>
+            <Text style={styles.summaryPoint}>✅ We don't use your information for targeted ads</Text>
+            <Text style={styles.summaryPoint}>✅ We collect only what's needed to make the app work</Text>
+            <Text style={styles.summaryPoint}>✅ Parents can contact us anytime with questions</Text>
           </View>
         </View>
 
@@ -72,279 +67,263 @@ export default function PrivacyPolicyScreen({ navigation, onClose }) {
         {/* Introduction */}
         <Text style={styles.sectionTitle}>1. Introduction</Text>
         <Text style={styles.paragraph}>
-          {COMPANY_NAME} ("we," "us," or "our") operates the PlayBeacon mobile application (the "App").
-          This Privacy Policy explains how we collect, use, disclose, and safeguard your information
-          when you use our App.
+          PlayBeacon is operated by {COMPANY_NAME} ("we," "us," or "our"). This Privacy Policy explains
+          how we collect, use, and protect information when you use the PlayBeacon mobile application (the "App").
         </Text>
         <Text style={styles.paragraph}>
-          PlayBeacon is a Roblox game discovery app designed for users of all ages, with special
-          protections for children under 13 in compliance with the Children's Online Privacy
-          Protection Act (COPPA).
+          PlayBeacon is a game discovery companion app designed for users of all ages, with additional
+          protections for children under 13 in compliance with the Children's Online Privacy Protection Act (COPPA).
         </Text>
         <Text style={styles.highlightBox}>
-          By using PlayBeacon, you agree to the collection and use of information in accordance
-          with this Privacy Policy. If you do not agree with this policy, please do not use our App.
+          By using the App, you agree to the practices described in this Privacy Policy. If you do not agree,
+          please do not use the App.
         </Text>
 
-        {/* Operator Information - Required for COPPA */}
+        {/* Operator Information */}
         <Text style={styles.sectionTitle}>2. Operator Information</Text>
-        <Text style={styles.paragraph}>
-          PlayBeacon is operated by:
-        </Text>
         <View style={styles.contactBox}>
-          <Text style={styles.contactText}>{COMPANY_NAME}</Text>
-          {COMPANY_ADDRESS ? <Text style={styles.contactText}>{COMPANY_ADDRESS}</Text> : null}
-          <Text style={styles.contactText}>Email: {SUPPORT_EMAIL}</Text>
+          <Text style={styles.contactText}><Text style={styles.bold}>Operator:</Text> {COMPANY_NAME}</Text>
+          <Text style={styles.contactText}><Text style={styles.bold}>Support Email:</Text> {SUPPORT_EMAIL}</Text>
         </View>
 
         {/* Information We Collect */}
         <Text style={styles.sectionTitle}>3. Information We Collect</Text>
 
         <Text style={styles.subTitle}>3.1 Information Collected Automatically</Text>
-        <Text style={styles.paragraph}>When you use PlayBeacon, we may automatically collect:</Text>
+        <Text style={styles.paragraph}>
+          We may collect limited technical information to operate and improve the App:
+        </Text>
         <View style={styles.bulletList}>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Device Information:</Text> Device type, operating system version, and unique device identifiers for app functionality and analytics</Text>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Usage Data:</Text> Features you use, games you view, and interaction patterns (anonymized and not linked to personal identity)</Text>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Log Data:</Text> IP address, access times, and technical error logs for debugging purposes</Text>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Analytics:</Text> Aggregated usage statistics to improve our App</Text>
+          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Device Information:</Text> Device type, operating system version</Text>
+          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Usage Data:</Text> Features used, games viewed, and in-app interactions</Text>
+          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Log Data:</Text> IP address, timestamps, and error logs for debugging</Text>
+          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Analytics Data:</Text> Aggregated and anonymized usage statistics</Text>
         </View>
+        <Text style={styles.paragraph}>
+          This information is not used to identify individual users.
+        </Text>
 
         <Text style={styles.subTitle}>3.2 Information You Provide</Text>
         <View style={styles.bulletList}>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Anonymous Account:</Text> No personal information is required to use the basic features of PlayBeacon</Text>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Roblox Username:</Text> If you choose to connect your Roblox account, we only access your public profile information</Text>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Wishlists and Collections:</Text> Games you save are stored securely in your account</Text>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Age Information:</Text> Birth year to determine if COPPA protections apply</Text>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Optional Sign-In:</Text> If you sign in with Google, we receive your email address and profile name (with parental consent for users under 13)</Text>
+          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Anonymous Use:</Text> No personal information is required to use PlayBeacon's core features</Text>
+          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Roblox Username (Optional):</Text> If you choose to connect Roblox, we access only publicly available profile data</Text>
+          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Wishlists & Collections:</Text> Games you choose to save</Text>
+          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Age Information:</Text> Birth year to determine whether child-specific protections apply</Text>
         </View>
 
-        <Text style={styles.subTitle}>3.3 Information We Do NOT Collect</Text>
+        <Text style={styles.subTitle}>Optional Sign-In</Text>
+        <Text style={styles.paragraph}>
+          Third-party sign-in (such as Google) is only available to users aged 13 and older.
+          Children under 13 are not permitted to use third-party sign-in methods.
+        </Text>
+
+        <Text style={styles.subTitle}>3.3 Information We Do Not Collect</Text>
+        <Text style={styles.paragraph}>We do not collect:</Text>
         <View style={styles.bulletList}>
-          <Text style={styles.bulletItem}>• We do not collect precise geolocation data</Text>
-          <Text style={styles.bulletItem}>• We do not collect photos, videos, or audio from your device</Text>
-          <Text style={styles.bulletItem}>• We do not collect contact lists or address books</Text>
-          <Text style={styles.bulletItem}>• We do not collect financial or payment information directly (handled by app stores)</Text>
+          <Text style={styles.bulletItem}>• Precise geolocation data</Text>
+          <Text style={styles.bulletItem}>• Photos, videos, or audio from your device</Text>
+          <Text style={styles.bulletItem}>• Contact lists or address books</Text>
+          <Text style={styles.bulletItem}>• Chat messages or user-generated content</Text>
+          <Text style={styles.bulletItem}>• Financial or payment information (handled by app stores)</Text>
         </View>
 
         {/* How We Use Information */}
         <Text style={styles.sectionTitle}>4. How We Use Information</Text>
-        <Text style={styles.paragraph}>We use the information we collect to:</Text>
+        <Text style={styles.paragraph}>We use collected information to:</Text>
         <View style={styles.bulletList}>
-          <Text style={styles.bulletItem}>• Provide, maintain, and improve the PlayBeacon App</Text>
-          <Text style={styles.bulletItem}>• Save your wishlists, collections, and preferences</Text>
-          <Text style={styles.bulletItem}>• Personalize game recommendations based on your interactions</Text>
-          <Text style={styles.bulletItem}>• Analyze usage patterns to improve user experience</Text>
-          <Text style={styles.bulletItem}>• Diagnose technical problems and fix bugs</Text>
-          <Text style={styles.bulletItem}>• Ensure compliance with our Terms of Service</Text>
-          <Text style={styles.bulletItem}>• Respond to your inquiries and support requests</Text>
+          <Text style={styles.bulletItem}>• Provide and maintain the App</Text>
+          <Text style={styles.bulletItem}>• Save user preferences, wishlists, and collections</Text>
+          <Text style={styles.bulletItem}>• Offer game discovery features based on in-app interactions</Text>
+          <Text style={styles.bulletItem}>• Improve app performance and usability</Text>
+          <Text style={styles.bulletItem}>• Diagnose technical issues and fix bugs</Text>
+          <Text style={styles.bulletItem}>• Respond to support requests</Text>
         </View>
 
         <Text style={styles.warningBox}>
-          We do NOT sell, rent, or trade your personal information to third parties. We do NOT use
-          your information for behavioral advertising or profiling.
+          We do not sell, rent, or trade personal information.{'\n'}
+          We do not use personal information for behavioral advertising or cross-app tracking.
         </Text>
 
-        {/* Children's Privacy - COPPA Section */}
+        {/* Children's Privacy */}
         <Text style={styles.sectionTitle}>5. Children's Privacy (COPPA Compliance)</Text>
         <Text style={styles.paragraph}>
-          PlayBeacon is committed to protecting the privacy of children. We comply with the
-          Children's Online Privacy Protection Act (COPPA) and take the following measures:
+          Protecting children's privacy is a core principle of PlayBeacon.
         </Text>
 
-        <Text style={styles.subTitle}>5.1 Age Verification</Text>
+        <Text style={styles.subTitle}>5.1 Age Screening</Text>
         <Text style={styles.paragraph}>
-          We use a neutral age-screening mechanism (birth year selection) to identify users under 13.
-          We do not encourage children to provide false age information.
+          We use a neutral age-screening process (birth year) to identify users under 13.
         </Text>
 
-        <Text style={styles.subTitle}>5.2 Parental Consent</Text>
-        <Text style={styles.paragraph}>
-          For users identified as under 13, we require verifiable parental consent before collecting
-          any personal information beyond what is necessary to support our internal operations.
-        </Text>
-
-        <Text style={styles.subTitle}>5.3 Limited Data Collection</Text>
+        <Text style={styles.subTitle}>5.2 Limited Data Collection</Text>
+        <Text style={styles.paragraph}>For children under 13:</Text>
         <View style={styles.bulletList}>
-          <Text style={styles.bulletItem}>• We collect only the minimum information necessary to provide our services</Text>
-          <Text style={styles.bulletItem}>• Anonymous accounts require no personal information</Text>
-          <Text style={styles.bulletItem}>• We do not condition participation on disclosure of more information than necessary</Text>
+          <Text style={styles.bulletItem}>• Only the minimum data required for internal app functionality is collected</Text>
+          <Text style={styles.bulletItem}>• Anonymous use is supported</Text>
+          <Text style={styles.bulletItem}>• Participation is never conditioned on providing unnecessary information</Text>
         </View>
+
+        <Text style={styles.subTitle}>5.3 Parental Consent</Text>
+        <Text style={styles.paragraph}>
+          If personal information beyond internal operations is ever required, verifiable parental consent will be obtained first.
+        </Text>
 
         <Text style={styles.subTitle}>5.4 No Behavioral Advertising</Text>
         <Text style={styles.paragraph}>
-          We do not serve personalized or behavioral advertising to users identified as children.
-          Any ads shown are contextual and age-appropriate.
+          We do not serve personalized or behavioral advertising to children.
         </Text>
 
         <Text style={styles.subTitle}>5.5 No Social Features</Text>
-        <Text style={styles.paragraph}>
-          PlayBeacon does not include chat, messaging, user-generated content sharing, or any
-          features that would allow children to communicate with other users or share personal information publicly.
-        </Text>
+        <Text style={styles.paragraph}>PlayBeacon does not include:</Text>
+        <View style={styles.bulletList}>
+          <Text style={styles.bulletItem}>• Chat or messaging</Text>
+          <Text style={styles.bulletItem}>• Public profiles</Text>
+          <Text style={styles.bulletItem}>• User-generated content sharing</Text>
+        </View>
 
         {/* Parental Rights */}
         <Text style={styles.sectionTitle}>6. Parental Rights</Text>
-        <Text style={styles.paragraph}>
-          Parents and legal guardians of children under 13 have the following rights under COPPA:
-        </Text>
+        <Text style={styles.paragraph}>Parents and legal guardians may:</Text>
         <View style={styles.bulletList}>
-          <Text style={styles.bulletItem}>1. <Text style={styles.bold}>Review:</Text> Request to review the personal information we have collected from your child</Text>
-          <Text style={styles.bulletItem}>2. <Text style={styles.bold}>Deletion:</Text> Request that we delete your child's personal information</Text>
-          <Text style={styles.bulletItem}>3. <Text style={styles.bold}>Refuse Collection:</Text> Refuse to allow further collection of your child's information</Text>
-          <Text style={styles.bulletItem}>4. <Text style={styles.bold}>Withdraw Consent:</Text> Withdraw your consent at any time</Text>
+          <Text style={styles.bulletItem}>• Review information collected from their child</Text>
+          <Text style={styles.bulletItem}>• Request deletion of their child's data</Text>
+          <Text style={styles.bulletItem}>• Refuse or withdraw consent</Text>
         </View>
         <Text style={styles.paragraph}>
-          To exercise these rights, please contact us at {SUPPORT_EMAIL}. We will respond to
-          verified requests within 30 days.
+          Requests can be made by contacting: {SUPPORT_EMAIL}
+        </Text>
+        <Text style={styles.paragraph}>
+          We respond to verified requests within 30 days.
         </Text>
 
         {/* Third-Party Services */}
         <Text style={styles.sectionTitle}>7. Third-Party Services</Text>
-        <Text style={styles.paragraph}>PlayBeacon uses the following third-party services:</Text>
+        <Text style={styles.paragraph}>PlayBeacon uses the following services:</Text>
 
         <Text style={styles.subTitle}>7.1 Google Firebase</Text>
         <Text style={styles.paragraph}>
-          We use Firebase for authentication, data storage, and analytics. Firebase's privacy policy
-          can be found at: https://firebase.google.com/support/privacy
+          Used for authentication, secure data storage, and analytics.{'\n'}
+          Privacy Policy: https://firebase.google.com/support/privacy
         </Text>
 
         <Text style={styles.subTitle}>7.2 Google AdMob</Text>
         <Text style={styles.paragraph}>
-          We display advertisements through Google AdMob. For users identified as children, we serve
-          only non-personalized, child-safe advertisements. AdMob's privacy policy can be found at:
-          https://policies.google.com/privacy
+          We may display advertisements through Google AdMob.
+        </Text>
+        <View style={styles.bulletList}>
+          <Text style={styles.bulletItem}>• Ads are non-personalized</Text>
+          <Text style={styles.bulletItem}>• No interest-based or cross-app tracking</Text>
+          <Text style={styles.bulletItem}>• For children under 13, ads are contextual and age-appropriate, or may be disabled entirely</Text>
+        </View>
+        <Text style={styles.paragraph}>
+          Privacy Policy: https://policies.google.com/privacy
         </Text>
 
         <Text style={styles.subTitle}>7.3 Roblox API</Text>
         <Text style={styles.paragraph}>
-          We access publicly available Roblox game information to provide game recommendations.
-          We do not share your data with Roblox. Roblox's privacy policy can be found at:
-          https://en.help.roblox.com/hc/articles/115004630823
+          Used to access publicly available game information.{'\n'}
+          We do not share user data with Roblox.{'\n'}
+          Privacy Policy: https://en.help.roblox.com/hc/articles/115004630823
         </Text>
 
         <Text style={styles.subTitle}>7.4 Expo / React Native</Text>
         <Text style={styles.paragraph}>
-          Our App is built using Expo and React Native frameworks. These may collect anonymous
-          crash reports and usage statistics.
+          These frameworks may collect anonymous crash and performance data.
+        </Text>
+
+        <Text style={styles.subTitle}>7.5 Error Monitoring</Text>
+        <Text style={styles.paragraph}>
+          We use error monitoring services to identify and fix technical issues.
+          No personal information is collected through these services.
         </Text>
 
         {/* Data Security */}
         <Text style={styles.sectionTitle}>8. Data Security</Text>
         <Text style={styles.paragraph}>
-          We implement appropriate technical and organizational measures to protect your information:
+          We use industry-standard safeguards to protect information:
         </Text>
         <View style={styles.bulletList}>
-          <Text style={styles.bulletItem}>• All data transmission is encrypted using industry-standard TLS/SSL</Text>
-          <Text style={styles.bulletItem}>• Data is stored securely in Google Cloud infrastructure</Text>
-          <Text style={styles.bulletItem}>• Access to personal information is restricted to authorized personnel only</Text>
-          <Text style={styles.bulletItem}>• We regularly review and update our security practices</Text>
+          <Text style={styles.bulletItem}>• Encrypted data transmission (TLS/SSL)</Text>
+          <Text style={styles.bulletItem}>• Secure cloud infrastructure</Text>
+          <Text style={styles.bulletItem}>• Restricted access to authorized personnel only</Text>
         </View>
         <Text style={styles.paragraph}>
-          While we strive to protect your information, no method of electronic transmission or
-          storage is 100% secure. We cannot guarantee absolute security.
+          No system is 100% secure, but we regularly review and improve our protections.
         </Text>
 
         {/* Data Retention */}
         <Text style={styles.sectionTitle}>9. Data Retention</Text>
         <View style={styles.bulletList}>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Anonymous Accounts:</Text> Data is retained while the account is active. Accounts inactive for 12 months may be deleted.</Text>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Signed-In Accounts:</Text> Data is retained until you request deletion or delete your account.</Text>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Analytics Data:</Text> Aggregated, anonymized data may be retained indefinitely for product improvement.</Text>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Support Communications:</Text> Retained for up to 2 years for quality assurance purposes.</Text>
+          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Anonymous Accounts:</Text> Retained while active; may be deleted after 12 months of inactivity</Text>
+          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Signed-In Accounts:</Text> Retained until deleted by the user</Text>
+          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Analytics Data:</Text> Aggregated, anonymized data may be retained long-term</Text>
+          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Support Communications:</Text> Retained up to 2 years</Text>
         </View>
 
-        {/* Your Rights - For all users */}
+        {/* Your Rights */}
         <Text style={styles.sectionTitle}>10. Your Rights</Text>
-        <Text style={styles.paragraph}>Depending on your location, you may have the following rights:</Text>
+        <Text style={styles.paragraph}>Depending on your location, you may have the right to:</Text>
         <View style={styles.bulletList}>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Access:</Text> Request a copy of your personal data</Text>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Correction:</Text> Request correction of inaccurate data</Text>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Deletion:</Text> Request deletion of your data</Text>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Portability:</Text> Request your data in a portable format</Text>
-          <Text style={styles.bulletItem}>• <Text style={styles.bold}>Opt-Out:</Text> Opt out of certain data collection practices</Text>
+          <Text style={styles.bulletItem}>• Access your data</Text>
+          <Text style={styles.bulletItem}>• Correct inaccuracies</Text>
+          <Text style={styles.bulletItem}>• Request deletion</Text>
+          <Text style={styles.bulletItem}>• Request data portability</Text>
         </View>
 
-        <Text style={styles.subTitle}>10.1 How to Delete Your Account</Text>
-        <Text style={styles.paragraph}>
-          You can delete your account and all associated data by:
-        </Text>
+        <Text style={styles.subTitle}>10.1 Account Deletion</Text>
+        <Text style={styles.paragraph}>You can delete your account by:</Text>
         <View style={styles.bulletList}>
-          <Text style={styles.bulletItem}>1. Going to Settings in the App</Text>
-          <Text style={styles.bulletItem}>2. Selecting "Delete Account"</Text>
-          <Text style={styles.bulletItem}>3. Confirming your choice</Text>
+          <Text style={styles.bulletItem}>• Using the in-app "Delete Account" option, or</Text>
+          <Text style={styles.bulletItem}>• Emailing {SUPPORT_EMAIL}</Text>
         </View>
         <Text style={styles.paragraph}>
-          Alternatively, you can email us at {SUPPORT_EMAIL} to request account deletion.
-          We will process deletion requests within 30 days.
+          Requests are processed within 30 days.
         </Text>
 
         {/* California Privacy Rights */}
         <Text style={styles.sectionTitle}>11. California Privacy Rights (CCPA)</Text>
-        <Text style={styles.paragraph}>
-          If you are a California resident, you have additional rights under the California Consumer
-          Privacy Act (CCPA):
-        </Text>
+        <Text style={styles.paragraph}>California residents have the right to:</Text>
         <View style={styles.bulletList}>
-          <Text style={styles.bulletItem}>• Right to know what personal information we collect and how it's used</Text>
-          <Text style={styles.bulletItem}>• Right to delete your personal information</Text>
-          <Text style={styles.bulletItem}>• Right to opt-out of the sale of personal information (we do not sell personal information)</Text>
-          <Text style={styles.bulletItem}>• Right to non-discrimination for exercising your privacy rights</Text>
+          <Text style={styles.bulletItem}>• Know what personal data is collected</Text>
+          <Text style={styles.bulletItem}>• Request deletion</Text>
+          <Text style={styles.bulletItem}>• Opt out of the sale of personal data (we do not sell data)</Text>
+          <Text style={styles.bulletItem}>• Receive equal service regardless of privacy choices</Text>
         </View>
 
         {/* International Users */}
         <Text style={styles.sectionTitle}>12. International Users</Text>
         <Text style={styles.paragraph}>
-          PlayBeacon is operated from the United States. If you are accessing our App from outside
-          the United States, please be aware that your information may be transferred to, stored,
-          and processed in the United States where our servers are located.
-        </Text>
-        <Text style={styles.paragraph}>
-          By using PlayBeacon, you consent to the transfer of your information to the United States
-          and the use of your information in accordance with this Privacy Policy.
+          PlayBeacon is operated from the United States. If you access the App from outside the U.S.,
+          your information may be processed in the U.S. in accordance with this policy.
         </Text>
 
-        {/* Changes to Privacy Policy */}
+        {/* Changes */}
         <Text style={styles.sectionTitle}>13. Changes to This Privacy Policy</Text>
         <Text style={styles.paragraph}>
-          We may update this Privacy Policy from time to time. We will notify you of any changes by:
+          We may update this Privacy Policy from time to time. Changes will be communicated by:
         </Text>
         <View style={styles.bulletList}>
-          <Text style={styles.bulletItem}>• Posting the new Privacy Policy in the App</Text>
-          <Text style={styles.bulletItem}>• Updating the "Last Updated" date at the top of this policy</Text>
-          <Text style={styles.bulletItem}>• Sending a notification through the App for material changes</Text>
+          <Text style={styles.bulletItem}>• Updating this page</Text>
+          <Text style={styles.bulletItem}>• Updating the "Last Updated" date</Text>
+          <Text style={styles.bulletItem}>• Providing in-app notice for material changes</Text>
         </View>
         <Text style={styles.paragraph}>
-          We encourage you to review this Privacy Policy periodically. Your continued use of
-          PlayBeacon after any changes constitutes acceptance of the updated policy.
+          Continued use of the App constitutes acceptance of the updated policy.
         </Text>
 
         {/* Contact */}
         <Text style={styles.sectionTitle}>14. Contact Us</Text>
         <Text style={styles.paragraph}>
-          If you have questions about this Privacy Policy, wish to exercise your rights, or have
-          concerns about how we handle your information, please contact us:
+          If you have questions or concerns about this Privacy Policy, contact:
         </Text>
         <View style={styles.contactBox}>
-          <Text style={styles.contactLabel}>Email:</Text>
+          <Text style={styles.contactText}>{COMPANY_NAME}</Text>
           <TouchableOpacity onPress={handleEmailPress}>
-            <Text style={styles.emailLink}>{SUPPORT_EMAIL}</Text>
+            <Text style={styles.emailLink}>📧 {SUPPORT_EMAIL}</Text>
           </TouchableOpacity>
-          {COMPANY_ADDRESS ? (
-            <>
-              <Text style={styles.contactLabel}>Mail:</Text>
-              <Text style={styles.contactText}>{COMPANY_NAME}</Text>
-              <Text style={styles.contactText}>{COMPANY_ADDRESS}</Text>
-            </>
-          ) : null}
         </View>
-        <Text style={styles.paragraph}>
-          We will respond to all inquiries within 30 days.
-        </Text>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            This Privacy Policy is effective as of {EFFECTIVE_DATE}.
-          </Text>
           <Text style={styles.footerText}>
             © {new Date().getFullYear()} {COMPANY_NAME}. All rights reserved.
           </Text>
@@ -398,7 +377,7 @@ const styles = StyleSheet.create({
     borderLeftColor: colors.accent.primary,
   },
   summaryTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: colors.text.primary,
     marginBottom: 8,
@@ -480,12 +459,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.s,
     padding: 16,
     marginBottom: 12,
-  },
-  contactLabel: {
-    fontSize: 12,
-    color: colors.text.tertiary,
-    marginTop: 8,
-    marginBottom: 4,
   },
   contactText: {
     fontSize: 14,

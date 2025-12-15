@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../styles/colors';
 import { radii } from '../styles/kidTheme';
 
-const SUPPORT_EMAIL = 'support@playbeacon.app';
+const SUPPORT_EMAIL = 'support@watchlightinteractive.com';
 const COMPANY_NAME = 'Watchlight Interactive LLC';
 const EFFECTIVE_DATE = 'December 2024';
 
