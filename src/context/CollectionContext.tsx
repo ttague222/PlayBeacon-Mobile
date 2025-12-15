@@ -28,8 +28,16 @@ import {
 import badgesData from '../data/badges.json';
 import animalsData from '../data/animals.json';
 import SoundManager from '../services/SoundManager';
-import { useBear } from './BearContext';
 import logger from '../utils/logger';
+
+// Lazy import BearContext to prevent initialization crashes
+let useBearHook: (() => any) | null = null;
+try {
+  const BearContext = require('./BearContext');
+  useBearHook = BearContext.useBear;
+} catch (error) {
+  logger.warn('[CollectionContext] BearContext not available:', error);
+}
 
 // Storage key
 const COLLECTION_STORAGE_KEY = '@playbeacon_collection_progress';
@@ -146,7 +154,18 @@ export function CollectionProvider({ children }: CollectionProviderProps) {
   const [progress, setProgress] = useState<CollectionProgress>(getDefaultProgress());
   const [isLoaded, setIsLoaded] = useState(false);
   const [pendingUnlocks, setPendingUnlocks] = useState<UnlockEvent[]>([]);
-  const bearContext = useBear();
+
+  // Safely get bear context - wrapped to prevent crashes if BearProvider isn't ready
+  let bearContext: any = null;
+  try {
+    if (useBearHook) {
+      bearContext = useBearHook();
+    }
+  } catch (error) {
+    // BearContext not available yet - this is fine, we'll just skip bear animations
+    logger.warn('[CollectionContext] Could not get bear context:', error);
+  }
+
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Track when we need to trigger bear celebration (to avoid setState during render)
   const shouldTriggerBearRef = useRef(false);

@@ -41,8 +41,14 @@ export function SoundProvider({ children }) {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        // Initialize SoundManager
-        await SoundManager.initialize();
+        // Initialize SoundManager with extra error protection
+        try {
+          await SoundManager.initialize();
+        } catch (soundInitError) {
+          // Sound initialization failed - app continues without sound
+          logger.warn('[SoundContext] SoundManager initialization failed:', soundInitError);
+          // Don't throw - continue loading settings and mark as initialized
+        }
 
         // Load saved settings
         const savedSettings = await AsyncStorage.getItem(STORAGE_KEY);
