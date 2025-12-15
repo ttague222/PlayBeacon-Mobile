@@ -19,9 +19,7 @@ export default ({ config }) => {
       bundleIdentifier: 'com.playbeacon.app',
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
-        NSCameraUsageDescription: 'PlayBeacon needs camera access to scan QR codes',
-        NSPhotoLibraryUsageDescription: 'PlayBeacon needs photo library access to upload game screenshots',
-        NSUserTrackingUsageDescription: 'This identifier will be used to deliver personalized ads to you.',
+        NSUserTrackingUsageDescription: 'PlayBeacon shows non-personalized ads. This permission helps measure ad effectiveness without tracking you personally.',
         SKAdNetworkItems: [
           { SKAdNetworkIdentifier: 'cstr6suwn9.skadnetwork' },
           { SKAdNetworkIdentifier: '4fzdc2evr5.skadnetwork' },
@@ -66,7 +64,7 @@ export default ({ config }) => {
           // Use production App IDs from env vars, fall back to test IDs for development
           androidAppId: process.env.EXPO_PUBLIC_ADMOB_APP_ID_ANDROID || 'ca-app-pub-3940256099942544~3347511713',
           iosAppId: process.env.EXPO_PUBLIC_ADMOB_APP_ID_IOS || 'ca-app-pub-3940256099942544~1458002511',
-          userTrackingUsageDescription: 'This identifier will be used to deliver personalized ads to you.',
+          userTrackingUsageDescription: 'PlayBeacon shows non-personalized ads. This permission helps measure ad effectiveness without tracking you personally.',
         },
       ],
       'expo-tracking-transparency',
