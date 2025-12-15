@@ -19,7 +19,7 @@ import { colors } from '../styles/colors';
 import { radii } from '../styles/kidTheme';
 
 const SUPPORT_EMAIL = 'support@playbeacon.app';
-const COMPANY_NAME = 'PlayBeacon';
+const COMPANY_NAME = 'Watchlight Interactive LLC';
 const EFFECTIVE_DATE = 'December 2024';
 
 export default function TermsOfServiceScreen({ navigation, onClose }) {

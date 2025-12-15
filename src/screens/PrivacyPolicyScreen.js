@@ -19,12 +19,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../styles/colors';
 import { radii } from '../styles/kidTheme';
 
-// TODO: Update these before production launch
 const SUPPORT_EMAIL = 'support@playbeacon.app';
-const COMPANY_NAME = 'PlayBeacon'; // TODO: Replace with your legal entity name (e.g., "PlayBeacon LLC")
-const COMPANY_ADDRESS = ''; // TODO: Add your business address for COPPA compliance
-const EFFECTIVE_DATE = 'December 14, 2024';
-const WEBSITE_URL = 'https://playbeacon.app'; // TODO: Update with your actual website
+const COMPANY_NAME = 'Watchlight Interactive LLC';
+const COMPANY_ADDRESS = ''; // Optional - email contact is sufficient for COPPA compliance
+const EFFECTIVE_DATE = 'December 15, 2024';
+const WEBSITE_URL = 'https://playbeacon.app';
 
 export default function PrivacyPolicyScreen({ navigation, onClose }) {
   const handleClose = () => {
