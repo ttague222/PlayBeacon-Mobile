@@ -218,6 +218,11 @@ export const api = {
     return response.data;
   },
 
+  deleteAccount: async () => {
+    const response = await apiClient.delete('/user/account');
+    return response.data;
+  },
+
   updateProfileAnimal: async (animalId) => {
     if (!animalId || typeof animalId !== 'string') {
       throw new Error('Invalid animal ID');

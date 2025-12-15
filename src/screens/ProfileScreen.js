@@ -171,6 +171,52 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleDeleteAccount = async () => {
+    SoundManager.play('ui.tap');
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all your data including ratings, collections, and preferences. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: () => {
+            // Second confirmation for destructive action
+            Alert.alert(
+              'Are you absolutely sure?',
+              'All your data will be permanently deleted. This cannot be recovered.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Yes, Delete Everything',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      setResetting(true);
+                      // Delete account from server (Firestore + Firebase Auth)
+                      await api.deleteAccount();
+                      // Clear all local data
+                      await clearAllLocalData();
+                      // Sign out (this will trigger new anonymous account creation)
+                      await logout();
+                      // The app will restart at age verification/tutorial
+                    } catch (error) {
+                      logger.error('Failed to delete account:', error);
+                      Alert.alert('Error', 'Failed to delete account. Please try again or contact support.');
+                    } finally {
+                      setResetting(false);
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
   // Parent-gated actions
   const handleGoogleSignInPress = () => {
     SoundManager.play('ui.tap');
@@ -593,6 +639,30 @@ export default function ProfileScreen() {
               <View>
                 <Text style={styles.settingsRowText}>Start Fresh</Text>
                 <Text style={styles.settingsRowSubtext}>Reset app and restart tutorial</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.settingsRowDivider} />
+
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={handleDeleteAccount}
+            disabled={resetting}
+          >
+            <View style={styles.settingsRowLeft}>
+              <View style={[styles.settingsIcon, { backgroundColor: colors.error + '20' }]}>
+                {resetting ? (
+                  <ActivityIndicator size="small" color={colors.error} />
+                ) : (
+                  <Ionicons name="trash-outline" size={18} color={colors.error} />
+                )}
+              </View>
+              <View>
+                <Text style={[styles.settingsRowText, { color: colors.error }]}>
+                  Delete Account
+                </Text>
+                <Text style={styles.settingsRowSubtext}>Permanently delete all data</Text>
               </View>
             </View>
           </TouchableOpacity>
