@@ -84,8 +84,8 @@ export function PremiumProvider({ children }) {
       // Save to local storage
       await AsyncStorage.setItem(PREMIUM_STORAGE_KEY, status ? 'true' : 'false');
 
-      // Sync to Firestore if user is logged in
-      if (user?.uid) {
+      // Sync to Firestore if user is logged in and db is available
+      if (user?.uid && db) {
         try {
           const userRef = doc(db, 'users', user.uid);
           const userDoc = await getDoc(userRef);
@@ -110,7 +110,7 @@ export function PremiumProvider({ children }) {
    * Load premium status from Firestore (for cross-device sync)
    */
   const loadPremiumFromFirestore = useCallback(async () => {
-    if (!user?.uid) return;
+    if (!user?.uid || !db) return;
 
     try {
       const userRef = doc(db, 'users', user.uid);

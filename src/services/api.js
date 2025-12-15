@@ -32,7 +32,8 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(async (config) => {
-  const currentUser = auth.currentUser;
+  // Check if auth is available (may be null if Firebase failed to initialize)
+  const currentUser = auth?.currentUser;
   if (currentUser) {
     // getIdToken() automatically refreshes the token if expired
     const token = await currentUser.getIdToken();

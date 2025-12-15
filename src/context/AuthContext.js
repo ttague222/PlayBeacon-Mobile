@@ -25,8 +25,19 @@ import { auth, db } from '../config/firebase';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import * as SecureStore from 'expo-secure-store';
-import { setUser as setSentryUser } from '../config/sentry';
 import logger from '../utils/logger';
+
+// Lazy load sentry to prevent initialization crashes
+const setSentryUser = (user) => {
+  try {
+    const sentry = require('../config/sentry');
+    if (sentry && sentry.setUser) {
+      sentry.setUser(user);
+    }
+  } catch (error) {
+    // Silently fail - sentry is optional
+  }
+};
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -51,6 +62,13 @@ export const AuthProvider = ({ children }) => {
    * Initialize or restore anonymous session
    */
   const initializeAuth = useCallback(async () => {
+    // Check if Firebase Auth is available
+    if (!auth) {
+      logger.error('Firebase Auth not initialized - app will run in offline mode');
+      setLoading(false);
+      return;
+    }
+
     try {
       // Read stored values in parallel (faster startup)
       const [, storedLinkedGoogle] = await Promise.all([
@@ -74,6 +92,7 @@ export const AuthProvider = ({ children }) => {
         await signInAnonymously(auth);
       } catch (fallbackError) {
         logger.error('Fallback anonymous sign-in failed:', fallbackError);
+        setLoading(false);
       }
     }
   }, []);
@@ -82,7 +101,7 @@ export const AuthProvider = ({ children }) => {
    * Create or update user document in Firestore
    */
   const ensureUserDocument = useCallback(async (firebaseUser) => {
-    if (!firebaseUser) return;
+    if (!firebaseUser || !db) return;
 
     try {
       const userRef = doc(db, 'users', firebaseUser.uid);
@@ -120,6 +139,12 @@ export const AuthProvider = ({ children }) => {
 
   // Listen for auth state changes
   useEffect(() => {
+    // If auth is not available, set loading to false and return
+    if (!auth) {
+      setLoading(false);
+      return () => {};
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
