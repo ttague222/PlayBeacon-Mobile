@@ -28,7 +28,6 @@
     },
     "production": {
       "autoIncrement": true,
-      "node": "22.12.0",
       "ios": {
         "resourceClass": "m-medium",
         "simulator": false
