@@ -28,6 +28,9 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+      },
       "ios": {
         "resourceClass": "m-medium",
         "simulator": false
