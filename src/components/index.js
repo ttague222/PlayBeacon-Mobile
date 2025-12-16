@@ -4,48 +4,12 @@
  * Central export file for all reusable components.
  */
 
-// Bear Mascot (New unified component with state machine)
-export { default as Bear, BearState, BearPositioned, BearReactive } from './Bear';
-
-// Bear Screen Wrappers (Page-level Bear components)
-export {
-  BearHome,
-  BearDiscovery,
-  BearWishlist,
-  BearProfile,
-  BearOnboarding,
-  BearGameDetail,
-  BearLoadingScreen,
-  BearError,
-  BearEmpty,
-  GlobalBear,
-} from './BearScreens';
-
-// Legacy Bear Mascot (kept for backwards compatibility)
-export { default as BearMascot, BEAR_STATES } from './BearMascot';
-export {
-  BearSmall,
-  BearMedium,
-  BearLarge,
-  BearThinking,
-  BearSad,
-  BearCelebrating,
-  BearWaving,
-  BearJumping,
-  BearSleeping,
-  BearYes,
-  BearNo,
-  BearSurprised,
-  BearHappy,
-} from './BearMascot';
-
 // Lottie Animations
 export { default as LottieAnim } from './LottieAnim';
 export {
   MicroAnim,
   LoadingAnim,
   CelebrationAnim,
-  MascotAnim,
   EmptyStateAnim,
 } from './LottieAnim';
 
@@ -62,16 +26,8 @@ export {
   OfflineState,
 } from './EmptyState';
 
-// Bear Loading
-export { default as BearLoading } from './BearLoading';
-export {
-  BearLoadingOverlay,
-  BearLoadingInline,
-  BearLoadingPlaceholder,
-} from './BearLoading';
-
 // Sound Settings
-export { default as SoundSettings, SoundToggle, BearSoundToggle } from './SoundSettings';
+export { default as SoundSettings, SoundToggle } from './SoundSettings';
 
 // Sound-enabled Touchables
 export {

@@ -1,42 +1,34 @@
 /**
  * EmptyState Component
  *
- * Displays a friendly empty state with Bear the mascot.
+ * Displays a friendly empty state with icons and messages.
  * Use this when lists are empty, searches return no results, etc.
  */
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import BearMascot, { BEAR_STATES, BearSad, BearThinking, BearSleeping } from './BearMascot';
 import { colors } from '../styles/colors';
 
 /**
  * @param {Object} props
  * @param {string} props.title - Main message
  * @param {string} props.subtitle - Secondary message
- * @param {string} props.bearState - Bear emotional state (default: SAD)
+ * @param {string} props.emoji - Emoji to display (default: 😢)
  * @param {string} props.actionLabel - Button text (optional)
  * @param {Function} props.onAction - Button callback (optional)
- * @param {number} props.bearSize - Size of Bear (default: 180)
  * @param {Object} props.style - Additional container style
  */
 export default function EmptyState({
   title,
   subtitle,
-  bearState = BEAR_STATES.SAD,
+  emoji = '😢',
   actionLabel,
   onAction,
-  bearSize = 180,
   style,
 }) {
   return (
     <View style={[styles.container, style]}>
-      <BearMascot
-        state={bearState}
-        size={bearSize}
-        interactive={true}
-        autoIdle={false}
-      />
+      <Text style={styles.emoji}>{emoji}</Text>
 
       <Text style={styles.title}>{title}</Text>
 
@@ -63,7 +55,7 @@ export function EmptySearchState({ onRetry }) {
     <EmptyState
       title="No games found"
       subtitle="Try a different search term"
-      bearState={BEAR_STATES.THINK}
+      emoji="🔍"
       actionLabel={onRetry ? "Try Again" : undefined}
       onAction={onRetry}
     />
@@ -76,7 +68,7 @@ export function EmptyFavoritesState({ onExplore }) {
     <EmptyState
       title="No favorites yet"
       subtitle="Start exploring games to save your favorites!"
-      bearState={BEAR_STATES.SAD}
+      emoji="💜"
       actionLabel="Explore Games"
       onAction={onExplore}
     />
@@ -89,7 +81,7 @@ export function EmptyCollectionsState({ onCreate }) {
     <EmptyState
       title="No collections"
       subtitle="Create your first collection to organize games!"
-      bearState={BEAR_STATES.BLINK}
+      emoji="📁"
       actionLabel="Create Collection"
       onAction={onCreate}
     />
@@ -102,7 +94,7 @@ export function EmptyQueueState({ onRefresh }) {
     <EmptyState
       title="All caught up!"
       subtitle="Check back later for new game recommendations"
-      bearState={BEAR_STATES.SLEEP}
+      emoji="✨"
       actionLabel={onRefresh ? "Refresh" : undefined}
       onAction={onRefresh}
     />
@@ -115,23 +107,18 @@ export function ErrorState({ message, onRetry }) {
     <EmptyState
       title="Oops!"
       subtitle={message || "Something went wrong. Please try again."}
-      bearState={BEAR_STATES.SAD}
+      emoji="😕"
       actionLabel="Try Again"
       onAction={onRetry}
     />
   );
 }
 
-// Loading state with thinking Bear
+// Loading state
 export function LoadingState({ message }) {
   return (
     <View style={styles.container}>
-      <BearMascot
-        state={BEAR_STATES.THINK}
-        size={150}
-        interactive={false}
-        autoIdle={false}
-      />
+      <Text style={styles.emoji}>⏳</Text>
       <Text style={styles.loadingText}>{message || "Loading..."}</Text>
     </View>
   );
@@ -143,10 +130,9 @@ export function WelcomeState({ onGetStarted }) {
     <EmptyState
       title="Welcome to PlayBeacon!"
       subtitle="Let's find some awesome Roblox games for you"
-      bearState={BEAR_STATES.WAVE}
+      emoji="🎮"
       actionLabel="Get Started"
       onAction={onGetStarted}
-      bearSize={200}
     />
   );
 }
@@ -157,7 +143,7 @@ export function OfflineState({ onRetry }) {
     <EmptyState
       title="No connection"
       subtitle="Check your internet and try again"
-      bearState={BEAR_STATES.SAD}
+      emoji="📡"
       actionLabel="Retry"
       onAction={onRetry}
     />
@@ -170,6 +156,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 30,
+  },
+  emoji: {
+    fontSize: 64,
+    marginBottom: 8,
   },
   title: {
     fontSize: 22,

@@ -2,7 +2,7 @@
  * BadgesScreen
  *
  * Displays all badges in a grid layout with progress tracking.
- * Kid-friendly design with Bear mascot integration.
+ * Kid-friendly design.
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
@@ -21,7 +21,6 @@ import { useCollection } from '../context/CollectionContext';
 import SoundManager from '../services/SoundManager';
 import { BadgeDefinition, AnimalDefinition, RARITY_CONFIG } from '../types/badges';
 import { BadgeTile, BadgeDetailModal, AnimalTile, AnimalCardModal } from '../components/badges';
-import { BearHome } from '../components/BearScreens';
 import { colors } from '../styles/colors';
 import { radii, spacing, typography } from '../styles/kidTheme';
 import ProfileButton from '../components/ProfileButton';
@@ -245,9 +244,6 @@ export default function BadgesScreen() {
         {/* Bottom padding */}
         <View style={styles.bottomPadding} />
       </ScrollView>
-
-      {/* Bear Mascot - disabled until animation files are fixed */}
-      {/* <BearHome /> */}
 
       {/* Badge Detail Modal */}
       <BadgeDetailModal

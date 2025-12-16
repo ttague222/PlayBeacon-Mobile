@@ -2,7 +2,7 @@
  * CollectablesScreen
  *
  * Displays all animal collectables in a gallery grid.
- * Kid-friendly design with rarity indicators and Bear mascot.
+ * Kid-friendly design with rarity indicators.
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
@@ -21,7 +21,6 @@ import { useCollection } from '../context/CollectionContext';
 import SoundManager from '../services/SoundManager';
 import { AnimalDefinition, RARITY_CONFIG } from '../types/badges';
 import { AnimalTile, AnimalCardModal } from '../components/badges';
-import { BearHome } from '../components/BearScreens';
 import { colors } from '../styles/colors';
 import { typography, radii } from '../styles/kidTheme';
 
@@ -288,9 +287,6 @@ export default function CollectablesScreen() {
         {/* Bottom padding */}
         <View style={styles.bottomPadding} />
       </ScrollView>
-
-      {/* Bear Mascot - disabled until animation files are fixed */}
-      {/* <BearHome /> */}
 
       {/* Animal Card Modal */}
       <AnimalCardModal

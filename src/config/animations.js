@@ -65,28 +65,6 @@ export const ANIMATIONS = {
     queue: null, // require('../../assets/lottie/empty_states/empty_queue.json'),
   },
 
-  // ============================================
-  // MASCOT (BEAR) ANIMATIONS
-  // ============================================
-  mascot: {
-    idle: null, // require('../../assets/lottie/mascot/bear_idle.json'),
-    blink: null, // require('../../assets/lottie/mascot/bear_blink.json'),
-    sleep: null, // require('../../assets/lottie/mascot/bear_sleep.json'),
-    wave: null, // require('../../assets/lottie/mascot/bear_wave.json'),
-    celebrate: null, // require('../../assets/lottie/mascot/bear_celebrate.json'),
-    sad: null, // require('../../assets/lottie/mascot/bear_sad.json'),
-    think: null, // require('../../assets/lottie/mascot/bear_think.json'),
-    surprise: null, // require('../../assets/lottie/mascot/bear_surprise.json'),
-    jump: null, // require('../../assets/lottie/mascot/bear_jump.json'),
-    yes: null, // require('../../assets/lottie/mascot/bear_yes.json'),
-    no: null, // require('../../assets/lottie/mascot/bear_no.json'),
-    tail_wag: null, // require('../../assets/lottie/mascot/bear_tail_wag.json'),
-    ear_wiggle: null, // require('../../assets/lottie/mascot/bear_ear_wiggle.json'),
-    point_left: null, // require('../../assets/lottie/mascot/bear_point_left.json'),
-    point_right: null, // require('../../assets/lottie/mascot/bear_point_right.json'),
-    tap_bounce: null, // require('../../assets/lottie/mascot/bear_tap_bounce.json'),
-    paw_pop: null, // require('../../assets/lottie/mascot/bear_paw_pop.json'),
-  },
 };
 
 /**

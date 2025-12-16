@@ -2,7 +2,7 @@
  * RewardUnlockModal Component
  *
  * Full-screen celebratory modal for badge/animal unlocks.
- * Features confetti, animations, Bear celebration, and magical reveal.
+ * Features confetti, animations, and magical reveal.
  * Uses dark theme to match the rest of the app.
  */
 
@@ -24,7 +24,6 @@ import { useCollection } from '../../context/CollectionContext';
 import { radii, spacing, typography } from '../../styles/kidTheme';
 import { colors } from '../../styles/colors';
 import SoundManager from '../../services/SoundManager';
-import Bear, { BearState } from '../Bear';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 

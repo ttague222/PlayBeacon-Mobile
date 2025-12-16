@@ -4,7 +4,6 @@ import { AuthProvider } from './src/context/AuthContext';
 import { AdProvider } from './src/context/AdContext';
 import { PremiumProvider } from './src/context/PremiumContext';
 import { AnimationProvider } from './src/context/AnimationContext';
-import { BearProvider } from './src/context/BearContext';
 import { SoundProvider } from './src/context/SoundContext';
 import { CollectionProvider } from './src/context/CollectionContext';
 import { NetworkProvider } from './src/context/NetworkContext';
@@ -64,13 +63,11 @@ function AppContent() {
               <PremiumProvider>
                 <AdProvider>
                   <AnimationProvider>
-                    <BearProvider>
-                      <CollectionProvider>
-                        <View style={styles.container}>
-                          <AppNavigator />
-                        </View>
-                      </CollectionProvider>
-                    </BearProvider>
+                    <CollectionProvider>
+                      <View style={styles.container}>
+                        <AppNavigator />
+                      </View>
+                    </CollectionProvider>
                   </AnimationProvider>
                 </AdProvider>
               </PremiumProvider>

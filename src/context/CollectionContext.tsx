@@ -28,7 +28,6 @@ import {
 import badgesData from '../data/badges.json';
 import animalsData from '../data/animals.json';
 import SoundManager from '../services/SoundManager';
-import { useBear } from './BearContext';
 import logger from '../utils/logger';
 
 // Storage key
@@ -146,10 +145,7 @@ export function CollectionProvider({ children }: CollectionProviderProps) {
   const [progress, setProgress] = useState<CollectionProgress>(getDefaultProgress());
   const [isLoaded, setIsLoaded] = useState(false);
   const [pendingUnlocks, setPendingUnlocks] = useState<UnlockEvent[]>([]);
-  const bearContext = useBear();
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // Track when we need to trigger bear celebration (to avoid setState during render)
-  const shouldTriggerBearRef = useRef(false);
 
   /**
    * Load progress from storage
@@ -201,14 +197,6 @@ export function CollectionProvider({ children }: CollectionProviderProps) {
       }
     };
   }, [loadProgress]);
-
-  // Trigger bear celebration after state updates (avoids setState during render)
-  useEffect(() => {
-    if (shouldTriggerBearRef.current && bearContext) {
-      shouldTriggerBearRef.current = false;
-      bearContext.triggerEvent('ACHIEVEMENT_UNLOCK', { immediate: true });
-    }
-  }, [pendingUnlocks, bearContext]);
 
   /**
    * Check if a badge should unlock based on current stats
@@ -295,9 +283,6 @@ export function CollectionProvider({ children }: CollectionProviderProps) {
       if (newUnlocks.length > 0) {
         setPendingUnlocks(current => [...current, ...newUnlocks]);
 
-        // Mark that we need to trigger Bear celebration (done in useEffect to avoid setState during render)
-        shouldTriggerBearRef.current = true;
-
         // Play unlock sound
         SoundManager.play('rewards.achievement');
       }
@@ -359,8 +344,6 @@ export function CollectionProvider({ children }: CollectionProviderProps) {
 
       if (newUnlocks.length > 0) {
         setPendingUnlocks(current => [...current, ...newUnlocks]);
-        // Mark that we need to trigger Bear celebration (done in useEffect to avoid setState during render)
-        shouldTriggerBearRef.current = true;
         SoundManager.play('rewards.achievement');
       }
 

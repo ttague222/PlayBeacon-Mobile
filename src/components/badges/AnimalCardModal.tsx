@@ -2,7 +2,7 @@
  * AnimalCardModal Component
  *
  * Full-screen modal showing animal card details.
- * Includes fun fact, rarity, and Bear reaction.
+ * Includes fun fact and rarity information.
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -23,7 +23,6 @@ import { useCollection } from '../../context/CollectionContext';
 import { colors } from '../../styles/colors';
 import { radii, spacing, typography } from '../../styles/kidTheme';
 import SoundManager from '../../services/SoundManager';
-import Bear, { BearState } from '../Bear';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -261,16 +260,6 @@ export default function AnimalCardModal({
             </Text>
           )}
 
-          {/* Bear reaction */}
-          <View style={styles.bearContainer}>
-            <Bear
-              state={isUnlocked ? BearState.TAIL_WAG : BearState.THINK}
-              size={70}
-              interactive={false}
-              autoBlink={true}
-              soundEnabled={false}
-            />
-          </View>
         </Animated.View>
       </Animated.View>
     </Modal>
@@ -393,8 +382,5 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginBottom: spacing.m,
     paddingHorizontal: spacing.m,
-  },
-  bearContainer: {
-    marginTop: spacing.s,
   },
 });

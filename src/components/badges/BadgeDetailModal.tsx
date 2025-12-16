@@ -2,7 +2,7 @@
  * BadgeDetailModal Component
  *
  * Full-screen modal showing badge details and associated animal.
- * Kid-friendly design with Bear reactions.
+ * Kid-friendly design.
  */
 
 import React, { useEffect } from 'react';
@@ -20,7 +20,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { BadgeDefinition, RARITY_CONFIG } from '../../types/badges';
 import { useCollection } from '../../context/CollectionContext';
-import { useBear } from '../../context/BearContext';
 import { colors } from '../../styles/colors';
 import { radii, spacing, typography } from '../../styles/kidTheme';
 import SoundManager from '../../services/SoundManager';
@@ -61,7 +60,6 @@ export default function BadgeDetailModal({
   onViewAnimal,
 }: BadgeDetailModalProps) {
   const { getBadgeProgress, isBadgeUnlocked, animals, markBadgeSeen } = useCollection();
-  const { triggerEvent } = useBear();
 
   const isUnlocked = badge ? isBadgeUnlocked(badge.id) : false;
   const progress = badge ? getBadgeProgress(badge.id) : undefined;
@@ -94,16 +92,11 @@ export default function BadgeDetailModal({
 
       // Play sound
       SoundManager.play('ui.modal_open');
-
-      // Bear reaction
-      if (isUnlocked) {
-        triggerEvent('MASCOT_CELEBRATE', { immediate: true });
-      }
     } else {
       scaleAnim.setValue(0.8);
       fadeAnim.setValue(0);
     }
-  }, [visible, badge, isUnlocked, progress, markBadgeSeen, triggerEvent, scaleAnim, fadeAnim]);
+  }, [visible, badge, isUnlocked, progress, markBadgeSeen, scaleAnim, fadeAnim]);
 
   const handleClose = () => {
     SoundManager.play('ui.modal_close');

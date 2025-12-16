@@ -9,13 +9,6 @@ import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Mock BearContext
-jest.mock('../../context/BearContext', () => ({
-  useBear: () => ({
-    triggerEvent: jest.fn(),
-  }),
-}));
-
 // Mock SoundManager
 jest.mock('../../services/SoundManager', () => ({
   play: jest.fn(),
