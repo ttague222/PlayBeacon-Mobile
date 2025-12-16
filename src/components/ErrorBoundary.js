@@ -68,13 +68,13 @@ class ErrorBoundary extends Component {
       return (
         <SafeAreaView style={styles.container}>
           <View style={styles.content}>
-            {/* Friendly Emoji */}
-            <Text style={styles.emoji}>😅</Text>
+            {/* Sad Bear Emoji */}
+            <Text style={styles.emoji}>🐻💤</Text>
 
             <Text style={styles.title}>Oops! Something went wrong</Text>
 
             <Text style={styles.message}>
-              Something got a little mixed up! Don't worry, let's try again.
+              Bear got a little confused! Don't worry, let's try again.
             </Text>
 
             <TouchableOpacity

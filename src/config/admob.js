@@ -45,16 +45,11 @@ const PROD_IDS = {
 };
 
 // Use test IDs in development, real IDs in production
-// Falls back to test IDs if production IDs are not configured
 const getAdUnitId = (iosId, androidId, testIosId, testAndroidId) => {
   if (__DEV__) {
     return Platform.OS === 'ios' ? testIosId : testAndroidId;
   }
-  // In production, use real IDs if available, otherwise fall back to test IDs
-  // This prevents crashes if AdMob env vars aren't configured
-  const prodId = Platform.OS === 'ios' ? iosId : androidId;
-  const testId = Platform.OS === 'ios' ? testIosId : testAndroidId;
-  return prodId || testId;
+  return Platform.OS === 'ios' ? iosId : androidId;
 };
 
 export const AD_UNIT_IDS = {
