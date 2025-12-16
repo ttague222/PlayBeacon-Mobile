@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
@@ -11,16 +11,16 @@ import { CollectionProvider } from './src/context/CollectionContext';
 import { NetworkProvider } from './src/context/NetworkContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { ErrorBoundary } from './src/components';
+import { initializeSentry } from './src/config/sentry';
+import * as Sentry from '@sentry/react-native';
 
 // Track if Sentry initialized successfully
 let sentryInitialized = false;
 
-// Safely initialize Sentry - wrapped in try/catch to prevent white screen crashes
-try {
-  const Sentry = require('@sentry/react-native');
-  const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
-
-  if (sentryDsn) {
+// Only initialize Sentry if DSN is provided via environment variable
+const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+if (sentryDsn) {
+  try {
     Sentry.init({
       dsn: sentryDsn,
 
@@ -46,22 +46,17 @@ try {
       },
     });
     sentryInitialized = true;
+  } catch (error) {
+    // Silently fail Sentry initialization to prevent app crashes
+    console.warn('Sentry initialization failed:', error);
   }
-} catch (error) {
-  // Silently fail Sentry initialization to prevent app crashes
-  console.warn('Sentry initialization failed:', error);
 }
 
+// Initialize error tracking
+// Logs errors to Firestore in production for monitoring
+initializeSentry();
+
 function App() {
-  // Initialize custom crashlytics inside React lifecycle (safer)
-  useEffect(() => {
-    try {
-      const { initializeSentry } = require('./src/config/sentry');
-      initializeSentry();
-    } catch (error) {
-      console.warn('Custom error tracking initialization failed:', error);
-    }
-  }, []);
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
@@ -97,14 +92,4 @@ const styles = StyleSheet.create({
 
 // Only wrap with Sentry if it initialized successfully
 // This prevents white screen crashes on iOS if Sentry has issues
-let ExportedApp = App;
-if (sentryInitialized) {
-  try {
-    const Sentry = require('@sentry/react-native');
-    ExportedApp = Sentry.wrap(App);
-  } catch (error) {
-    console.warn('Failed to wrap app with Sentry:', error);
-  }
-}
-
-export default ExportedApp;
+export default sentryInitialized ? Sentry.wrap(App) : App;

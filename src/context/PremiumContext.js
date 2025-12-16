@@ -26,23 +26,31 @@ export const PRODUCT_ID = 'com.playbeacon.app.removeads';
 // Storage key for local premium cache
 const PREMIUM_STORAGE_KEY = '@playbeacon_premium';
 
-// Flag to track if IAP module load failed
-let iapModuleLoadFailed = false;
+// Dynamically import react-native-iap functions only when not in Expo Go
+let initConnection = null;
+let endConnection = null;
+let getProducts = null;
+let getAvailablePurchases = null;
+let requestPurchase = null;
+let finishTransaction = null;
+let purchaseUpdatedListener = null;
+let purchaseErrorListener = null;
 
-// Lazy load react-native-iap functions to prevent crashes at module initialization
-// Called on first use, not at import time
-const getIapModule = () => {
-  if (isExpoGo || iapModuleLoadFailed) {
-    return null;
-  }
+if (!isExpoGo) {
   try {
-    return require('react-native-iap');
+    const RNIap = require('react-native-iap');
+    initConnection = RNIap.initConnection;
+    endConnection = RNIap.endConnection;
+    getProducts = RNIap.getProducts;
+    getAvailablePurchases = RNIap.getAvailablePurchases;
+    requestPurchase = RNIap.requestPurchase;
+    finishTransaction = RNIap.finishTransaction;
+    purchaseUpdatedListener = RNIap.purchaseUpdatedListener;
+    purchaseErrorListener = RNIap.purchaseErrorListener;
   } catch (error) {
-    console.warn('react-native-iap not available:', error?.message);
-    iapModuleLoadFailed = true;
-    return null;
+    logger.log('react-native-iap not available:', error.message);
   }
-};
+}
 
 const PremiumContext = createContext(null);
 
@@ -76,8 +84,8 @@ export function PremiumProvider({ children }) {
       // Save to local storage
       await AsyncStorage.setItem(PREMIUM_STORAGE_KEY, status ? 'true' : 'false');
 
-      // Sync to Firestore if user is logged in and db is available
-      if (user?.uid && db) {
+      // Sync to Firestore if user is logged in
+      if (user?.uid) {
         try {
           const userRef = doc(db, 'users', user.uid);
           const userDoc = await getDoc(userRef);
@@ -102,7 +110,7 @@ export function PremiumProvider({ children }) {
    * Load premium status from Firestore (for cross-device sync)
    */
   const loadPremiumFromFirestore = useCallback(async () => {
-    if (!user?.uid || !db) return;
+    if (!user?.uid) return;
 
     try {
       const userRef = doc(db, 'users', user.uid);
@@ -125,8 +133,7 @@ export function PremiumProvider({ children }) {
    * Initialize IAP connection and load products
    */
   const initializeIAP = useCallback(async () => {
-    const RNIap = getIapModule();
-    if (isExpoGo || !RNIap) {
+    if (isExpoGo || !initConnection) {
       logger.log('IAP: Skipping initialization (running in Expo Go or IAP not available)');
       setIsLoading(false);
       return;
@@ -134,14 +141,16 @@ export function PremiumProvider({ children }) {
 
     try {
       // Initialize connection to store
-      const result = await RNIap.initConnection();
+      const result = await initConnection();
       logger.log('IAP connection result:', result);
       setIsIapAvailable(true);
 
       // Load products
-      const loadedProducts = await RNIap.getProducts({ skus: [PRODUCT_ID] });
-      logger.log('IAP products loaded:', loadedProducts);
-      setProducts(loadedProducts);
+      if (getProducts) {
+        const loadedProducts = await getProducts({ skus: [PRODUCT_ID] });
+        logger.log('IAP products loaded:', loadedProducts);
+        setProducts(loadedProducts);
+      }
 
       // Check for existing purchases (restore)
       await checkExistingPurchases();
@@ -157,11 +166,10 @@ export function PremiumProvider({ children }) {
    * Check for existing purchases (restore functionality)
    */
   const checkExistingPurchases = useCallback(async () => {
-    const RNIap = getIapModule();
-    if (!RNIap) return;
+    if (!getAvailablePurchases) return;
 
     try {
-      const purchases = await RNIap.getAvailablePurchases();
+      const purchases = await getAvailablePurchases();
       logger.log('Available purchases:', purchases);
 
       const hasPremium = purchases.some(
@@ -182,8 +190,7 @@ export function PremiumProvider({ children }) {
    * Purchase the premium/ad-free product
    */
   const purchasePremium = useCallback(async () => {
-    const RNIap = getIapModule();
-    if (isExpoGo || !RNIap) {
+    if (isExpoGo || !requestPurchase) {
       Alert.alert(
         'Not Available',
         'In-app purchases are not available in development mode.'
@@ -204,7 +211,7 @@ export function PremiumProvider({ children }) {
       setIsPurchasing(true);
 
       // Request purchase
-      const purchase = await RNIap.requestPurchase({
+      const purchase = await requestPurchase({
         sku: PRODUCT_ID,
         andDangerouslyFinishTransactionAutomaticallyIOS: false,
       });
@@ -212,8 +219,8 @@ export function PremiumProvider({ children }) {
       logger.log('Purchase result:', purchase);
 
       // Finish the transaction
-      if (Platform.OS === 'ios') {
-        await RNIap.finishTransaction({ purchase, isConsumable: false });
+      if (Platform.OS === 'ios' && finishTransaction) {
+        await finishTransaction({ purchase, isConsumable: false });
       }
 
       // Update premium status (local + Firestore)
@@ -252,8 +259,7 @@ export function PremiumProvider({ children }) {
    * Restore previous purchases
    */
   const restorePurchases = useCallback(async () => {
-    const RNIap = getIapModule();
-    if (isExpoGo || !RNIap) {
+    if (isExpoGo || !getAvailablePurchases) {
       Alert.alert(
         'Not Available',
         'Purchase restoration is not available in development mode.'
@@ -264,7 +270,7 @@ export function PremiumProvider({ children }) {
     try {
       setIsLoading(true);
 
-      const purchases = await RNIap.getAvailablePurchases();
+      const purchases = await getAvailablePurchases();
       const hasPremium = purchases.some(
         (purchase) => purchase.productId === PRODUCT_ID
       );
@@ -328,9 +334,8 @@ export function PremiumProvider({ children }) {
 
     // Cleanup IAP connection on unmount
     return () => {
-      const RNIap = getIapModule();
-      if (RNIap?.endConnection) {
-        RNIap.endConnection();
+      if (endConnection) {
+        endConnection();
       }
     };
   }, [loadPremiumStatus, initializeIAP]);
@@ -344,18 +349,17 @@ export function PremiumProvider({ children }) {
 
   // Set up purchase listener
   useEffect(() => {
-    const RNIap = getIapModule();
-    if (isExpoGo || !RNIap?.purchaseUpdatedListener) return;
+    if (isExpoGo || !purchaseUpdatedListener) return;
 
-    const purchaseUpdateSubscription = RNIap.purchaseUpdatedListener(
+    const purchaseUpdateSubscription = purchaseUpdatedListener(
       async (purchase) => {
         logger.log('Purchase updated:', purchase);
 
         if (purchase.productId === PRODUCT_ID) {
           // Finish transaction
           try {
-            if (Platform.OS === 'ios' && RNIap.finishTransaction) {
-              await RNIap.finishTransaction({ purchase, isConsumable: false });
+            if (Platform.OS === 'ios' && finishTransaction) {
+              await finishTransaction({ purchase, isConsumable: false });
             }
             setIsPremium(true);
             await savePremiumStatus(true);
@@ -366,8 +370,8 @@ export function PremiumProvider({ children }) {
       }
     );
 
-    const purchaseErrorSubscription = RNIap.purchaseErrorListener
-      ? RNIap.purchaseErrorListener((error) => {
+    const purchaseErrorSubscription = purchaseErrorListener
+      ? purchaseErrorListener((error) => {
           logger.error('Purchase error:', error);
         })
       : null;

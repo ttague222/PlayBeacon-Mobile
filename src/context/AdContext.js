@@ -137,7 +137,6 @@ export function AdProvider({ children }) {
 
   /**
    * Initialize AdMob SDK with COPPA-compliant settings
-   * Uses lazy loading with separate try/catch blocks to prevent native module crashes
    */
   const initializeAds = useCallback(async () => {
     // Skip initialization in Expo Go
@@ -148,48 +147,25 @@ export function AdProvider({ children }) {
       return;
     }
 
-    // Lazy load native modules - each in separate try/catch to isolate failures
-    let mobileAds = null;
-    let MaxAdContentRating = null;
-    let requestTrackingPermissionsAsync = null;
-
     try {
-      const adsModule = require('react-native-google-mobile-ads');
-      mobileAds = adsModule.default;
-      MaxAdContentRating = adsModule.MaxAdContentRating;
-    } catch (adsError) {
-      logger.warn('AdMob: Failed to load native module:', adsError?.message);
-      setIsInitialized(false);
-      setAdsEnabled(false);
-      return;
-    }
+      // Dynamically import native modules
+      const mobileAds = require('react-native-google-mobile-ads').default;
+      const { MaxAdContentRating } = require('react-native-google-mobile-ads');
+      const { requestTrackingPermissionsAsync } = require('expo-tracking-transparency');
 
-    try {
-      const trackingModule = require('expo-tracking-transparency');
-      requestTrackingPermissionsAsync = trackingModule.requestTrackingPermissionsAsync;
-    } catch (trackingError) {
-      logger.warn('AdMob: Tracking transparency not available:', trackingError?.message);
-      // Continue without tracking - ads can still work
-    }
-
-    try {
       // Request iOS App Tracking Transparency permission
-      if (Platform.OS === 'ios' && requestTrackingPermissionsAsync) {
-        try {
-          const { status } = await requestTrackingPermissionsAsync();
-          setTrackingStatus(status);
+      if (Platform.OS === 'ios') {
+        const { status } = await requestTrackingPermissionsAsync();
+        setTrackingStatus(status);
 
-          if (status !== 'granted') {
-            logger.log('Tracking permission not granted, showing non-personalized ads');
-          }
-        } catch (permError) {
-          logger.warn('AdMob: Failed to request tracking permission:', permError?.message);
+        if (status !== 'granted') {
+          logger.log('Tracking permission not granted, showing non-personalized ads');
         }
       }
 
       // COPPA-compliant request configuration
       const coppaConfig = {
-        maxAdContentRating: MaxAdContentRating?.G || 'G',
+        maxAdContentRating: MaxAdContentRating.G,
         tagForChildDirectedTreatment: true,
         tagForUnderAgeOfConsent: true,
       };

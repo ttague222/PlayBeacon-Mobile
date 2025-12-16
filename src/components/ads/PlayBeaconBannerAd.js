@@ -19,24 +19,19 @@ import logger from '../../utils/logger';
 // Check if we're running in Expo Go
 const isExpoGo = Constants.appOwnership === 'expo';
 
-// Flag to track if we've attempted to load and it failed
-let nativeModuleLoadFailed = false;
+// Dynamically import BannerAd only when not in Expo Go
+let BannerAd = null;
+let BannerAdSize = null;
 
-// Lazy load ad components to prevent crashes at module initialization
-// These are loaded on first render, not at import time
-const getAdComponents = () => {
-  if (isExpoGo || nativeModuleLoadFailed) {
-    return { BannerAd: null, BannerAdSize: null };
-  }
+if (!isExpoGo) {
   try {
     const ads = require('react-native-google-mobile-ads');
-    return { BannerAd: ads.BannerAd, BannerAdSize: ads.BannerAdSize };
+    BannerAd = ads.BannerAd;
+    BannerAdSize = ads.BannerAdSize;
   } catch (error) {
-    console.warn('BannerAd not available:', error?.message);
-    nativeModuleLoadFailed = true;
-    return { BannerAd: null, BannerAdSize: null };
+    logger.log('BannerAd not available - running in Expo Go');
   }
-};
+}
 
 // Retry configuration
 const MAX_RETRIES = 3;
@@ -53,9 +48,6 @@ export default function PlayBeaconBannerAd({
   const [retryCount, setRetryCount] = useState(0);
   const [permanentError, setPermanentError] = useState(false);
   const retryTimeoutRef = useRef(null);
-
-  // Lazy load ad components on first render
-  const { BannerAd, BannerAdSize } = getAdComponents();
 
   // Cleanup timeout on unmount
   useEffect(() => {

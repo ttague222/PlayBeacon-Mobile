@@ -13,18 +13,16 @@ import logger from '../utils/logger';
 // Check if we're running in Expo Go
 const isExpoGo = Constants.appOwnership === 'expo';
 
-// Lazy load MaxAdContentRating to prevent crashes at module initialization
-// This is called lazily when COPPA_REQUEST_CONFIG is accessed
-const getMaxAdContentRating = () => {
-  if (isExpoGo) return null;
+// Dynamically import MaxAdContentRating only when not in Expo Go
+let MaxAdContentRating = null;
+
+if (!isExpoGo) {
   try {
-    return require('react-native-google-mobile-ads').MaxAdContentRating;
+    MaxAdContentRating = require('react-native-google-mobile-ads').MaxAdContentRating;
   } catch (error) {
-    // Log but don't crash - this can happen during native module initialization
-    console.warn('MaxAdContentRating not available:', error?.message);
-    return null;
+    logger.log('MaxAdContentRating not available - running in Expo Go');
   }
-};
+}
 
 // Google's official test ad unit IDs
 const TEST_IDS = {
@@ -81,36 +79,27 @@ export const AD_UNIT_IDS = {
 };
 
 /**
- * Get COPPA-compliant request configuration for child-directed ads
+ * COPPA-compliant request configuration for child-directed ads
  * This is CRITICAL for App Store/Play Store approval
  *
  * Note: When running in Expo Go, MaxAdContentRating won't be available.
  * The actual config is only used when initializing AdMob in a native build.
- *
- * Returns a function to lazily construct the config (prevents crashes at import time)
  */
-export const getCoppaRequestConfig = () => {
-  const MaxAdContentRating = getMaxAdContentRating();
-  if (MaxAdContentRating) {
-    return {
+export const COPPA_REQUEST_CONFIG = MaxAdContentRating
+  ? {
       // Set max ad content rating to 'G' for General audiences
       maxAdContentRating: MaxAdContentRating.G,
       // Tag for child-directed treatment (COPPA compliance)
       tagForChildDirectedTreatment: true,
       // Tag for users under age of consent (GDPR compliance)
       tagForUnderAgeOfConsent: true,
+    }
+  : {
+      // Fallback config for Expo Go (won't be used but prevents errors)
+      maxAdContentRating: 'G',
+      tagForChildDirectedTreatment: true,
+      tagForUnderAgeOfConsent: true,
     };
-  }
-  // Fallback config for Expo Go (won't be used but prevents errors)
-  return {
-    maxAdContentRating: 'G',
-    tagForChildDirectedTreatment: true,
-    tagForUnderAgeOfConsent: true,
-  };
-};
-
-// Note: COPPA_REQUEST_CONFIG has been removed to prevent module-level require() crashes.
-// Use getCoppaRequestConfig() instead when you need this configuration.
 
 /**
  * Interstitial ad configuration

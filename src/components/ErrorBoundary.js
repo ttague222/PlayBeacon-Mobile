@@ -16,17 +16,8 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { colors } from '../styles/colors';
+import { captureException, addBreadcrumb } from '../config/sentry';
 import logger from '../utils/logger';
-
-// Lazy load sentry to prevent initialization issues
-const getSentry = () => {
-  try {
-    return require('../config/sentry');
-  } catch (error) {
-    console.warn('Failed to load sentry module:', error);
-    return null;
-  }
-};
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -53,17 +44,14 @@ class ErrorBoundary extends Component {
       errorInfo,
     });
 
-    // Send to error tracking service (lazy loaded to prevent init issues)
-    const sentry = getSentry();
-    if (sentry) {
-      sentry.addBreadcrumb('error_boundary', 'Error caught by boundary', {
-        componentStack: errorInfo?.componentStack,
-      });
-      sentry.captureException(error, {
-        componentStack: errorInfo?.componentStack,
-        type: 'react_error_boundary',
-      });
-    }
+    // Send to error tracking service
+    addBreadcrumb('error_boundary', 'Error caught by boundary', {
+      componentStack: errorInfo?.componentStack,
+    });
+    captureException(error, {
+      componentStack: errorInfo?.componentStack,
+      type: 'react_error_boundary',
+    });
   }
 
   handleRetry = () => {

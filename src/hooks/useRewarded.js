@@ -15,28 +15,21 @@ import logger from '../utils/logger';
 // Check if we're running in Expo Go
 const isExpoGo = Constants.appOwnership === 'expo';
 
-// Flag to track if module load failed (prevents repeated attempts)
-let nativeModuleLoadFailed = false;
+// Dynamically import RewardedAd only when not in Expo Go
+let RewardedAd = null;
+let RewardedAdEventType = null;
+let AdEventType = null;
 
-// Lazy load ad components to prevent crashes at module initialization
-// Called inside the hook, not at module import time
-const getAdComponents = () => {
-  if (isExpoGo || nativeModuleLoadFailed) {
-    return { RewardedAd: null, RewardedAdEventType: null, AdEventType: null };
-  }
+if (!isExpoGo) {
   try {
     const ads = require('react-native-google-mobile-ads');
-    return {
-      RewardedAd: ads.RewardedAd,
-      RewardedAdEventType: ads.RewardedAdEventType,
-      AdEventType: ads.AdEventType,
-    };
+    RewardedAd = ads.RewardedAd;
+    RewardedAdEventType = ads.RewardedAdEventType;
+    AdEventType = ads.AdEventType;
   } catch (error) {
-    logger.warn('RewardedAd not available:', error?.message);
-    nativeModuleLoadFailed = true;
-    return { RewardedAd: null, RewardedAdEventType: null, AdEventType: null };
+    logger.log('RewardedAd not available - running in Expo Go');
   }
-};
+}
 
 // Max retry attempts for loading ads
 const MAX_RETRY_ATTEMPTS = 3;
@@ -52,9 +45,6 @@ export function useRewarded() {
   const onRewardRef = useRef(null);
   const retryCountRef = useRef(0);
   const retryTimeoutRef = useRef(null);
-
-  // Lazy load ad components on first hook call
-  const { RewardedAd, RewardedAdEventType, AdEventType } = getAdComponents();
 
   // Check if ads are available
   const adsAvailable = !isExpoGo && !contextIsExpoGo && RewardedAd !== null;
