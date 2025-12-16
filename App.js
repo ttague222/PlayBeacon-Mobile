@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
@@ -11,37 +10,51 @@ import { CollectionProvider } from './src/context/CollectionContext';
 import { NetworkProvider } from './src/context/NetworkContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { ErrorBoundary } from './src/components';
-import { initializeSentry } from './src/config/sentry';
-import * as Sentry from '@sentry/react-native';
 
-// Only initialize Sentry if DSN is provided via environment variable
-const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
-if (sentryDsn) {
-  Sentry.init({
-    dsn: sentryDsn,
+// Track initialization state
+let sentryInitialized = false;
+let Sentry = null;
 
-    // Adds more context data to events (IP address, cookies, user, etc.)
-    // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
-    sendDefaultPii: true,
+// Safely initialize Sentry with comprehensive error handling
+try {
+  Sentry = require('@sentry/react-native');
+  const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
 
-    // Enable Logs
-    enableLogs: true,
-
-    // Configure Session Replay
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1,
-    integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
-
-    // uncomment the line below to enable Spotlight (https://spotlightjs.com)
-    // spotlight: __DEV__,
-  });
+  if (sentryDsn && Sentry) {
+    Sentry.init({
+      dsn: sentryDsn,
+      // COPPA Compliance: Do NOT send PII
+      sendDefaultPii: false,
+      enableLogs: false,
+      // Disable Session Replay for stability
+      replaysSessionSampleRate: 0,
+      replaysOnErrorSampleRate: 0,
+      // Filter sensitive data
+      beforeBreadcrumb(breadcrumb) {
+        if (breadcrumb.category === 'navigation') {
+          return null;
+        }
+        return breadcrumb;
+      },
+    });
+    sentryInitialized = true;
+    console.log('[App] Sentry initialized successfully');
+  } else {
+    console.log('[App] Sentry DSN not provided, skipping initialization');
+  }
+} catch (error) {
+  console.warn('[App] Sentry initialization failed:', error?.message || error);
 }
 
-// Initialize error tracking
-// Logs errors to Firestore in production for monitoring
-initializeSentry();
+// Initialize custom error tracking (Firestore-based)
+try {
+  const { initializeSentry } = require('./src/config/sentry');
+  initializeSentry();
+} catch (error) {
+  console.warn('[App] Custom error tracking initialization failed:', error?.message || error);
+}
 
-export default Sentry.wrap(function App() {
+function AppContent() {
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
@@ -67,7 +80,23 @@ export default Sentry.wrap(function App() {
       </SafeAreaProvider>
     </ErrorBoundary>
   );
-});
+}
+
+// Only wrap with Sentry if it initialized successfully
+let ExportedApp;
+if (sentryInitialized && Sentry) {
+  try {
+    ExportedApp = Sentry.wrap(AppContent);
+    console.log('[App] App wrapped with Sentry');
+  } catch (error) {
+    console.warn('[App] Failed to wrap app with Sentry:', error?.message || error);
+    ExportedApp = AppContent;
+  }
+} else {
+  ExportedApp = AppContent;
+}
+
+export default ExportedApp;
 
 const styles = StyleSheet.create({
   container: {
