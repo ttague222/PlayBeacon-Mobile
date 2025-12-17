@@ -15,6 +15,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "validate": "expo export --platform all --output-dir .validate-build",
     "setup:sounds": "node scripts/download-placeholder-sounds.js",
     "test": "jest",
     "test:watch": "jest --watch",

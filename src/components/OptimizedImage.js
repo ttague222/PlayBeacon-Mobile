@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Image, StyleSheet, Animated } from 'react-native';
 import { colors } from '../styles/colors';
 
@@ -11,7 +11,18 @@ export default function OptimizedImage({
 }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [fadeAnim] = useState(new Animated.Value(0));
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const previousUri = useRef(source?.uri);
+
+  // Reset state when source URI changes
+  useEffect(() => {
+    if (source?.uri !== previousUri.current) {
+      previousUri.current = source?.uri;
+      setLoading(true);
+      setError(false);
+      fadeAnim.setValue(0);
+    }
+  }, [source?.uri, fadeAnim]);
 
   const handleLoadEnd = () => {
     setLoading(false);
