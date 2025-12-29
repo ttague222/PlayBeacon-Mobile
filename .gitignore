@@ -63,3 +63,4 @@ google-services.json
 GoogleService-Info.plist
 
 .env.local
+nul
