@@ -16,7 +16,8 @@ import {
   sanitizeFeedback,
   sanitizeCollectionName,
   sanitizeCollectionDescription,
-  sanitizeRobloxUsername,
+  // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
+  // sanitizeRobloxUsername,
   validateNumericId,
   validateFeedback,
   validateCollectionName,
@@ -164,39 +165,40 @@ describe('API Service', () => {
       });
     });
 
-    describe('resolveRobloxUsername', () => {
-      it('should validate username format', async () => {
-        await expect(api.resolveRobloxUsername('')).rejects.toThrow('Invalid Roblox username');
-        await expect(api.resolveRobloxUsername(null)).rejects.toThrow('Invalid Roblox username');
-      });
+    // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
+    // describe('resolveRobloxUsername', () => {
+    //   it('should validate username format', async () => {
+    //     await expect(api.resolveRobloxUsername('')).rejects.toThrow('Invalid Roblox username');
+    //     await expect(api.resolveRobloxUsername(null)).rejects.toThrow('Invalid Roblox username');
+    //   });
 
-      it('should sanitize username with special characters', async () => {
-        // '<script>' gets sanitized to 'script' (special chars removed)
-        // which is a valid username format, so it succeeds
-        await api.resolveRobloxUsername('<script>');
-        expect(mockAxios.get).toHaveBeenCalledWith('/roblox/resolve', {
-          params: { username: 'script' },
-        });
-      });
+    //   it('should sanitize username with special characters', async () => {
+    //     // '<script>' gets sanitized to 'script' (special chars removed)
+    //     // which is a valid username format, so it succeeds
+    //     await api.resolveRobloxUsername('<script>');
+    //     expect(mockAxios.get).toHaveBeenCalledWith('/roblox/resolve', {
+    //       params: { username: 'script' },
+    //     });
+    //   });
 
-      it('should accept valid usernames', async () => {
-        await api.resolveRobloxUsername('ValidUser123');
+    //   it('should accept valid usernames', async () => {
+    //     await api.resolveRobloxUsername('ValidUser123');
 
-        expect(mockAxios.get).toHaveBeenCalledWith('/roblox/resolve', {
-          params: { username: 'ValidUser123' },
-        });
-      });
-    });
+    //     expect(mockAxios.get).toHaveBeenCalledWith('/roblox/resolve', {
+    //       params: { username: 'ValidUser123' },
+    //     });
+    //   });
+    // });
 
-    describe('getRobloxImportData', () => {
-      it('should validate user ID', async () => {
-        await expect(api.getRobloxImportData(null)).rejects.toThrow('Invalid user ID');
-        // 0 sanitizes to 0 which is falsy, throws
-        await expect(api.getRobloxImportData(0)).rejects.toThrow('Invalid user ID');
-        // 'abc' sanitizes to null which is falsy, throws
-        await expect(api.getRobloxImportData('abc')).rejects.toThrow('Invalid user ID');
-      });
-    });
+    // describe('getRobloxImportData', () => {
+    //   it('should validate user ID', async () => {
+    //     await expect(api.getRobloxImportData(null)).rejects.toThrow('Invalid user ID');
+    //     // 0 sanitizes to 0 which is falsy, throws
+    //     await expect(api.getRobloxImportData(0)).rejects.toThrow('Invalid user ID');
+    //     // 'abc' sanitizes to null which is falsy, throws
+    //     await expect(api.getRobloxImportData('abc')).rejects.toThrow('Invalid user ID');
+    //   });
+    // });
 
     describe('getUserFeedback', () => {
       it('should validate feedback type', async () => {
@@ -424,14 +426,15 @@ describe('API Service', () => {
       expect(callArgs.name).not.toContain('</script>');
     });
 
-    it('should sanitize SQL injection patterns in usernames', async () => {
-      // SQL injection patterns get sanitized (special chars removed)
-      // "'; DROP TABLE users;--" becomes "DROPTABLEusers"
-      await api.resolveRobloxUsername("'; DROP TABLE users;--");
-      expect(mockAxios.get).toHaveBeenCalledWith('/roblox/resolve', {
-        params: { username: 'DROPTABLEusers' },
-      });
-    });
+    // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
+    // it('should sanitize SQL injection patterns in usernames', async () => {
+    //   // SQL injection patterns get sanitized (special chars removed)
+    //   // "'; DROP TABLE users;--" becomes "DROPTABLEusers"
+    //   await api.resolveRobloxUsername("'; DROP TABLE users;--");
+    //   expect(mockAxios.get).toHaveBeenCalledWith('/roblox/resolve', {
+    //     params: { username: 'DROPTABLEusers' },
+    //   });
+    // });
   });
 });
 
@@ -511,26 +514,27 @@ describe('Validation Functions', () => {
     });
   });
 
-  describe('sanitizeRobloxUsername', () => {
-    it('should accept valid usernames', () => {
-      expect(sanitizeRobloxUsername('Player123')).toBe('Player123');
-      expect(sanitizeRobloxUsername('Player_123')).toBe('Player_123');
-    });
+  // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
+  // describe('sanitizeRobloxUsername', () => {
+  //   it('should accept valid usernames', () => {
+  //     expect(sanitizeRobloxUsername('Player123')).toBe('Player123');
+  //     expect(sanitizeRobloxUsername('Player_123')).toBe('Player_123');
+  //   });
 
-    it('should return empty string for invalid usernames', () => {
-      // sanitizeRobloxUsername returns '' for empty/null input
-      expect(sanitizeRobloxUsername('')).toBe('');
-      expect(sanitizeRobloxUsername(null)).toBe('');
-      // For special chars, they get stripped - '<script>' becomes empty
-      expect(sanitizeRobloxUsername('<script>')).toBe('script');
-    });
+  //   it('should return empty string for invalid usernames', () => {
+  //     // sanitizeRobloxUsername returns '' for empty/null input
+  //     expect(sanitizeRobloxUsername('')).toBe('');
+  //     expect(sanitizeRobloxUsername(null)).toBe('');
+  //     // For special chars, they get stripped - '<script>' becomes empty
+  //     expect(sanitizeRobloxUsername('<script>')).toBe('script');
+  //   });
 
-    it('should truncate long usernames', () => {
-      const longUsername = 'a'.repeat(30);
-      const result = sanitizeRobloxUsername(longUsername);
-      expect(result.length).toBeLessThanOrEqual(20);
-    });
-  });
+  //   it('should truncate long usernames', () => {
+  //     const longUsername = 'a'.repeat(30);
+  //     const result = sanitizeRobloxUsername(longUsername);
+  //     expect(result.length).toBeLessThanOrEqual(20);
+  //   });
+  // });
 
   describe('validateNumericId', () => {
     it('should return valid for positive numbers', () => {

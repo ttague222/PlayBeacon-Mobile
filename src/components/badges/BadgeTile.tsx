@@ -12,7 +12,7 @@ import {
   StyleSheet,
   Pressable,
   Animated,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BadgeDefinition } from '../../types/badges';
@@ -20,23 +20,34 @@ import { useCollection } from '../../context/CollectionContext';
 import { colors } from '../../styles/colors';
 import SoundManager from '../../services/SoundManager';
 
+export const HORIZONTAL_PADDING = 20;
+export const TILE_GAP = 12;
+
+// Calculate responsive columns based on screen width
+export const getNumColumns = (width: number) => {
+  if (width >= 1024) return 4; // Large tablets
+  if (width >= 768) return 3;  // iPad
+  return 2; // Phone
+};
+
+export const getTileSize = (width: number) => {
+  const numColumns = getNumColumns(width);
+  return Math.floor((width - (HORIZONTAL_PADDING * 2) - (TILE_GAP * (numColumns - 1))) / numColumns);
+};
+
 interface BadgeTileProps {
   badge: BadgeDefinition;
   onPress?: (badge: BadgeDefinition) => void;
 }
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const HORIZONTAL_PADDING = 20;
-const TILE_GAP = 12;
-const NUM_COLUMNS = 2;
-const TILE_SIZE = Math.floor((SCREEN_WIDTH - (HORIZONTAL_PADDING * 2) - (TILE_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
-
 export default function BadgeTile({ badge, onPress }: BadgeTileProps) {
+  const { width: screenWidth } = useWindowDimensions();
   const { getBadgeProgress, isBadgeUnlocked } = useCollection();
   const progress = getBadgeProgress(badge.id);
   const isUnlocked = isBadgeUnlocked(badge.id);
   const isNew = isUnlocked && progress && !progress.seen;
 
+  const tileSize = getTileSize(screenWidth);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
   const handlePressIn = useCallback(() => {
@@ -70,7 +81,7 @@ export default function BadgeTile({ badge, onPress }: BadgeTileProps) {
       onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      style={styles.pressable}
+      style={{ width: tileSize, marginBottom: TILE_GAP }}
     >
       <Animated.View
         style={[
@@ -119,13 +130,9 @@ export default function BadgeTile({ badge, onPress }: BadgeTileProps) {
 }
 
 const styles = StyleSheet.create({
-  pressable: {
-    width: TILE_SIZE,
-    marginBottom: TILE_GAP,
-  },
   container: {
     width: '100%',
-    aspectRatio: 0.9,
+    aspectRatio: 1,
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',

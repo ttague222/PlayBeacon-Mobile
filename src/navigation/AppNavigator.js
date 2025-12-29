@@ -17,7 +17,8 @@ import { UnlockModalManager } from '../components/badges';
 // Import screens
 import AgeVerificationScreen from '../screens/AgeVerificationScreen';
 import TutorialScreen from '../screens/TutorialScreen';
-import RobloxImportScreen from '../screens/RobloxImportScreen';
+// TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
+// import RobloxImportScreen from '../screens/RobloxImportScreen';
 import QueueScreen from '../screens/QueueScreen';
 import CollectionsScreen from '../screens/CollectionsScreen';
 import CollectionDetailScreen from '../screens/CollectionDetailScreen';
@@ -124,7 +125,9 @@ export default function AppNavigator() {
   const { user, loading } = useAuth();
   const [ageVerified, setAgeVerified] = useState(null); // null = checking
   const [tutorialCompleted, setTutorialCompleted] = useState(null); // null = checking
-  const [hasCompletedImport, setHasCompletedImport] = useState(null); // null = checking
+  // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
+  // const [hasCompletedImport, setHasCompletedImport] = useState(null); // null = checking
+  const hasCompletedImport = true; // Skip Roblox import screen
 
   // Check age verification, tutorial, and import status in parallel once auth is ready
   useEffect(() => {
@@ -137,28 +140,28 @@ export default function AppNavigator() {
       // Start tutorial check immediately (local storage - fast)
       const tutorialPromise = getTutorialCompleted().catch(() => false);
 
+      // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
       // Start import status check if user exists (API call)
-      const importPromise = user
-        ? api.getUserStats()
-            .then(stats => stats.has_completed_import || false)
-            .catch(error => {
-              if (error.response?.status !== 401) {
-                logger.error('Error checking import status:', error);
-              }
-              return false;
-            })
-        : Promise.resolve(false);
+      // const importPromise = user
+      //   ? api.getUserStats()
+      //       .then(stats => stats.has_completed_import || false)
+      //       .catch(error => {
+      //         if (error.response?.status !== 401) {
+      //           logger.error('Error checking import status:', error);
+      //         }
+      //         return false;
+      //       })
+      //   : Promise.resolve(false);
 
       // Wait for all to complete in parallel
-      const [ageResult, tutorialResult, importResult] = await Promise.all([
+      const [ageResult, tutorialResult] = await Promise.all([
         agePromise,
         tutorialPromise,
-        importPromise,
       ]);
 
       setAgeVerified(ageResult);
       setTutorialCompleted(tutorialResult);
-      setHasCompletedImport(importResult);
+      // setHasCompletedImport(importResult);
 
       // Track daily login in background (non-blocking)
       if (user) {
@@ -175,7 +178,8 @@ export default function AppNavigator() {
   }, [user, loading]);
 
   // Show loading while auth or app state is initializing
-  const isInitializing = loading || ageVerified === null || tutorialCompleted === null || hasCompletedImport === null;
+  // TEMPORARILY DISABLED: Removed hasCompletedImport check - Roblox import pending approval
+  const isInitializing = loading || ageVerified === null || tutorialCompleted === null;
 
   if (isInitializing || !user) {
     return (
@@ -196,11 +200,13 @@ export default function AppNavigator() {
           <Stack.Screen name="Tutorial">
             {(props) => <TutorialScreen {...props} onComplete={() => setTutorialCompleted(true)} />}
           </Stack.Screen>
-        ) : !hasCompletedImport ? (
-          <Stack.Screen name="RobloxImport">
-            {(props) => <RobloxImportScreen {...props} onImportComplete={() => setHasCompletedImport(true)} />}
-          </Stack.Screen>
         ) : (
+          // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
+          // ) : !hasCompletedImport ? (
+          //   <Stack.Screen name="RobloxImport">
+          //     {(props) => <RobloxImportScreen {...props} onImportComplete={() => setHasCompletedImport(true)} />}
+          //   </Stack.Screen>
+          // ) : (
           <>
             <Stack.Screen name="Main" component={MainTabs} />
             <Stack.Screen name="CollectionDetail" component={CollectionDetailScreen} />

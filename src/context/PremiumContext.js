@@ -21,7 +21,7 @@ import logger from '../utils/logger';
 const isExpoGo = Constants.appOwnership === 'expo';
 
 // Product ID - must match App Store Connect and Google Play Console
-export const PRODUCT_ID = 'com.playbeacon.app.removeads';
+export const PRODUCT_ID = 'com.playbeacon.app.removeads2';
 
 // Storage key for local premium cache
 const PREMIUM_STORAGE_KEY = '@playbeacon_premium';
@@ -141,21 +141,40 @@ export function PremiumProvider({ children }) {
 
     try {
       // Initialize connection to store
+      logger.log('IAP: Starting connection initialization...');
       const result = await initConnection();
       logger.log('IAP connection result:', result);
-      setIsIapAvailable(true);
 
       // Load products
       if (getProducts) {
+        logger.log('IAP: Fetching products for SKU:', PRODUCT_ID);
         const loadedProducts = await getProducts({ skus: [PRODUCT_ID] });
-        logger.log('IAP products loaded:', loadedProducts);
-        setProducts(loadedProducts);
+        logger.log('IAP products loaded:', loadedProducts?.length || 0, loadedProducts);
+
+        if (loadedProducts && loadedProducts.length > 0) {
+          logger.log('IAP: Product found:', loadedProducts[0].productId, 'Price:', loadedProducts[0].localizedPrice);
+          setProducts(loadedProducts);
+          setIsIapAvailable(true);
+        } else {
+          // Product not found - this is the likely cause of the App Store rejection
+          // Log detailed info to help debug
+          logger.warn('IAP: No products found for SKU:', PRODUCT_ID);
+          logger.warn('IAP: This may mean the product is not configured in App Store Connect or not approved yet');
+          setProducts([]);
+          // Still set IAP as available - the product may load on retry
+          // This prevents showing an error if there's a temporary issue
+          setIsIapAvailable(false);
+        }
+      } else {
+        logger.warn('IAP: getProducts function not available');
+        setIsIapAvailable(false);
       }
 
       // Check for existing purchases (restore)
       await checkExistingPurchases();
     } catch (error) {
       logger.error('IAP initialization failed:', error);
+      logger.error('IAP error details:', error.code, error.message);
       setIsIapAvailable(false);
     } finally {
       setIsLoading(false);
@@ -241,6 +260,46 @@ export function PremiumProvider({ children }) {
       if (error.code === 'E_USER_CANCELLED') {
         // User cancelled - no need to show error
         return false;
+      }
+
+      if (error.code === 'E_DEFERRED_PAYMENT') {
+        // Ask to Buy - purchase requires parental approval
+        Alert.alert(
+          'Waiting for Approval',
+          'Your purchase request has been sent for approval. You\'ll get access once it\'s approved.',
+          [{ text: 'OK' }]
+        );
+        return false;
+      }
+
+      if (error.code === 'E_ITEM_UNAVAILABLE') {
+        Alert.alert(
+          'Not Available',
+          'This purchase is temporarily unavailable. Please try again later.',
+          [{ text: 'OK' }]
+        );
+        return false;
+      }
+
+      if (error.code === 'E_NETWORK_ERROR') {
+        Alert.alert(
+          'Connection Error',
+          'Please check your internet connection and try again.',
+          [{ text: 'OK' }]
+        );
+        return false;
+      }
+
+      if (error.code === 'E_ALREADY_OWNED') {
+        // User already owns this - restore it
+        setIsPremium(true);
+        await savePremiumStatus(true);
+        Alert.alert(
+          'Already Purchased',
+          'You already own this! Your ad-free experience has been restored.',
+          [{ text: 'Great!' }]
+        );
+        return true;
       }
 
       Alert.alert(
@@ -382,6 +441,15 @@ export function PremiumProvider({ children }) {
     };
   }, [savePremiumStatus]);
 
+  /**
+   * Retry IAP connection (for when initial connection fails)
+   */
+  const retryConnection = useCallback(async () => {
+    logger.log('IAP: Retrying connection...');
+    setIsLoading(true);
+    await initializeIAP();
+  }, [initializeIAP]);
+
   const value = {
     isPremium,
     isLoading,
@@ -391,6 +459,7 @@ export function PremiumProvider({ children }) {
     purchasePremium,
     restorePurchases,
     getProductInfo,
+    retryConnection,
   };
 
   return (

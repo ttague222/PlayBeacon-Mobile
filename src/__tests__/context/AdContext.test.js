@@ -28,6 +28,19 @@ jest.mock('../../context/PremiumContext', () => ({
   })),
 }));
 
+// Mock RemoteConfig - default to ads enabled for tests
+jest.mock('../../services/RemoteConfig', () => ({
+  __esModule: true,
+  default: {
+    initialize: jest.fn().mockResolvedValue(undefined),
+    areAdsEnabled: jest.fn(() => true),
+    isTestModeForced: jest.fn(() => false),
+    addListener: jest.fn(() => jest.fn()), // Returns unsubscribe function
+    getBoolean: jest.fn(() => true),
+    getValue: jest.fn(() => true),
+  },
+}));
+
 // Import after mocks
 import { AdProvider, useAds } from '../../context/AdContext';
 import { usePremium } from '../../context/PremiumContext';

@@ -59,7 +59,7 @@ describe('PremiumContext', () => {
 
   describe('PRODUCT_ID', () => {
     it('should export the correct product ID', () => {
-      expect(PRODUCT_ID).toBe('playbeacon_remove_ads');
+      expect(PRODUCT_ID).toBe('com.playbeacon.app.removeads2');
     });
   });
 

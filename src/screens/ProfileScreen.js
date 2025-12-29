@@ -26,14 +26,16 @@ import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useAuth } from '../context/AuthContext';
 import SoundManager from '../services/SoundManager';
-import { usePremium } from '../context/PremiumContext';
+// TEMPORARILY DISABLED: Premium/IAP - re-enable after initial App Store approval
+// import { usePremium } from '../context/PremiumContext';
 import ParentalGate from '../components/ParentalGate';
 import ProfileAvatar from '../components/ProfileAvatar';
 import AnimalPickerModal from '../components/AnimalPickerModal';
 import { api } from '../services/api';
 import { colors } from '../styles/colors';
 import { typography, radii } from '../styles/kidTheme';
-import { validateRobloxUsername, sanitizeRobloxUsername } from '../utils/validation';
+// TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
+// import { validateRobloxUsername, sanitizeRobloxUsername } from '../utils/validation';
 import { clearAllLocalData } from '../utils/resetApp';
 import logger from '../utils/logger';
 
@@ -47,7 +49,9 @@ export default function ProfileScreen() {
     isLinkingAccount,
     getAccountStatus,
   } = useAuth();
-  const { isPremium, restorePurchases } = usePremium();
+  // TEMPORARILY DISABLED: Premium/IAP - re-enable after initial App Store approval
+  // const { isPremium, restorePurchases } = usePremium();
+  const isPremium = false; // Placeholder until IAP is enabled
 
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -56,9 +60,10 @@ export default function ProfileScreen() {
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [historyType, setHistoryType] = useState('liked');
   const [historyGames, setHistoryGames] = useState([]);
-  const [robloxModalVisible, setRobloxModalVisible] = useState(false);
-  const [robloxUsername, setRobloxUsername] = useState('');
-  const [linkingRoblox, setLinkingRoblox] = useState(false);
+  // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
+  // const [robloxModalVisible, setRobloxModalVisible] = useState(false);
+  // const [robloxUsername, setRobloxUsername] = useState('');
+  // const [linkingRoblox, setLinkingRoblox] = useState(false);
 
   // Parental gate state
   const [showParentalGate, setShowParentalGate] = useState(false);
@@ -230,11 +235,12 @@ export default function ProfileScreen() {
     setShowParentalGate(true);
   };
 
-  const handleRestorePurchasesPress = () => {
-    SoundManager.play('ui.tap');
-    setPendingAction('restore_purchases');
-    setShowParentalGate(true);
-  };
+  // TEMPORARILY DISABLED: Premium/IAP - re-enable after initial App Store approval
+  // const handleRestorePurchasesPress = () => {
+  //   SoundManager.play('ui.tap');
+  //   setPendingAction('restore_purchases');
+  //   setShowParentalGate(true);
+  // };
 
   const handleParentalGatePass = async () => {
     setShowParentalGate(false);
@@ -270,8 +276,9 @@ export default function ProfileScreen() {
       } catch (error) {
         logger.error('Disconnect error:', error);
       }
-    } else if (pendingAction === 'restore_purchases') {
-      await restorePurchases();
+    // TEMPORARILY DISABLED: Premium/IAP - re-enable after initial App Store approval
+    // } else if (pendingAction === 'restore_purchases') {
+    //   await restorePurchases();
     }
 
     setPendingAction(null);
@@ -282,58 +289,59 @@ export default function ProfileScreen() {
     setPendingAction(null);
   };
 
-  const handleLinkRoblox = async () => {
-    SoundManager.play('ui.tap');
-    const validation = validateRobloxUsername(robloxUsername);
-    if (!validation.valid) {
-      Alert.alert('Invalid Username', validation.error);
-      return;
-    }
+  // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
+  // const handleLinkRoblox = async () => {
+  //   SoundManager.play('ui.tap');
+  //   const validation = validateRobloxUsername(robloxUsername);
+  //   if (!validation.valid) {
+  //     Alert.alert('Invalid Username', validation.error);
+  //     return;
+  //   }
 
-    try {
-      setLinkingRoblox(true);
-      const sanitizedUsername = sanitizeRobloxUsername(robloxUsername);
+  //   try {
+  //     setLinkingRoblox(true);
+  //     const sanitizedUsername = sanitizeRobloxUsername(robloxUsername);
 
-      const userData = await api.resolveRobloxUsername(sanitizedUsername);
-      if (!userData) {
-        Alert.alert(
-          'Error',
-          'Roblox user not found. Please check the username and try again.'
-        );
-        return;
-      }
+  //     const userData = await api.resolveRobloxUsername(sanitizedUsername);
+  //     if (!userData) {
+  //       Alert.alert(
+  //         'Error',
+  //         'Roblox user not found. Please check the username and try again.'
+  //       );
+  //       return;
+  //     }
 
-      const importData = await api.getRobloxImportData(userData.userId);
+  //     const importData = await api.getRobloxImportData(userData.userId);
 
-      const gamesToImport = importData.aggregated_games
-        .slice(0, 50)
-        .map((game) => ({
-          universeId: game.universeId,
-          score: game.score,
-          source: game.source,
-        }));
+  //     const gamesToImport = importData.aggregated_games
+  //       .slice(0, 50)
+  //       .map((game) => ({
+  //         universeId: game.universeId,
+  //         score: game.score,
+  //         source: game.source,
+  //       }));
 
-      const result = await api.importRobloxGames({
-        robloxUsername: userData.username,
-        robloxUserId: userData.userId,
-        selectedGames: gamesToImport,
-      });
+  //     const result = await api.importRobloxGames({
+  //       robloxUsername: userData.username,
+  //       robloxUserId: userData.userId,
+  //       selectedGames: gamesToImport,
+  //     });
 
-      setRobloxModalVisible(false);
-      setRobloxUsername('');
-      await fetchUserStats();
+  //     setRobloxModalVisible(false);
+  //     setRobloxUsername('');
+  //     await fetchUserStats();
 
-      Alert.alert(
-        'Success!',
-        `Linked Roblox account "${userData.username}" and imported ${result.games_imported} games!`
-      );
-    } catch (error) {
-      logger.error('Roblox link error:', error);
-      Alert.alert('Link Failed', 'Failed to link Roblox account. Please try again.');
-    } finally {
-      setLinkingRoblox(false);
-    }
-  };
+  //     Alert.alert(
+  //       'Success!',
+  //       `Linked Roblox account "${userData.username}" and imported ${result.games_imported} games!`
+  //     );
+  //   } catch (error) {
+  //     logger.error('Roblox link error:', error);
+  //     Alert.alert('Link Failed', 'Failed to link Roblox account. Please try again.');
+  //   } finally {
+  //     setLinkingRoblox(false);
+  //   }
+  // };
 
   if (loading) {
     return (
@@ -389,7 +397,8 @@ export default function ProfileScreen() {
             />
           </View>
           <View style={styles.profileInfo}>
-            {stats?.roblox_username ? (
+            {/* TEMPORARILY DISABLED: Roblox import feature pending Roblox approval */}
+            {/* {stats?.roblox_username ? (
               <>
                 <Text style={styles.profileName}>{stats.roblox_username}</Text>
                 <View style={styles.profileBadges}>
@@ -399,12 +408,12 @@ export default function ProfileScreen() {
                   </View>
                 </View>
               </>
-            ) : (
+            ) : ( */}
               <>
                 <Text style={styles.profileName}>PlayBeacon User</Text>
-                <Text style={styles.profileSubtext}>Link Roblox for personalized picks</Text>
+                <Text style={styles.profileSubtext}>Discover your next favorite game</Text>
               </>
-            )}
+            {/* )} */}
           </View>
         </View>
 
@@ -428,8 +437,9 @@ export default function ProfileScreen() {
           </View>
         )}
 
+        {/* TEMPORARILY DISABLED: Roblox import feature pending Roblox approval */}
         {/* Link Roblox CTA (if not linked) */}
-        {!stats?.roblox_username && (
+        {/* {!stats?.roblox_username && (
           <TouchableOpacity
             style={styles.linkRobloxCTA}
             onPress={() => {
@@ -441,11 +451,11 @@ export default function ProfileScreen() {
             <Ionicons name="link" size={18} color={colors.text.primary} />
             <Text style={styles.linkRobloxCTAText}>Link Roblox Account</Text>
           </TouchableOpacity>
-        )}
+        )} */}
       </View>
 
-      {/* Premium Card */}
-      <TouchableOpacity
+      {/* TEMPORARILY DISABLED: Premium/IAP Card - re-enable after initial App Store approval */}
+      {/* <TouchableOpacity
         style={[styles.premiumCard, isPremium && styles.premiumCardActive]}
         onPress={() => {
           if (!isPremium) {
@@ -479,7 +489,7 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
           </View>
         )}
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       {/* Settings Section */}
       <View style={styles.settingsSection}>
@@ -580,9 +590,9 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           )}
 
-          <View style={styles.settingsRowDivider} />
+          {/* TEMPORARILY DISABLED: Restore Purchases - re-enable after initial App Store approval */}
+          {/* <View style={styles.settingsRowDivider} />
 
-          {/* Restore Purchases */}
           <TouchableOpacity
             style={styles.settingsRow}
             onPress={handleRestorePurchasesPress}
@@ -596,7 +606,7 @@ export default function ProfileScreen() {
             <View style={styles.parentBadgeSmall}>
               <Text style={styles.parentBadgeText}>Parent</Text>
             </View>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
 
@@ -708,8 +718,9 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
+      {/* TEMPORARILY DISABLED: Roblox import feature pending Roblox approval */}
       {/* Roblox Link Modal */}
-      <Modal
+      {/* <Modal
         visible={robloxModalVisible}
         animationType="slide"
         onRequestClose={() => {
@@ -767,7 +778,7 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
-      </Modal>
+      </Modal> */}
 
       {/* Parental Gate */}
       <ParentalGate

@@ -8,7 +8,8 @@ import {
   sanitizeFeedback,
   sanitizeCollectionName,
   sanitizeCollectionDescription,
-  sanitizeRobloxUsername,
+  // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
+  // sanitizeRobloxUsername,
   validateNumericId,
   validateFeedback,
   validateCollectionName,
@@ -160,38 +161,39 @@ export const api = {
     return response.data;
   },
 
-  resolveRobloxUsername: async (username) => {
-    const sanitizedUsername = sanitizeRobloxUsername(username);
-    if (!sanitizedUsername) {
-      throw new Error('Invalid Roblox username');
-    }
-    const response = await apiClient.get('/roblox/resolve', {
-      params: { username: sanitizedUsername },
-    });
-    return response.data;
-  },
+  // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
+  // resolveRobloxUsername: async (username) => {
+  //   const sanitizedUsername = sanitizeRobloxUsername(username);
+  //   if (!sanitizedUsername) {
+  //     throw new Error('Invalid Roblox username');
+  //   }
+  //   const response = await apiClient.get('/roblox/resolve', {
+  //     params: { username: sanitizedUsername },
+  //   });
+  //   return response.data;
+  // },
 
-  getRobloxImportData: async (userId) => {
-    const sanitizedId = sanitizeNumericId(userId);
-    if (!sanitizedId) {
-      throw new Error('Invalid user ID');
-    }
-    const response = await apiClient.get('/roblox/import-data', {
-      params: { userId: sanitizedId },
-    });
-    return response.data;
-  },
+  // getRobloxImportData: async (userId) => {
+  //   const sanitizedId = sanitizeNumericId(userId);
+  //   if (!sanitizedId) {
+  //     throw new Error('Invalid user ID');
+  //   }
+  //   const response = await apiClient.get('/roblox/import-data', {
+  //     params: { userId: sanitizedId },
+  //   });
+  //   return response.data;
+  // },
 
-  importRobloxGames: async (importData) => {
-    const response = await apiClient.post('/roblox/import-selected', importData);
-    return response.data;
-  },
+  // importRobloxGames: async (importData) => {
+  //   const response = await apiClient.post('/roblox/import-selected', importData);
+  //   return response.data;
+  // },
 
-  skipRobloxImport: async () => {
-    // Explicitly send empty object to ensure Content-Type and Content-Length headers are set
-    const response = await apiClient.post('/user/skip-roblox-import', {});
-    return response.data;
-  },
+  // skipRobloxImport: async () => {
+  //   // Explicitly send empty object to ensure Content-Type and Content-Length headers are set
+  //   const response = await apiClient.post('/user/skip-roblox-import', {});
+  //   return response.data;
+  // },
 
   getUserStats: async () => {
     const response = await apiClient.get('/user/stats');

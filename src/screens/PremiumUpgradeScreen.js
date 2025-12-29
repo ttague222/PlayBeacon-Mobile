@@ -30,12 +30,22 @@ export default function PremiumUpgradeScreen({ navigation }) {
     purchasePremium,
     restorePurchases,
     getProductInfo,
+    retryConnection,
   } = usePremium();
 
   const [showParentalGate, setShowParentalGate] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const productInfo = getProductInfo();
+
+  const handleRetryConnection = async () => {
+    if (retryConnection) {
+      setIsRetrying(true);
+      await retryConnection();
+      setIsRetrying(false);
+    }
+  };
 
   const handlePurchasePress = () => {
     setPendingAction('purchase');
@@ -178,9 +188,23 @@ export default function PremiumUpgradeScreen({ navigation }) {
             </Text>
           </View>
         ) : !isIapAvailable ? (
-          <View style={styles.devModeNotice}>
-            <Text style={styles.devModeText}>
-              Store connection unavailable. Please try again later.
+          <View style={styles.connectionErrorContainer}>
+            <Text style={styles.connectionErrorText}>
+              Unable to connect to the store right now.
+            </Text>
+            <TouchableOpacity
+              style={[styles.retryButton, isRetrying && styles.buttonDisabled]}
+              onPress={handleRetryConnection}
+              disabled={isRetrying}
+            >
+              {isRetrying ? (
+                <ActivityIndicator color={colors.accent.primary} size="small" />
+              ) : (
+                <Text style={styles.retryButtonText}>Try Again</Text>
+              )}
+            </TouchableOpacity>
+            <Text style={styles.connectionHintText}>
+              Please check your internet connection and try again.
             </Text>
           </View>
         ) : (
@@ -406,5 +430,38 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  connectionErrorContainer: {
+    backgroundColor: colors.background.secondary,
+    borderRadius: radii.m,
+    padding: 20,
+    marginBottom: 24,
+    width: '100%',
+    alignItems: 'center',
+  },
+  connectionErrorText: {
+    fontSize: 16,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: colors.background.primary,
+    borderWidth: 2,
+    borderColor: colors.accent.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: radii.s,
+    marginBottom: 12,
+  },
+  retryButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.accent.primary,
+  },
+  connectionHintText: {
+    fontSize: 12,
+    color: colors.text.tertiary,
+    textAlign: 'center',
   },
 });

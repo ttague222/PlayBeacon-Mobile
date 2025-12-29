@@ -88,7 +88,9 @@ export default ({ config }) => {
       },
     },
     updates: {
+      url: 'https://u.expo.dev/23865d64-b2c1-4555-89f6-e85e795bc696',
       fallbackToCacheTimeout: 0,
     },
+    runtimeVersion: '1.0.0',
   };
 };

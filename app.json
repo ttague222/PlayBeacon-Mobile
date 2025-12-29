@@ -15,11 +15,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.playbeacon.app",
-      "buildNumber": "1.0.0",
+      "buildNumber": "3",
       "infoPlist": {
         "NSCameraUsageDescription": "PlayBeacon needs camera access to scan QR codes",
         "NSPhotoLibraryUsageDescription": "PlayBeacon needs photo library access to upload game screenshots",
-        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you.",
+        "NSUserTrackingUsageDescription": "PlayBeacon shows non-personalized ads. This permission helps measure ad effectiveness without tracking you personally.",
         "SKAdNetworkItems": [
           {
             "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork"
@@ -61,7 +61,7 @@
         "backgroundColor": "#5B21B6"
       },
       "package": "com.playbeacon.app",
-      "versionCode": 1,
+      "versionCode": 3,
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
@@ -93,7 +93,7 @@
         {
           "androidAppId": "ca-app-pub-6866584041914873~1187787683",
           "iosAppId": "ca-app-pub-6866584041914873~6185141102",
-          "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
+          "userTrackingUsageDescription": "PlayBeacon shows non-personalized ads. This permission helps measure ad effectiveness without tracking you personally."
         }
       ],
       "expo-tracking-transparency",
@@ -104,8 +104,13 @@
           "project": "react-native",
           "organization": "thomas-tague"
         }
-      ]
+      ],
+      "react-native-iap"
     ],
+    "updates": {
+      "url": "https://u.expo.dev/23865d64-b2c1-4555-89f6-e85e795bc696"
+    },
+    "runtimeVersion": "1.0.0",
     "extra": {
       "eas": {
         "projectId": "23865d64-b2c1-4555-89f6-e85e795bc696"

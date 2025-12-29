@@ -14,6 +14,7 @@ import {
   SafeAreaView,
   Pressable,
   StatusBar,
+  useWindowDimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,15 +22,17 @@ import { useCollection } from '../context/CollectionContext';
 import SoundManager from '../services/SoundManager';
 import { BadgeDefinition, AnimalDefinition, RARITY_CONFIG } from '../types/badges';
 import { BadgeTile, BadgeDetailModal, AnimalTile, AnimalCardModal } from '../components/badges';
+import { TILE_GAP, getNumColumns } from '../components/badges/BadgeTile';
 import { colors } from '../styles/colors';
 import { radii, spacing, typography } from '../styles/kidTheme';
 import ProfileButton from '../components/ProfileButton';
 
 const HORIZONTAL_PADDING = 20;
-const TILE_GAP = 12;
 
 export default function BadgesScreen() {
   const navigation = useNavigation();
+  const { width: screenWidth } = useWindowDimensions();
+  const numColumns = getNumColumns(screenWidth);
   const {
     badges,
     animals,
@@ -224,21 +227,24 @@ export default function BadgesScreen() {
 
         {/* Badges Grid */}
         <View style={styles.badgesGrid}>
-          {sortedBadges.map((badge, index) => (
-            <View
-              key={badge.id}
-              style={[
-                styles.badgeTileWrapper,
-                // Add right margin for left column (odd indices after 0-indexing means even position)
-                index % 2 === 0 && { marginRight: TILE_GAP }
-              ]}
-            >
-              <BadgeTile
-                badge={badge}
-                onPress={handleBadgePress}
-              />
-            </View>
-          ))}
+          {sortedBadges.map((badge, index) => {
+            // Add right margin for all except the last column
+            const isLastColumn = (index + 1) % numColumns === 0;
+            return (
+              <View
+                key={badge.id}
+                style={[
+                  styles.badgeTileWrapper,
+                  !isLastColumn && { marginRight: TILE_GAP }
+                ]}
+              >
+                <BadgeTile
+                  badge={badge}
+                  onPress={handleBadgePress}
+                />
+              </View>
+            );
+          })}
         </View>
 
         {/* Bottom padding */}

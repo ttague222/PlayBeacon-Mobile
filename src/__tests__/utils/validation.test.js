@@ -9,8 +9,9 @@ import {
   validateCollectionName,
   sanitizeCollectionDescription,
   validateCollectionDescription,
-  sanitizeRobloxUsername,
-  validateRobloxUsername,
+  // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
+  // sanitizeRobloxUsername,
+  // validateRobloxUsername,
   sanitizeNumericId,
   validateNumericId,
   sanitizeFeedback,
@@ -119,56 +120,57 @@ describe('Validation Utilities', () => {
     });
   });
 
-  describe('sanitizeRobloxUsername', () => {
-    it('should return empty string for null/undefined', () => {
-      expect(sanitizeRobloxUsername(null)).toBe('');
-      expect(sanitizeRobloxUsername(undefined)).toBe('');
-    });
+  // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
+  // describe('sanitizeRobloxUsername', () => {
+  //   it('should return empty string for null/undefined', () => {
+  //     expect(sanitizeRobloxUsername(null)).toBe('');
+  //     expect(sanitizeRobloxUsername(undefined)).toBe('');
+  //   });
 
-    it('should trim whitespace', () => {
-      expect(sanitizeRobloxUsername('  Player123  ')).toBe('Player123');
-    });
+  //   it('should trim whitespace', () => {
+  //     expect(sanitizeRobloxUsername('  Player123  ')).toBe('Player123');
+  //   });
 
-    it('should limit length to 20 characters', () => {
-      const longUsername = 'a'.repeat(30);
-      expect(sanitizeRobloxUsername(longUsername).length).toBe(20);
-    });
+  //   it('should limit length to 20 characters', () => {
+  //     const longUsername = 'a'.repeat(30);
+  //     expect(sanitizeRobloxUsername(longUsername).length).toBe(20);
+  //   });
 
-    it('should only allow alphanumeric and underscore', () => {
-      expect(sanitizeRobloxUsername('Player_123')).toBe('Player_123');
-      expect(sanitizeRobloxUsername('Player@123')).toBe('Player123');
-      expect(sanitizeRobloxUsername('Player 123')).toBe('Player123');
-      expect(sanitizeRobloxUsername('Player-123')).toBe('Player123');
-    });
+  //   it('should only allow alphanumeric and underscore', () => {
+  //     expect(sanitizeRobloxUsername('Player_123')).toBe('Player_123');
+  //     expect(sanitizeRobloxUsername('Player@123')).toBe('Player123');
+  //     expect(sanitizeRobloxUsername('Player 123')).toBe('Player123');
+  //     expect(sanitizeRobloxUsername('Player-123')).toBe('Player123');
+  //   });
 
-    it('should handle special characters', () => {
-      expect(sanitizeRobloxUsername('<script>')).toBe('script');
-      expect(sanitizeRobloxUsername("'; DROP TABLE users;--")).toBe('DROPTABLEusers');
-    });
-  });
+  //   it('should handle special characters', () => {
+  //     expect(sanitizeRobloxUsername('<script>')).toBe('script');
+  //     expect(sanitizeRobloxUsername("'; DROP TABLE users;--")).toBe('DROPTABLEusers');
+  //   });
+  // });
 
-  describe('validateRobloxUsername', () => {
-    it('should return invalid for empty usernames', () => {
-      expect(validateRobloxUsername('').valid).toBe(false);
-      expect(validateRobloxUsername('').error).toBe('Username is required');
-    });
+  // describe('validateRobloxUsername', () => {
+  //   it('should return invalid for empty usernames', () => {
+  //     expect(validateRobloxUsername('').valid).toBe(false);
+  //     expect(validateRobloxUsername('').error).toBe('Username is required');
+  //   });
 
-    it('should return invalid for usernames less than 3 characters', () => {
-      expect(validateRobloxUsername('AB').valid).toBe(false);
-      expect(validateRobloxUsername('AB').error).toBe('Username must be at least 3 characters');
-    });
+  //   it('should return invalid for usernames less than 3 characters', () => {
+  //     expect(validateRobloxUsername('AB').valid).toBe(false);
+  //     expect(validateRobloxUsername('AB').error).toBe('Username must be at least 3 characters');
+  //   });
 
-    it('should return invalid for usernames starting with number', () => {
-      expect(validateRobloxUsername('123Player').valid).toBe(false);
-      expect(validateRobloxUsername('123Player').error).toBe('Username cannot start with a number');
-    });
+  //   it('should return invalid for usernames starting with number', () => {
+  //     expect(validateRobloxUsername('123Player').valid).toBe(false);
+  //     expect(validateRobloxUsername('123Player').error).toBe('Username cannot start with a number');
+  //   });
 
-    it('should return valid for proper usernames', () => {
-      expect(validateRobloxUsername('Player123').valid).toBe(true);
-      expect(validateRobloxUsername('Cool_Gamer').valid).toBe(true);
-      expect(validateRobloxUsername('ABC').valid).toBe(true);
-    });
-  });
+  //   it('should return valid for proper usernames', () => {
+  //     expect(validateRobloxUsername('Player123').valid).toBe(true);
+  //     expect(validateRobloxUsername('Cool_Gamer').valid).toBe(true);
+  //     expect(validateRobloxUsername('ABC').valid).toBe(true);
+  //   });
+  // });
 
   describe('sanitizeNumericId', () => {
     it('should return number for valid positive numbers', () => {

@@ -44,34 +44,50 @@ const PROD_IDS = {
   REWARDED_ANDROID: process.env.EXPO_PUBLIC_ADMOB_REWARDED_ID_ANDROID,
 };
 
-// Use test IDs in development, real IDs in production
-const getAdUnitId = (iosId, androidId, testIosId, testAndroidId) => {
-  if (__DEV__) {
+/**
+ * Get ad unit ID based on development mode OR forced test mode
+ * Test mode can be forced via Remote Config (ads_test_mode flag)
+ */
+const getAdUnitId = (iosId, androidId, testIosId, testAndroidId, forceTestMode = false) => {
+  if (__DEV__ || forceTestMode) {
     return Platform.OS === 'ios' ? testIosId : testAndroidId;
   }
   return Platform.OS === 'ios' ? iosId : androidId;
 };
 
-export const AD_UNIT_IDS = {
+/**
+ * Get ad unit IDs dynamically based on test mode flag
+ * @param {boolean} forceTestMode - Whether to force test ads (from Remote Config)
+ */
+export const getAdUnitIds = (forceTestMode = false) => ({
   BANNER: getAdUnitId(
     PROD_IDS.BANNER_IOS,
     PROD_IDS.BANNER_ANDROID,
     TEST_IDS.BANNER_IOS,
-    TEST_IDS.BANNER_ANDROID
+    TEST_IDS.BANNER_ANDROID,
+    forceTestMode
   ),
   INTERSTITIAL: getAdUnitId(
     PROD_IDS.INTERSTITIAL_IOS,
     PROD_IDS.INTERSTITIAL_ANDROID,
     TEST_IDS.INTERSTITIAL_IOS,
-    TEST_IDS.INTERSTITIAL_ANDROID
+    TEST_IDS.INTERSTITIAL_ANDROID,
+    forceTestMode
   ),
   REWARDED: getAdUnitId(
     PROD_IDS.REWARDED_IOS,
     PROD_IDS.REWARDED_ANDROID,
     TEST_IDS.REWARDED_IOS,
-    TEST_IDS.REWARDED_ANDROID
+    TEST_IDS.REWARDED_ANDROID,
+    forceTestMode
   ),
-};
+});
+
+// Static export for backwards compatibility (uses __DEV__ only)
+export const AD_UNIT_IDS = getAdUnitIds(false);
+
+// Export test IDs separately for components that need them directly
+export { TEST_IDS };
 
 /**
  * COPPA-compliant request configuration for child-directed ads

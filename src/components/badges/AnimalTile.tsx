@@ -14,7 +14,7 @@ import {
   Animated,
   Image,
   ImageSourcePropType,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AnimalDefinition, RARITY_CONFIG, RARITY_STARS } from '../../types/badges';
@@ -22,12 +22,7 @@ import { useCollection } from '../../context/CollectionContext';
 import { colors } from '../../styles/colors';
 import { radii } from '../../styles/kidTheme';
 import SoundManager from '../../services/SoundManager';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const HORIZONTAL_PADDING = 20;
-const TILE_GAP = 12;
-const NUM_COLUMNS = 2;
-const TILE_SIZE = Math.floor((SCREEN_WIDTH - (HORIZONTAL_PADDING * 2) - (TILE_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS);
+import { TILE_GAP, getTileSize } from './BadgeTile';
 
 interface AnimalTileProps {
   animal: AnimalDefinition;
@@ -36,11 +31,11 @@ interface AnimalTileProps {
 }
 
 // Small size is used for horizontal scroll previews
-const SIZES = {
+const getSizes = (tileSize: number) => ({
   small: { tile: 100, image: 56, name: 11 },
-  medium: { tile: TILE_SIZE, image: 90, name: 14 },
+  medium: { tile: tileSize, image: Math.min(90, tileSize * 0.5), name: 14 },
   large: { tile: 160, image: 100, name: 15 },
-};
+});
 
 // Animal image mapping - custom artwork
 const ANIMAL_IMAGES: Record<string, ImageSourcePropType> = {
@@ -63,11 +58,14 @@ const ANIMAL_IMAGES: Record<string, ImageSourcePropType> = {
 };
 
 export default function AnimalTile({ animal, onPress, size = 'medium' }: AnimalTileProps) {
+  const { width: screenWidth } = useWindowDimensions();
   const { isAnimalUnlocked, getAnimalProgress } = useCollection();
   const isUnlocked = isAnimalUnlocked(animal.id);
   const progress = getAnimalProgress(animal.id);
   const isNew = isUnlocked && progress && !progress.seen;
 
+  const tileSize = getTileSize(screenWidth);
+  const SIZES = getSizes(tileSize);
   const dimensions = SIZES[size];
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const rarityConfig = RARITY_CONFIG[animal.rarity];
@@ -104,7 +102,7 @@ export default function AnimalTile({ animal, onPress, size = 'medium' }: AnimalT
       onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      style={isGridTile ? styles.pressable : undefined}
+      style={isGridTile ? { width: tileSize, marginBottom: TILE_GAP } : undefined}
     >
       <Animated.View
         style={[
@@ -204,10 +202,6 @@ export default function AnimalTile({ animal, onPress, size = 'medium' }: AnimalT
 }
 
 const styles = StyleSheet.create({
-  pressable: {
-    width: TILE_SIZE,
-    marginBottom: TILE_GAP,
-  },
   container: {
     alignItems: 'center',
     padding: 12,
@@ -217,7 +211,7 @@ const styles = StyleSheet.create({
   },
   gridContainer: {
     width: '100%',
-    aspectRatio: 0.85,
+    aspectRatio: 1,
     margin: 0,
     padding: 16,
   },

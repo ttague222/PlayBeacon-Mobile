@@ -3,11 +3,16 @@
  *
  * Manages ad state and provides hooks for ad components.
  * Integrates with PremiumContext for premium/ad-free status.
+ * Integrates with RemoteConfig for dynamic ad control (App Store review).
  *
  * Ad Frequency Logic:
  * - First 20 game recommendations each day are ad-free
  * - After 20 games, show interstitial every 5 games
  * - Resets daily at midnight (local time)
+ *
+ * Remote Config Flags:
+ * - ads_enabled: Master toggle for ads (false during App Store review)
+ * - ads_test_mode: Force test ads even in production builds
  *
  * NOTE: react-native-google-mobile-ads requires a native build (EAS Build).
  * In Expo Go, ads will be disabled gracefully.
@@ -18,6 +23,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePremium } from './PremiumContext';
+import remoteConfig from '../services/RemoteConfig';
 import logger from '../utils/logger';
 
 // Check if we're running in Expo Go (where native modules aren't available)
@@ -49,6 +55,8 @@ export function AdProvider({ children }) {
 
   const [isInitialized, setIsInitialized] = useState(false);
   const [adsEnabled, setAdsEnabled] = useState(!isExpoGo);
+  const [remoteAdsEnabled, setRemoteAdsEnabled] = useState(false);
+  const [isTestMode, setIsTestMode] = useState(false);
   const [trackingStatus, setTrackingStatus] = useState(null);
 
   // Daily tracking state
@@ -58,12 +66,34 @@ export function AdProvider({ children }) {
   const lastInterstitialTime = useRef(0);
   const isLoadingTracking = useRef(true);
 
-  // Update ads enabled based on premium status
+  // Update ads enabled based on premium status AND remote config
   useEffect(() => {
     if (!isExpoGo) {
-      setAdsEnabled(!premiumStatus);
+      // Ads only enabled if: not premium AND remote config allows ads
+      setAdsEnabled(!premiumStatus && remoteAdsEnabled);
     }
-  }, [premiumStatus]);
+  }, [premiumStatus, remoteAdsEnabled]);
+
+  // Initialize Remote Config and listen for changes
+  useEffect(() => {
+    const initRemoteConfig = async () => {
+      await remoteConfig.initialize();
+      setRemoteAdsEnabled(remoteConfig.areAdsEnabled());
+      setIsTestMode(remoteConfig.isTestModeForced());
+      logger.log(`[AdContext] Remote config: ads_enabled=${remoteConfig.areAdsEnabled()}, test_mode=${remoteConfig.isTestModeForced()}`);
+    };
+
+    initRemoteConfig();
+
+    // Listen for remote config changes
+    const unsubscribe = remoteConfig.addListener((config) => {
+      setRemoteAdsEnabled(config.ads_enabled === true);
+      setIsTestMode(config.ads_test_mode === true);
+      logger.log('[AdContext] Remote config updated:', config);
+    });
+
+    return unsubscribe;
+  }, []);
 
   /**
    * Load saved tracking data from AsyncStorage
@@ -260,10 +290,11 @@ export function AdProvider({ children }) {
 
   /**
    * Check if ads should currently be shown
+   * Requires: initialized, not premium, not Expo Go, AND remote config enabled
    */
   const shouldShowAds = useCallback(() => {
-    return isInitialized && adsEnabled && !premiumStatus && !isExpoGo;
-  }, [isInitialized, adsEnabled, premiumStatus]);
+    return isInitialized && adsEnabled && !premiumStatus && !isExpoGo && remoteAdsEnabled;
+  }, [isInitialized, adsEnabled, premiumStatus, remoteAdsEnabled]);
 
   /**
    * Get current ad status info (for debugging/UI)
@@ -281,13 +312,17 @@ export function AdProvider({ children }) {
       gamesUntilNextAd,
       isInFreePeriod: dailyGameCount < AD_FREQUENCY_CONFIG.freeGamesPerDay,
       config: AD_FREQUENCY_CONFIG,
+      remoteAdsEnabled,
+      isTestMode,
     };
-  }, [dailyGameCount, gamesSinceLastAd]);
+  }, [dailyGameCount, gamesSinceLastAd, remoteAdsEnabled, isTestMode]);
 
   const value = {
     isInitialized,
     isPremium: premiumStatus,
     adsEnabled,
+    remoteAdsEnabled,
+    isTestMode,
     trackingStatus,
     isExpoGo,
     shouldShowAds,

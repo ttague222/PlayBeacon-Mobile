@@ -8,12 +8,11 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HORIZONTAL_PADDING = 20;
-const IMAGE_WIDTH = SCREEN_WIDTH - (HORIZONTAL_PADDING * 2);
+const MAX_CONTENT_WIDTH = 500; // Maximum width for content on tablets
 import { api } from '../services/api';
 import OptimizedImage from '../components/OptimizedImage';
 import CollectionPickerModal from '../components/CollectionPickerModal';
@@ -22,9 +21,10 @@ import { useCollection } from '../context/CollectionContext';
 import SoundManager from '../services/SoundManager';
 import { colors } from '../styles/colors';
 import logger from '../utils/logger';
-import { radii, shadows } from '../styles/kidTheme';
+import { radii } from '../styles/kidTheme';
 
 export default function DailyBoxScreen({ onClose }) {
+  const { width: screenWidth } = useWindowDimensions();
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState(null);
   const [opening, setOpening] = useState(false);
@@ -34,6 +34,9 @@ export default function DailyBoxScreen({ onClose }) {
   const [xpGained, setXpGained] = useState(0);
   const [newAchievements, setNewAchievements] = useState([]);
   const [bonusBoxUsed, setBonusBoxUsed] = useState(false);
+
+  // Calculate responsive content width
+  const contentWidth = Math.min(screenWidth - (HORIZONTAL_PADDING * 2), MAX_CONTENT_WIDTH);
 
   // Rewarded ad hook for bonus box
   const { isLoaded: rewardedAdLoaded, showRewardedAd, adsAvailable, isLoading: adIsLoading, loadError: adLoadError, loadAd } = useRewarded();
@@ -432,18 +435,18 @@ export default function DailyBoxScreen({ onClose }) {
             {revealedGame?.thumbnail_url ? (
               <OptimizedImage
                 source={{ uri: revealedGame.thumbnail_url }}
-                style={styles.gameImage}
+                style={[styles.gameImage, { width: contentWidth }]}
                 resizeMode="cover"
               />
             ) : (
-              <View style={[styles.gameImage, styles.placeholderImage]}>
+              <View style={[styles.gameImage, styles.placeholderImage, { width: contentWidth }]}>
                 <Text style={styles.placeholderEmoji}>🎮</Text>
                 <Text style={styles.placeholderText}>Tap to Play!</Text>
               </View>
             )}
           </TouchableOpacity>
 
-          <View style={styles.gameInfo}>
+          <View style={[styles.gameInfo, { width: contentWidth }]}>
             <Text style={styles.gameTitle}>{revealedGame?.title}</Text>
             {revealedGame?.genre && (
               <Text style={styles.gameGenre}>{revealedGame.genre}</Text>
@@ -458,7 +461,7 @@ export default function DailyBoxScreen({ onClose }) {
             </Text>
           </View>
 
-          <View style={styles.actionButtons}>
+          <View style={[styles.actionButtons, { width: contentWidth }]}>
             <TouchableOpacity
               style={styles.playButton}
               onPress={openRobloxGame}
@@ -475,7 +478,7 @@ export default function DailyBoxScreen({ onClose }) {
           </View>
 
           {newAchievements.length > 0 && (
-            <View style={styles.achievementBanner}>
+            <View style={[styles.achievementBanner, { width: contentWidth }]}>
               <Text style={styles.achievementTitle}>Achievement Unlocked!</Text>
               {newAchievements.map((ach, index) => (
                 <Text key={index} style={styles.achievementName}>
@@ -488,7 +491,7 @@ export default function DailyBoxScreen({ onClose }) {
           {/* Bonus Box - Watch ad for another game */}
           {adsAvailable && !bonusBoxUsed && (
             <TouchableOpacity
-              style={[styles.bonusBoxButton, !rewardedAdLoaded && styles.bonusBoxButtonDisabled]}
+              style={[styles.bonusBoxButton, { width: contentWidth }, !rewardedAdLoaded && styles.bonusBoxButtonDisabled]}
               onPress={rewardedAdLoaded ? handleBonusBox : (adLoadError ? loadAd : undefined)}
               disabled={adIsLoading}
             >
@@ -619,7 +622,6 @@ const styles = StyleSheet.create({
     color: colors.background.primary,
   },
   gameImage: {
-    width: IMAGE_WIDTH,
     height: 200,
     borderRadius: radii.m,
     backgroundColor: colors.background.tertiary,
@@ -642,7 +644,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   gameInfo: {
-    width: IMAGE_WIDTH,
     paddingVertical: 16,
   },
   gameTitle: {
@@ -669,7 +670,6 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
   },
   actionButtons: {
-    width: IMAGE_WIDTH,
     gap: 12,
   },
   playButton: {
@@ -701,7 +701,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.tertiary,
     padding: 16,
     borderRadius: radii.s,
-    width: IMAGE_WIDTH,
     alignItems: 'center',
   },
   achievementTitle: {
@@ -721,7 +720,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.s,
     padding: 14,
     marginTop: 16,
-    width: IMAGE_WIDTH,
     borderWidth: 1,
     borderColor: colors.accent.primary,
   },

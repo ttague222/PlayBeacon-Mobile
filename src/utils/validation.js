@@ -88,56 +88,57 @@ export const validateCollectionDescription = (description) => {
   return { valid: true, error: null };
 };
 
-/**
- * Sanitize Roblox username input
- */
-export const sanitizeRobloxUsername = (username) => {
-  if (!username || typeof username !== 'string') {
-    return '';
-  }
+// TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
+// /**
+//  * Sanitize Roblox username input
+//  */
+// export const sanitizeRobloxUsername = (username) => {
+//   if (!username || typeof username !== 'string') {
+//     return '';
+//   }
 
-  // Remove leading/trailing whitespace
-  let sanitized = username.trim();
+//   // Remove leading/trailing whitespace
+//   let sanitized = username.trim();
 
-  // Limit length to 20 characters (Roblox max)
-  sanitized = sanitized.slice(0, 20);
+//   // Limit length to 20 characters (Roblox max)
+//   sanitized = sanitized.slice(0, 20);
 
-  // Only allow alphanumeric and underscore (Roblox username rules)
-  sanitized = sanitized.replace(/[^a-zA-Z0-9_]/g, '');
+//   // Only allow alphanumeric and underscore (Roblox username rules)
+//   sanitized = sanitized.replace(/[^a-zA-Z0-9_]/g, '');
 
-  return sanitized;
-};
+//   return sanitized;
+// };
 
-/**
- * Validate Roblox username
- */
-export const validateRobloxUsername = (username) => {
-  const sanitized = sanitizeRobloxUsername(username);
+// /**
+//  * Validate Roblox username
+//  */
+// export const validateRobloxUsername = (username) => {
+//   const sanitized = sanitizeRobloxUsername(username);
 
-  if (!sanitized) {
-    return { valid: false, error: 'Username is required' };
-  }
+//   if (!sanitized) {
+//     return { valid: false, error: 'Username is required' };
+//   }
 
-  if (sanitized.length < 3) {
-    return { valid: false, error: 'Username must be at least 3 characters' };
-  }
+//   if (sanitized.length < 3) {
+//     return { valid: false, error: 'Username must be at least 3 characters' };
+//   }
 
-  if (sanitized.length > 20) {
-    return { valid: false, error: 'Username must be less than 20 characters' };
-  }
+//   if (sanitized.length > 20) {
+//     return { valid: false, error: 'Username must be less than 20 characters' };
+//   }
 
-  // Check if username starts with a number (not allowed by Roblox)
-  if (/^\d/.test(sanitized)) {
-    return { valid: false, error: 'Username cannot start with a number' };
-  }
+//   // Check if username starts with a number (not allowed by Roblox)
+//   if (/^\d/.test(sanitized)) {
+//     return { valid: false, error: 'Username cannot start with a number' };
+//   }
 
-  // Check for invalid characters
-  if (!/^[a-zA-Z0-9_]+$/.test(sanitized)) {
-    return { valid: false, error: 'Username can only contain letters, numbers, and underscores' };
-  }
+//   // Check for invalid characters
+//   if (!/^[a-zA-Z0-9_]+$/.test(sanitized)) {
+//     return { valid: false, error: 'Username can only contain letters, numbers, and underscores' };
+//   }
 
-  return { valid: true, error: null };
-};
+//   return { valid: true, error: null };
+// };
 
 /**
  * Sanitize numeric input (for universe IDs, etc.)

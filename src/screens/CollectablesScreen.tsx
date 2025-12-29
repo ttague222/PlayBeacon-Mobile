@@ -14,6 +14,7 @@ import {
   SafeAreaView,
   Pressable,
   StatusBar,
+  useWindowDimensions,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,11 +22,11 @@ import { useCollection } from '../context/CollectionContext';
 import SoundManager from '../services/SoundManager';
 import { AnimalDefinition, RARITY_CONFIG } from '../types/badges';
 import { AnimalTile, AnimalCardModal } from '../components/badges';
+import { TILE_GAP, getNumColumns } from '../components/badges/BadgeTile';
 import { colors } from '../styles/colors';
 import { typography, radii } from '../styles/kidTheme';
 
 const HORIZONTAL_PADDING = 20;
-const TILE_GAP = 12;
 
 type CollectablesRouteParams = {
   Collectables: { animalId?: string };
@@ -35,6 +36,8 @@ export default function CollectablesScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<CollectablesRouteParams, 'Collectables'>>();
   const initialAnimalId = route.params?.animalId;
+  const { width: screenWidth } = useWindowDimensions();
+  const numColumns = getNumColumns(screenWidth);
 
   const {
     animals,
@@ -251,21 +254,25 @@ export default function CollectablesScreen() {
 
         {/* Animals Grid */}
         <View style={styles.animalsGrid}>
-          {sortedAnimals.map((animal, index) => (
-            <View
-              key={animal.id}
-              style={[
-                styles.animalTileWrapper,
-                index % 2 === 0 && { marginRight: TILE_GAP }
-              ]}
-            >
-              <AnimalTile
-                animal={animal}
-                onPress={handleAnimalPress}
-                size="medium"
-              />
-            </View>
-          ))}
+          {sortedAnimals.map((animal, index) => {
+            // Add right margin for all except the last column
+            const isLastColumn = (index + 1) % numColumns === 0;
+            return (
+              <View
+                key={animal.id}
+                style={[
+                  styles.animalTileWrapper,
+                  !isLastColumn && { marginRight: TILE_GAP }
+                ]}
+              >
+                <AnimalTile
+                  animal={animal}
+                  onPress={handleAnimalPress}
+                  size="medium"
+                />
+              </View>
+            );
+          })}
         </View>
 
         {/* Empty state */}

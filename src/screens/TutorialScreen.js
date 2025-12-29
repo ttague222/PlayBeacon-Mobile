@@ -22,9 +22,12 @@ const { width, height } = Dimensions.get('window');
 const slides = [
   {
     key: '1',
-    title: 'Connect Your Roblox',
+    // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
+    // title: 'Connect Your Roblox',
+    // text: 'Add your Roblox username to get games you\'ll love, or jump right in!',
+    title: 'Welcome to PlayBeacon!',
     emoji: '⭐',
-    text: 'Add your Roblox username to get games you\'ll love, or jump right in!',
+    text: 'Discover amazing games you\'ll love - let\'s get started!',
     backgroundColor: colors.accent.primary,  // Coral pink
   },
   {
