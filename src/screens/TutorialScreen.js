@@ -1,5 +1,6 @@
 import React, { useRef, useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, Platform } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppIntroSlider from 'react-native-app-intro-slider';
 import LottieView from 'lottie-react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -92,6 +93,7 @@ export default function TutorialScreen({ navigation, onComplete }) {
   const { triggerEvent } = useCollection();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [practiceComplete, setPracticeComplete] = useState({});
+  const insets = useSafeAreaInsets();
 
   // Animation refs for interactive elements
   const dislikeScale = useRef(new Animated.Value(1)).current;
@@ -310,7 +312,7 @@ export default function TutorialScreen({ navigation, onComplete }) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <AppIntroSlider
         ref={sliderRef}
         data={slides}
@@ -323,24 +325,28 @@ export default function TutorialScreen({ navigation, onComplete }) {
         renderSkipButton={renderSkipButton}
         activeDotStyle={styles.activeDot}
         dotStyle={styles.dot}
+        bottomButton={false}
+        contentContainerStyle={{ paddingBottom: Platform.OS === 'android' ? 20 : 0 }}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.accent.primary, // Default background for safe area
   },
   slide: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 30,
+    paddingBottom: Platform.OS === 'android' ? 40 : 20, // Extra bottom padding for Android nav buttons
   },
   progressContainer: {
     position: 'absolute',
-    top: 60,
+    top: Platform.OS === 'android' ? 20 : 40, // Adjust for safe area already handled by SafeAreaView
     alignSelf: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
     paddingHorizontal: 16,

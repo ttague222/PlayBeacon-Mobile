@@ -9,7 +9,9 @@ import {
   Alert,
   Linking,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const HORIZONTAL_PADDING = 20;
 const MAX_CONTENT_WIDTH = 500; // Maximum width for content on tablets
@@ -353,14 +355,14 @@ export default function DailyBoxScreen({ onClose }) {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ActivityIndicator size="large" color={colors.accent.primary} />
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <TouchableOpacity style={styles.closeButton} onPress={() => {
         SoundManager.play('ui.modal_close');
         onClose();
@@ -519,7 +521,7 @@ export default function DailyBoxScreen({ onClose }) {
         gameId={revealedGame?.universe_id}
         gameName={revealedGame?.title}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -528,11 +530,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
     padding: 20,
-    paddingTop: 60,
+    paddingTop: Platform.OS === 'android' ? 20 : 40, // SafeAreaView handles top inset
   },
   closeButton: {
     position: 'absolute',
-    top: 50,
+    top: Platform.OS === 'android' ? 10 : 30, // Adjust for SafeAreaView
     right: 20,
     width: 40,
     height: 40,

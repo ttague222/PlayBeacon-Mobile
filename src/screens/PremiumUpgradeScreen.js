@@ -14,7 +14,9 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePremium } from '../context/PremiumContext';
 import ParentalGate from '../components/ParentalGate';
 import { colors } from '../styles/colors';
@@ -77,7 +79,7 @@ export default function PremiumUpgradeScreen({ navigation }) {
   // Already premium - show success state
   if (isPremium) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <TouchableOpacity
           style={styles.closeButton}
           onPress={() => navigation.goBack()}
@@ -93,24 +95,24 @@ export default function PremiumUpgradeScreen({ navigation }) {
             All ads have been removed from your experience.
           </Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   // Loading state
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.accent.primary} />
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <TouchableOpacity
         style={styles.closeButton}
         onPress={() => navigation.goBack()}
@@ -244,7 +246,7 @@ export default function PremiumUpgradeScreen({ navigation }) {
         onPass={handleParentalGatePass}
         onCancel={handleParentalGateCancel}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -255,7 +257,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: 50,
+    top: Platform.OS === 'android' ? 10 : 30, // Adjust for SafeAreaView
     right: 20,
     zIndex: 10,
     paddingVertical: 8,
@@ -267,9 +269,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   scrollContent: {
-    paddingTop: 80,
+    paddingTop: Platform.OS === 'android' ? 50 : 60, // SafeAreaView handles top inset
     paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingBottom: Platform.OS === 'android' ? 20 : 40, // SafeAreaView handles bottom inset
     alignItems: 'center',
   },
   badge: {
