@@ -2,7 +2,7 @@
  * Premium Context Provider
  *
  * Manages premium/ad-free status and in-app purchase flow.
- * Handles iOS and Android purchases via react-native-iap v14+.
+ * Supports both react-native-iap and RevenueCat via feature toggle.
  * Persists premium status to AsyncStorage and Firestore.
  *
  * COPPA-compliant: Works with both anonymous and Google-linked accounts.
@@ -17,16 +17,29 @@ import { db } from '../config/firebase';
 import { useAuth } from './AuthContext';
 import logger from '../utils/logger';
 
+// Feature toggle: Set to true to use RevenueCat, false for react-native-iap
+export const ENABLE_REVENUECAT = true;
+
 // Check if we're running in Expo Go (where native modules aren't available)
 const isExpoGo = Constants.appOwnership === 'expo';
 
 // Product ID - must match App Store Connect and Google Play Console
-export const PRODUCT_ID = 'com.playbeacon.app.removeads2';
+export const PRODUCT_ID = 'com.playbeacon.app.removeads3';
 
 // Storage key for local premium cache
 const PREMIUM_STORAGE_KEY = '@playbeacon_premium';
 
-// Dynamically import react-native-iap functions only when not in Expo Go
+// RevenueCat imports (conditionally loaded)
+let purchaseService = null;
+if (ENABLE_REVENUECAT && !isExpoGo) {
+  try {
+    purchaseService = require('../services/purchaseService');
+  } catch (error) {
+    logger.log('RevenueCat service not available:', error.message);
+  }
+}
+
+// Dynamically import react-native-iap functions only when not using RevenueCat
 let initConnection = null;
 let endConnection = null;
 let getProducts = null;
@@ -36,7 +49,7 @@ let finishTransaction = null;
 let purchaseUpdatedListener = null;
 let purchaseErrorListener = null;
 
-if (!isExpoGo) {
+if (!isExpoGo && !ENABLE_REVENUECAT) {
   try {
     const RNIap = require('react-native-iap');
     initConnection = RNIap.initConnection;
@@ -61,6 +74,7 @@ export function PremiumProvider({ children }) {
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [products, setProducts] = useState([]);
   const [isIapAvailable, setIsIapAvailable] = useState(false);
+  const [revenueCatPackage, setRevenueCatPackage] = useState(null);
 
   /**
    * Load premium status from local storage
@@ -130,9 +144,75 @@ export function PremiumProvider({ children }) {
   }, [user?.uid]);
 
   /**
-   * Initialize IAP connection and load products
+   * Initialize RevenueCat
+   */
+  const initializeRevenueCat = useCallback(async () => {
+    if (isExpoGo || !purchaseService) {
+      logger.log('RevenueCat: Skipping initialization (running in Expo Go or service not available)');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      logger.log('RevenueCat: Starting initialization...');
+
+      // Initialize RevenueCat with user ID if available
+      const initialized = await purchaseService.initializePurchases(user?.uid);
+
+      if (!initialized) {
+        logger.warn('RevenueCat: Initialization returned false');
+        setIsIapAvailable(false);
+        setIsLoading(false);
+        return;
+      }
+
+      // If user is logged in, sync with RevenueCat
+      if (user?.uid) {
+        try {
+          await purchaseService.loginUser(user.uid);
+        } catch (loginError) {
+          logger.warn('RevenueCat: Login failed, continuing with anonymous:', loginError);
+        }
+      }
+
+      // Check premium status from RevenueCat
+      const hasPremium = await purchaseService.checkPremiumStatus();
+      if (hasPremium) {
+        setIsPremium(true);
+        await savePremiumStatus(true);
+        logger.log('RevenueCat: User has premium entitlement');
+      }
+
+      // Load product info
+      const productInfo = await purchaseService.getProductInfo();
+      if (productInfo.package) {
+        setRevenueCatPackage(productInfo.package);
+        setIsIapAvailable(true);
+        logger.log('RevenueCat: Product loaded:', productInfo.title, productInfo.price);
+      } else {
+        // Even without package, we can try to present paywall
+        setIsIapAvailable(true);
+        logger.log('RevenueCat: No package found, but paywall may be available');
+      }
+
+      logger.log('RevenueCat: Initialization complete');
+    } catch (error) {
+      logger.error('RevenueCat: Initialization failed:', error);
+      setIsIapAvailable(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.uid, savePremiumStatus]);
+
+  /**
+   * Initialize IAP connection and load products (react-native-iap)
    */
   const initializeIAP = useCallback(async () => {
+    // Use RevenueCat if enabled
+    if (ENABLE_REVENUECAT) {
+      return initializeRevenueCat();
+    }
+
     if (isExpoGo || !initConnection) {
       logger.log('IAP: Skipping initialization (running in Expo Go or IAP not available)');
       setIsLoading(false);
@@ -179,7 +259,7 @@ export function PremiumProvider({ children }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [initializeRevenueCat]);
 
   /**
    * Check for existing purchases (restore functionality)
@@ -206,9 +286,94 @@ export function PremiumProvider({ children }) {
   }, [savePremiumStatus]);
 
   /**
+   * Purchase via RevenueCat
+   */
+  const purchaseWithRevenueCat = useCallback(async () => {
+    if (isExpoGo || !purchaseService) {
+      Alert.alert(
+        'Not Available',
+        'In-app purchases are not available in development mode.'
+      );
+      return false;
+    }
+
+    if (isPurchasing) {
+      return false;
+    }
+
+    try {
+      setIsPurchasing(true);
+
+      // Get the package if not already loaded
+      let packageToPurchase = revenueCatPackage;
+
+      if (!packageToPurchase) {
+        // Try to load packages
+        const packages = await purchaseService.getCurrentPackages();
+        if (packages && packages.length > 0) {
+          packageToPurchase = packages[0];
+          setRevenueCatPackage(packageToPurchase);
+        }
+      }
+
+      if (!packageToPurchase) {
+        Alert.alert(
+          'Error',
+          'Could not load purchase options. Please try again later.',
+          [{ text: 'OK' }]
+        );
+        return false;
+      }
+
+      // Purchase the package directly (like PlayNxt)
+      const result = await purchaseService.purchasePackage(packageToPurchase);
+
+      if (result.success || result.isPremium) {
+        setIsPremium(true);
+        await savePremiumStatus(true);
+
+        Alert.alert(
+          'Purchase Complete!',
+          'Thank you! All ads have been removed. Enjoy PlayBeacon ad-free!',
+          [{ text: 'Awesome!' }]
+        );
+        return true;
+      }
+
+      if (result.cancelled) {
+        // User cancelled - no need to show error
+        return false;
+      }
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      return false;
+    } catch (error) {
+      logger.error('RevenueCat purchase failed:', error);
+
+      Alert.alert(
+        'Purchase Failed',
+        error.message || 'Something went wrong. Please try again.',
+        [{ text: 'OK' }]
+      );
+
+      return false;
+    } finally {
+      setIsPurchasing(false);
+    }
+  }, [isPurchasing, revenueCatPackage, savePremiumStatus]);
+
+  /**
    * Purchase the premium/ad-free product
    */
   const purchasePremium = useCallback(async () => {
+    // Use RevenueCat if enabled
+    if (ENABLE_REVENUECAT) {
+      return purchaseWithRevenueCat();
+    }
+
     if (isExpoGo || !requestPurchase) {
       Alert.alert(
         'Not Available',
@@ -312,12 +477,64 @@ export function PremiumProvider({ children }) {
     } finally {
       setIsPurchasing(false);
     }
-  }, [isIapAvailable, isPurchasing, savePremiumStatus]);
+  }, [isIapAvailable, isPurchasing, purchaseWithRevenueCat, savePremiumStatus]);
+
+  /**
+   * Restore via RevenueCat
+   */
+  const restoreWithRevenueCat = useCallback(async () => {
+    if (isExpoGo || !purchaseService) {
+      Alert.alert(
+        'Not Available',
+        'Purchase restoration is not available in development mode.'
+      );
+      return false;
+    }
+
+    try {
+      setIsLoading(true);
+
+      const result = await purchaseService.restorePurchases();
+
+      if (result.success && result.isPremium) {
+        setIsPremium(true);
+        await savePremiumStatus(true);
+        Alert.alert(
+          'Restored!',
+          'Your ad-free purchase has been restored. Enjoy PlayBeacon!',
+          [{ text: 'Great!' }]
+        );
+        return true;
+      } else {
+        Alert.alert(
+          'No Purchases Found',
+          'We could not find any previous purchases to restore.',
+          [{ text: 'OK' }]
+        );
+        return false;
+      }
+    } catch (error) {
+      logger.error('RevenueCat restore failed:', error);
+      Alert.alert(
+        'Restore Failed',
+        'Could not restore purchases. Please try again.',
+        [{ text: 'OK' }]
+      );
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [savePremiumStatus]);
 
   /**
    * Restore previous purchases
    */
   const restorePurchases = useCallback(async () => {
+    // Use RevenueCat if enabled
+    if (ENABLE_REVENUECAT) {
+      return restoreWithRevenueCat();
+    }
+
     if (isExpoGo || !getAvailablePurchases) {
       Alert.alert(
         'Not Available',
@@ -362,18 +579,23 @@ export function PremiumProvider({ children }) {
     } finally {
       setIsLoading(false);
     }
-  }, [savePremiumStatus]);
+  }, [restoreWithRevenueCat, savePremiumStatus]);
 
   /**
    * Get the product info for display
    */
-  const getProductInfo = useCallback(() => {
+  const getProductInfo = useCallback(async () => {
+    // Use RevenueCat if enabled
+    if (ENABLE_REVENUECAT && purchaseService) {
+      return await purchaseService.getProductInfo();
+    }
+
     const product = products.find((p) => p.productId === PRODUCT_ID);
     if (product) {
       return {
         title: product.title || 'Remove Ads',
         description: product.description || 'Remove all ads forever with a one-time purchase.',
-        price: product.localizedPrice || '$2.99',
+        price: product.localizedPrice || '$1.99',
         currency: product.currency || 'USD',
       };
     }
@@ -381,10 +603,43 @@ export function PremiumProvider({ children }) {
     return {
       title: 'Remove Ads',
       description: 'Remove all ads forever with a one-time purchase.',
-      price: '$2.99',
+      price: '$1.99',
       currency: 'USD',
     };
   }, [products]);
+
+  /**
+   * Present purchase flow directly (no paywall UI needed)
+   */
+  const presentPaywall = useCallback(async () => {
+    // Just use the regular purchase flow - no RevenueCat paywall UI needed
+    return purchasePremium();
+  }, [purchasePremium]);
+
+  /**
+   * Show Customer Center (RevenueCat only)
+   */
+  const showCustomerCenter = useCallback(async () => {
+    if (!ENABLE_REVENUECAT || !purchaseService) {
+      Alert.alert(
+        'Not Available',
+        'Customer center is not available.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    try {
+      await purchaseService.showCustomerCenter();
+    } catch (error) {
+      logger.error('Customer center failed:', error);
+      Alert.alert(
+        'Error',
+        'Could not open customer center. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
+  }, []);
 
   // Initialize on mount
   useEffect(() => {
@@ -393,7 +648,7 @@ export function PremiumProvider({ children }) {
 
     // Cleanup IAP connection on unmount
     return () => {
-      if (endConnection) {
+      if (!ENABLE_REVENUECAT && endConnection) {
         endConnection();
       }
     };
@@ -406,9 +661,9 @@ export function PremiumProvider({ children }) {
     }
   }, [user?.uid, loadPremiumFromFirestore]);
 
-  // Set up purchase listener
+  // Set up purchase listener (react-native-iap only)
   useEffect(() => {
-    if (isExpoGo || !purchaseUpdatedListener) return;
+    if (ENABLE_REVENUECAT || isExpoGo || !purchaseUpdatedListener) return;
 
     const purchaseUpdateSubscription = purchaseUpdatedListener(
       async (purchase) => {
@@ -441,6 +696,26 @@ export function PremiumProvider({ children }) {
     };
   }, [savePremiumStatus]);
 
+  // Set up RevenueCat customer info listener
+  useEffect(() => {
+    if (!ENABLE_REVENUECAT || isExpoGo || !purchaseService) return;
+
+    const listener = purchaseService.addCustomerInfoListener((customerInfo) => {
+      logger.log('RevenueCat: Customer info updated');
+      const hasPremium = customerInfo.entitlements.active[purchaseService.ENTITLEMENT_ID] !== undefined;
+      if (hasPremium !== isPremium) {
+        setIsPremium(hasPremium);
+        savePremiumStatus(hasPremium);
+      }
+    });
+
+    return () => {
+      if (listener?.remove) {
+        listener.remove();
+      }
+    };
+  }, [isPremium, savePremiumStatus]);
+
   /**
    * Retry IAP connection (for when initial connection fails)
    */
@@ -456,10 +731,13 @@ export function PremiumProvider({ children }) {
     isPurchasing,
     isIapAvailable: isIapAvailable && !isExpoGo,
     isExpoGo,
+    isRevenueCatEnabled: ENABLE_REVENUECAT,
     purchasePremium,
     restorePurchases,
     getProductInfo,
     retryConnection,
+    presentPaywall,
+    showCustomerCenter,
   };
 
   return (

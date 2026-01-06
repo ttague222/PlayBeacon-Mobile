@@ -59,7 +59,7 @@ describe('PremiumContext', () => {
 
   describe('PRODUCT_ID', () => {
     it('should export the correct product ID', () => {
-      expect(PRODUCT_ID).toBe('com.playbeacon.app.removeads2');
+      expect(PRODUCT_ID).toBe('com.playbeacon.app.removeads3');
     });
   });
 
@@ -184,7 +184,7 @@ describe('PremiumContext', () => {
       expect(productInfo).toEqual({
         title: 'Remove Ads',
         description: 'Remove all ads forever with a one-time purchase.',
-        price: '$2.99',
+        price: '$1.99',
         currency: 'USD',
       });
     });

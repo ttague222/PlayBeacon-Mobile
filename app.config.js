@@ -32,6 +32,17 @@ export default ({ config }) => {
           { SKAdNetworkIdentifier: 's39g8k73mm.skadnetwork' },
           { SKAdNetworkIdentifier: '3qy4746246.skadnetwork' },
         ],
+        // Google Sign-In URL scheme (reversed client ID)
+        CFBundleURLTypes: [
+          {
+            CFBundleURLSchemes: [
+              'com.googleusercontent.apps.346141384720-m9273skmgc1vi0c3pb6h3n20herhedvt',
+            ],
+          },
+        ],
+      },
+      googleSignIn: {
+        reservedClientId: 'com.googleusercontent.apps.346141384720-m9273skmgc1vi0c3pb6h3n20herhedvt',
       },
     },
     android: {
@@ -70,6 +81,7 @@ export default ({ config }) => {
       'expo-tracking-transparency',
       'react-native-iap',
       'expo-secure-store',
+      'expo-updates',
     ],
     extra: {
       env,
@@ -82,7 +94,9 @@ export default ({ config }) => {
         messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
         appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
       },
-      googleClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+      // Google OAuth Client IDs (like PlayNxt)
+      googleIosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+      googleWebClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
       eas: {
         projectId: '23865d64-b2c1-4555-89f6-e85e795bc696',
       },

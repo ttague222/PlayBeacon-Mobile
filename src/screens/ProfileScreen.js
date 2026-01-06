@@ -26,8 +26,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useAuth } from '../context/AuthContext';
 import SoundManager from '../services/SoundManager';
-// TEMPORARILY DISABLED: Premium/IAP - re-enable after initial App Store approval
-// import { usePremium } from '../context/PremiumContext';
+import { usePremium } from '../context/PremiumContext';
 import ParentalGate from '../components/ParentalGate';
 import ProfileAvatar from '../components/ProfileAvatar';
 import AnimalPickerModal from '../components/AnimalPickerModal';
@@ -49,9 +48,7 @@ export default function ProfileScreen() {
     isLinkingAccount,
     getAccountStatus,
   } = useAuth();
-  // TEMPORARILY DISABLED: Premium/IAP - re-enable after initial App Store approval
-  // const { isPremium, restorePurchases } = usePremium();
-  const isPremium = false; // Placeholder until IAP is enabled
+  const { isPremium, restorePurchases } = usePremium();
 
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -235,12 +232,11 @@ export default function ProfileScreen() {
     setShowParentalGate(true);
   };
 
-  // TEMPORARILY DISABLED: Premium/IAP - re-enable after initial App Store approval
-  // const handleRestorePurchasesPress = () => {
-  //   SoundManager.play('ui.tap');
-  //   setPendingAction('restore_purchases');
-  //   setShowParentalGate(true);
-  // };
+  const handleRestorePurchasesPress = () => {
+    SoundManager.play('ui.tap');
+    setPendingAction('restore_purchases');
+    setShowParentalGate(true);
+  };
 
   const handleParentalGatePass = async () => {
     setShowParentalGate(false);
@@ -276,9 +272,8 @@ export default function ProfileScreen() {
       } catch (error) {
         logger.error('Disconnect error:', error);
       }
-    // TEMPORARILY DISABLED: Premium/IAP - re-enable after initial App Store approval
-    // } else if (pendingAction === 'restore_purchases') {
-    //   await restorePurchases();
+    } else if (pendingAction === 'restore_purchases') {
+      await restorePurchases();
     }
 
     setPendingAction(null);
@@ -454,8 +449,7 @@ export default function ProfileScreen() {
         )} */}
       </View>
 
-      {/* TEMPORARILY DISABLED: Premium/IAP Card - re-enable after initial App Store approval */}
-      {/* <TouchableOpacity
+      <TouchableOpacity
         style={[styles.premiumCard, isPremium && styles.premiumCardActive]}
         onPress={() => {
           if (!isPremium) {
@@ -489,7 +483,7 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
           </View>
         )}
-      </TouchableOpacity> */}
+      </TouchableOpacity>
 
       {/* Settings Section */}
       <View style={styles.settingsSection}>
@@ -590,8 +584,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           )}
 
-          {/* TEMPORARILY DISABLED: Restore Purchases - re-enable after initial App Store approval */}
-          {/* <View style={styles.settingsRowDivider} />
+          <View style={styles.settingsRowDivider} />
 
           <TouchableOpacity
             style={styles.settingsRow}
@@ -606,7 +599,7 @@ export default function ProfileScreen() {
             <View style={styles.parentBadgeSmall}>
               <Text style={styles.parentBadgeText}>Parent</Text>
             </View>
-          </TouchableOpacity> */}
+          </TouchableOpacity>
         </View>
       </View>
 

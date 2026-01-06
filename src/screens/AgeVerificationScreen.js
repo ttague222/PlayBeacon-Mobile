@@ -169,7 +169,7 @@ export default function AgeVerificationScreen({ onComplete }) {
             </TouchableOpacity>
 
             <Text style={styles.safetyNote}>
-              🔒 Safe & kid-friendly
+              🔒 No account required
             </Text>
           </Animated.View>
         </View>
@@ -230,24 +230,24 @@ export default function AgeVerificationScreen({ onComplete }) {
               Hey there, parents and guardians!
             </Text>
             <Text style={styles.consentText}>
-              PlayBeacon is a safe app for discovering Roblox games. Here's what you should know:
+              PlayBeacon helps discover Roblox games. Here's what you should know:
             </Text>
 
             <View style={styles.bulletList}>
               <Text style={styles.bulletItem}>
-                • We don't collect personal information from kids
+                • No account or sign-up required
               </Text>
               <Text style={styles.bulletItem}>
-                • All accounts are anonymous by default
+                • No chat or messaging features
               </Text>
               <Text style={styles.bulletItem}>
-                • No chat or social features with other users
+                • No social features or user profiles
               </Text>
               <Text style={styles.bulletItem}>
-                • Ads are kid-friendly and non-personalized
+                • Browse and discover Roblox games
               </Text>
               <Text style={styles.bulletItem}>
-                • Data is stored securely and never sold
+                • We do not sell personal data
               </Text>
             </View>
 

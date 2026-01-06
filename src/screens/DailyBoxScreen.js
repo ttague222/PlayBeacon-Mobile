@@ -19,6 +19,7 @@ import { api } from '../services/api';
 import OptimizedImage from '../components/OptimizedImage';
 import CollectionPickerModal from '../components/CollectionPickerModal';
 import { useRewarded } from '../hooks/useRewarded';
+import { useAds } from '../context/AdContext';
 import { useCollection } from '../context/CollectionContext';
 import SoundManager from '../services/SoundManager';
 import { colors } from '../styles/colors';
@@ -39,6 +40,9 @@ export default function DailyBoxScreen({ onClose }) {
 
   // Calculate responsive content width
   const contentWidth = Math.min(screenWidth - (HORIZONTAL_PADDING * 2), MAX_CONTENT_WIDTH);
+
+  // Ad context for checking if ads are enabled via remote config
+  const { remoteAdsEnabled } = useAds();
 
   // Rewarded ad hook for bonus box
   const { isLoaded: rewardedAdLoaded, showRewardedAd, adsAvailable, isLoading: adIsLoading, loadError: adLoadError, loadAd } = useRewarded();
@@ -490,8 +494,8 @@ export default function DailyBoxScreen({ onClose }) {
             </View>
           )}
 
-          {/* Bonus Box - Watch ad for another game */}
-          {adsAvailable && !bonusBoxUsed && (
+          {/* Bonus Box - Watch ad for another game (only show when ads are enabled) */}
+          {adsAvailable && remoteAdsEnabled && !bonusBoxUsed && (
             <TouchableOpacity
               style={[styles.bonusBoxButton, { width: contentWidth }, !rewardedAdLoaded && styles.bonusBoxButtonDisabled]}
               onPress={rewardedAdLoaded ? handleBonusBox : (adLoadError ? loadAd : undefined)}

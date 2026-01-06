@@ -4,9 +4,10 @@
  * Allows users to purchase the ad-free experience.
  * Includes parental gate for COPPA compliance.
  * Shows restore purchases option for existing customers.
+ * Supports RevenueCat paywall when enabled.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,7 +18,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { usePremium } from '../context/PremiumContext';
+import { usePremium, ENABLE_REVENUECAT } from '../context/PremiumContext';
 import ParentalGate from '../components/ParentalGate';
 import { colors } from '../styles/colors';
 import { radii, shadows } from '../styles/kidTheme';
@@ -29,17 +30,35 @@ export default function PremiumUpgradeScreen({ navigation }) {
     isPurchasing,
     isIapAvailable,
     isExpoGo,
+    isRevenueCatEnabled,
     purchasePremium,
     restorePurchases,
     getProductInfo,
     retryConnection,
+    presentPaywall,
+    showCustomerCenter,
   } = usePremium();
 
   const [showParentalGate, setShowParentalGate] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [productInfo, setProductInfo] = useState({
+    title: 'Remove Ads',
+    description: 'Remove all ads forever with a one-time purchase.',
+    price: '$1.99',
+    currency: 'USD',
+  });
 
-  const productInfo = getProductInfo();
+  // Load product info (async for RevenueCat)
+  useEffect(() => {
+    const loadProductInfo = async () => {
+      const info = await getProductInfo();
+      if (info) {
+        setProductInfo(info);
+      }
+    };
+    loadProductInfo();
+  }, [getProductInfo]);
 
   const handleRetryConnection = async () => {
     if (retryConnection) {
@@ -54,6 +73,11 @@ export default function PremiumUpgradeScreen({ navigation }) {
     setShowParentalGate(true);
   };
 
+  const handlePaywallPress = () => {
+    setPendingAction('paywall');
+    setShowParentalGate(true);
+  };
+
   const handleRestorePress = () => {
     setPendingAction('restore');
     setShowParentalGate(true);
@@ -64,6 +88,13 @@ export default function PremiumUpgradeScreen({ navigation }) {
 
     if (pendingAction === 'purchase') {
       await purchasePremium();
+    } else if (pendingAction === 'paywall') {
+      // Present RevenueCat paywall
+      if (presentPaywall) {
+        await presentPaywall();
+      } else {
+        await purchasePremium();
+      }
     } else if (pendingAction === 'restore') {
       await restorePurchases();
     }
@@ -94,6 +125,18 @@ export default function PremiumUpgradeScreen({ navigation }) {
             Thank you for supporting PlayBeacon!{'\n'}
             All ads have been removed from your experience.
           </Text>
+
+          {/* Show Customer Center option for RevenueCat users */}
+          {isRevenueCatEnabled && showCustomerCenter && (
+            <TouchableOpacity
+              style={styles.customerCenterButton}
+              onPress={showCustomerCenter}
+            >
+              <Text style={styles.customerCenterButtonText}>
+                Manage Purchase
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </SafeAreaView>
     );
@@ -211,19 +254,36 @@ export default function PremiumUpgradeScreen({ navigation }) {
           </View>
         ) : (
           <>
-            <TouchableOpacity
-              style={[styles.purchaseButton, isPurchasing && styles.buttonDisabled]}
-              onPress={handlePurchasePress}
-              disabled={isPurchasing}
-            >
-              {isPurchasing ? (
-                <ActivityIndicator color={colors.text.primary} />
-              ) : (
-                <Text style={styles.purchaseButtonText}>
-                  Unlock Ad-Free Experience
-                </Text>
-              )}
-            </TouchableOpacity>
+            {/* Use RevenueCat paywall button when enabled */}
+            {isRevenueCatEnabled ? (
+              <TouchableOpacity
+                style={[styles.purchaseButton, isPurchasing && styles.buttonDisabled]}
+                onPress={handlePaywallPress}
+                disabled={isPurchasing}
+              >
+                {isPurchasing ? (
+                  <ActivityIndicator color={colors.text.primary} />
+                ) : (
+                  <Text style={styles.purchaseButtonText}>
+                    Unlock Ad-Free Experience
+                  </Text>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.purchaseButton, isPurchasing && styles.buttonDisabled]}
+                onPress={handlePurchasePress}
+                disabled={isPurchasing}
+              >
+                {isPurchasing ? (
+                  <ActivityIndicator color={colors.text.primary} />
+                ) : (
+                  <Text style={styles.purchaseButtonText}>
+                    Unlock Ad-Free Experience
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.restoreButton}
@@ -419,6 +479,16 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  customerCenterButton: {
+    marginTop: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  customerCenterButtonText: {
+    fontSize: 15,
+    color: colors.text.tertiary,
+    textDecorationLine: 'underline',
   },
   devModeNotice: {
     backgroundColor: colors.background.secondary,

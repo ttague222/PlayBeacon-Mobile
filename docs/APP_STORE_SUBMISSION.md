@@ -80,7 +80,7 @@ ads_test_mode: false     ← Use production ad units
 After Apple approves the app, follow these steps before releasing:
 
 ### 1. Verify IAP is Ready
-- [ ] Confirm IAP (com.playbeacon.app.removeads2) status is "Ready to Submit" or "Approved"
+- [ ] Confirm IAP (com.playbeacon.app.removeads3) status is "Ready to Submit" or "Approved"
 - [ ] Ensure IAP localization is complete and not "Rejected"
 
 ### 2. Enable Ads via Remote Config
@@ -153,7 +153,7 @@ Update your remote config endpoint to return:
 4. Verify ad unit IDs match those in AdMob console
 
 ### IAP Not Working
-1. Verify product ID matches: `com.playbeacon.app.removeads2`
+1. Verify product ID matches: `com.playbeacon.app.removeads3`
 2. Check IAP status in App Store Connect (should be "Ready for Sale")
 3. Ensure localization is not in "Rejected" state
 4. For sandbox testing, use a Sandbox Apple ID

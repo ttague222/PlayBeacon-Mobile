@@ -25,6 +25,7 @@ import { auth, db } from '../config/firebase';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
 import { setUser as setSentryUser } from '../config/sentry';
 import logger from '../utils/logger';
 
@@ -42,9 +43,11 @@ export const AuthProvider = ({ children }) => {
   const [isLinkingAccount, setIsLinkingAccount] = useState(false);
   const [linkedGoogle, setLinkedGoogle] = useState(false);
 
-  // Google OAuth configuration
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+  // Google OAuth configuration - uses platform-specific client IDs like PlayNxt
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    iosClientId: Constants.expoConfig?.extra?.googleIosClientId,
+    webClientId: Constants.expoConfig?.extra?.googleWebClientId,
+    scopes: ['profile', 'email'],
   });
 
   /**
