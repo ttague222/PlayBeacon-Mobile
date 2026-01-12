@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 const HORIZONTAL_PADDING = 20;
 const MAX_CONTENT_WIDTH = 500; // Maximum width for content on tablets
@@ -27,6 +28,7 @@ import logger from '../utils/logger';
 import { radii } from '../styles/kidTheme';
 
 export default function DailyBoxScreen({ onClose }) {
+  const { t } = useTranslation();
   const { width: screenWidth } = useWindowDimensions();
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState(null);
@@ -76,7 +78,7 @@ export default function DailyBoxScreen({ onClose }) {
       }
     } catch (error) {
       logger.error('Failed to fetch daily box status:', error);
-      Alert.alert('Error', 'Failed to load daily mystery box');
+      Alert.alert(t('common.error'), t('dailyBox.errorLoad'));
     } finally {
       setLoading(false);
     }
@@ -185,7 +187,7 @@ export default function DailyBoxScreen({ onClose }) {
       boxScale.setValue(1);
       boxRotate.setValue(0);
       logger.error('Failed to open daily box:', error);
-      Alert.alert('Error', 'Failed to open mystery box. Please try again.');
+      Alert.alert(t('common.error'), t('dailyBox.errorOpen'));
     } finally {
       setOpening(false);
     }
@@ -194,15 +196,28 @@ export default function DailyBoxScreen({ onClose }) {
   const openRobloxGame = async () => {
     if (!revealedGame?.root_place_id) return;
 
-    const url = `https://www.roblox.com/games/${revealedGame.root_place_id}`;
-    try {
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      }
-    } catch (error) {
-      logger.error('Error opening URL:', error);
-    }
+    // Show confirmation dialog before opening external link
+    Alert.alert(
+      t('discover.openRobloxTitle'),
+      t('discover.openRobloxMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('discover.openRobloxConfirm'),
+          onPress: async () => {
+            const url = `https://www.roblox.com/games/${revealedGame.root_place_id}`;
+            try {
+              const supported = await Linking.canOpenURL(url);
+              if (supported) {
+                await Linking.openURL(url);
+              }
+            } catch (error) {
+              logger.error('Error opening URL:', error);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const formatTimeUntilAvailable = () => {
@@ -212,15 +227,15 @@ export default function DailyBoxScreen({ onClose }) {
     const now = new Date();
     const diff = next - now;
 
-    if (diff <= 0) return 'Available now!';
+    if (diff <= 0) return t('dailyBox.availableNow');
 
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
     if (hours > 0) {
-      return `${hours}h ${minutes}m until next box`;
+      return t('dailyBox.nextBoxTime', { hours, minutes });
     }
-    return `${minutes}m until next box`;
+    return t('dailyBox.nextBoxTimeMinutes', { minutes });
   };
 
   const handleBonusBox = async () => {
@@ -234,7 +249,7 @@ export default function DailyBoxScreen({ onClose }) {
       });
     } catch (error) {
       logger.log('Rewarded ad not available:', error.message);
-      Alert.alert('Ad Not Ready', 'Please try again in a moment.');
+      Alert.alert(t('dailyBox.adNotReady'), t('dailyBox.adTryAgain'));
     }
   };
 
@@ -346,7 +361,7 @@ export default function DailyBoxScreen({ onClose }) {
       boxScale.setValue(1);
       boxRotate.setValue(0);
       logger.error('Failed to open bonus box:', error);
-      Alert.alert('Error', 'Failed to open bonus box. Please try again.');
+      Alert.alert(t('common.error'), t('dailyBox.errorBonusBox'));
     } finally {
       setOpening(false);
     }
@@ -374,13 +389,13 @@ export default function DailyBoxScreen({ onClose }) {
         <Text style={styles.closeButtonText}>×</Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Daily Mystery Box</Text>
+      <Text style={styles.title}>{t('dailyBox.title')}</Text>
       <Text style={styles.subtitle}>
         {revealed
-          ? "Here's your mystery game!"
+          ? t('dailyBox.revealedSubtitle')
           : status?.is_available
-            ? "Tap to reveal today's mystery game!"
-            : "Come back tomorrow for a new mystery!"}
+            ? t('dailyBox.tapToReveal')
+            : t('dailyBox.comeBackTomorrow')}
       </Text>
 
       {!revealed ? (
@@ -447,7 +462,7 @@ export default function DailyBoxScreen({ onClose }) {
             ) : (
               <View style={[styles.gameImage, styles.placeholderImage, { width: contentWidth }]}>
                 <Text style={styles.placeholderEmoji}>🎮</Text>
-                <Text style={styles.placeholderText}>Tap to Play!</Text>
+                <Text style={styles.placeholderText}>{t('dailyBox.tapToPlay')}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -463,7 +478,7 @@ export default function DailyBoxScreen({ onClose }) {
               </Text>
             )}
             <Text style={styles.gameStats}>
-              {revealedGame?.visits?.toLocaleString()} visits • {revealedGame?.active_players} playing
+              {revealedGame?.visits?.toLocaleString()} {t('dailyBox.visits')} • {revealedGame?.active_players} {t('dailyBox.playing')}
             </Text>
           </View>
 
@@ -472,20 +487,20 @@ export default function DailyBoxScreen({ onClose }) {
               style={styles.playButton}
               onPress={openRobloxGame}
             >
-              <Text style={styles.playButtonText}>Play Game</Text>
+              <Text style={styles.playButtonText}>{t('dailyBox.playGame')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.saveButton}
               onPress={() => setCollectionModalVisible(true)}
             >
-              <Text style={styles.saveButtonText}>Save to Collection</Text>
+              <Text style={styles.saveButtonText}>{t('dailyBox.saveToCollection')}</Text>
             </TouchableOpacity>
           </View>
 
           {newAchievements.length > 0 && (
             <View style={[styles.achievementBanner, { width: contentWidth }]}>
-              <Text style={styles.achievementTitle}>Achievement Unlocked!</Text>
+              <Text style={styles.achievementTitle}>{t('dailyBox.achievementUnlocked')}</Text>
               {newAchievements.map((ach, index) => (
                 <Text key={index} style={styles.achievementName}>
                   🏆 {ach.title}
@@ -503,15 +518,15 @@ export default function DailyBoxScreen({ onClose }) {
             >
               <Text style={styles.bonusBoxEmoji}>🎬</Text>
               <View style={styles.bonusBoxTextContainer}>
-                <Text style={styles.bonusBoxTitle}>Bonus Mystery Box</Text>
+                <Text style={styles.bonusBoxTitle}>{t('dailyBox.bonusMysteryBox')}</Text>
                 <Text style={styles.bonusBoxSubtitle}>
                   {rewardedAdLoaded
-                    ? 'Watch a short video for another game!'
+                    ? t('dailyBox.watchVideoForGame')
                     : adLoadError
-                      ? 'Tap to retry loading ad'
+                      ? t('dailyBox.tapToRetryAd')
                       : adIsLoading
-                        ? 'Loading ad...'
-                        : 'Preparing...'}
+                        ? t('dailyBox.loadingAd')
+                        : t('dailyBox.preparing')}
                 </Text>
               </View>
             </TouchableOpacity>

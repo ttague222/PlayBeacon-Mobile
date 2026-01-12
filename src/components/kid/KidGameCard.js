@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { kidTheme } from '../../styles/kidTheme';
 import SoundManager from '../../services/SoundManager';
 import { triggerHaptic, HapticType } from '../../hooks/useHaptics';
@@ -44,6 +45,7 @@ export default function KidGameCard({
   size = 'medium',
   style,
 }) {
+  const { t } = useTranslation();
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const favoriteScale = useRef(new Animated.Value(1)).current;
 
@@ -131,11 +133,11 @@ export default function KidGameCard({
    */
   const getRatingEmoji = (rating) => {
     if (!rating) return null;
-    if (rating >= 90) return { emoji: '🌟', label: 'Amazing!' };
-    if (rating >= 80) return { emoji: '😍', label: 'Great!' };
-    if (rating >= 70) return { emoji: '😊', label: 'Good' };
-    if (rating >= 60) return { emoji: '🙂', label: 'Okay' };
-    return { emoji: '😐', label: 'Meh' };
+    if (rating >= 90) return { emoji: '🌟', label: t('kidGameCard.ratingAmazing') };
+    if (rating >= 80) return { emoji: '😍', label: t('kidGameCard.ratingGreat') };
+    if (rating >= 70) return { emoji: '😊', label: t('kidGameCard.ratingGood') };
+    if (rating >= 60) return { emoji: '🙂', label: t('kidGameCard.ratingOkay') };
+    return { emoji: '😐', label: t('kidGameCard.ratingMeh') };
   };
 
   const playerCount = formatPlayers(game?.playing || game?.visits);
@@ -350,6 +352,7 @@ export function KidGameCardFeatured({
   isFavorite = false,
   style,
 }) {
+  const { t } = useTranslation();
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const gameName = game?.name || 'Untitled Game';
 
@@ -407,7 +410,7 @@ export function KidGameCardFeatured({
           <View style={styles.featuredContent}>
             <View style={styles.featuredBadge}>
               <Ionicons name="star" size={16} color={colors.secondary.yellow} />
-              <Text style={styles.featuredBadgeText}>Featured</Text>
+              <Text style={styles.featuredBadgeText}>{t('kidGameCard.featured')}</Text>
             </View>
             <Text style={styles.featuredTitle} numberOfLines={2}>
               {gameName}

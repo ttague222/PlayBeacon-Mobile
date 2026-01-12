@@ -11,6 +11,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import SoundManager from '../services/SoundManager';
 import SkeletonLoader from '../components/SkeletonLoader';
@@ -21,6 +22,7 @@ import { typography, radii, shadows } from '../styles/kidTheme';
 import logger from '../utils/logger';
 
 export default function CollectionDetailScreen({ route, navigation }) {
+  const { t } = useTranslation();
   const { collection: initialCollection } = route.params;
   const [collection, setCollection] = useState(initialCollection);
   const [games, setGames] = useState([]);
@@ -42,7 +44,7 @@ export default function CollectionDetailScreen({ route, navigation }) {
       setGames(data.games);
     } catch (error) {
       logger.error('Failed to fetch collection games:', error);
-      Alert.alert('Error', 'Failed to load collection games');
+      Alert.alert(t('common.error'), t('collectionDetail.errorLoadGames'));
     } finally {
       setLoading(false);
     }
@@ -51,12 +53,12 @@ export default function CollectionDetailScreen({ route, navigation }) {
   const handleRemoveGame = (game) => {
     SoundManager.play('ui.tap');
     Alert.alert(
-      'Remove Game',
-      `Remove "${game.title}" from this collection?`,
+      t('collectionDetail.removeGameTitle'),
+      t('collectionDetail.removeGameConfirm', { title: game.title }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Remove',
+          text: t('common.remove'),
           style: 'destructive',
           onPress: async () => {
             // Optimistic UI update: remove game from list immediately
@@ -75,7 +77,7 @@ export default function CollectionDetailScreen({ route, navigation }) {
               setGames(previousGames);
               setCollection(previousCollection);
               logger.error('Failed to remove game:', error);
-              Alert.alert('Error', 'Failed to remove game from collection');
+              Alert.alert(t('common.error'), t('collectionDetail.errorRemoveGame'));
             }
           },
         },
@@ -86,13 +88,26 @@ export default function CollectionDetailScreen({ route, navigation }) {
   const handlePlayGame = (game) => {
     SoundManager.play('ui.tap');
     if (game.root_place_id) {
-      const url = `https://www.roblox.com/games/${game.root_place_id}`;
-      Linking.openURL(url).catch((err) => {
-        logger.error('Failed to open URL:', err);
-        Alert.alert('Error', 'Failed to open game');
-      });
+      // Show confirmation dialog before opening external link
+      Alert.alert(
+        t('discover.openRobloxTitle'),
+        t('discover.openRobloxMessage'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('discover.openRobloxConfirm'),
+            onPress: () => {
+              const url = `https://www.roblox.com/games/${game.root_place_id}`;
+              Linking.openURL(url).catch((err) => {
+                logger.error('Failed to open URL:', err);
+                Alert.alert(t('common.error'), t('collectionDetail.errorOpenGame'));
+              });
+            },
+          },
+        ]
+      );
     } else {
-      Alert.alert('Error', 'Game URL not available');
+      Alert.alert(t('common.error'), t('collectionDetail.errorNoUrl'));
     }
   };
 
@@ -107,7 +122,7 @@ export default function CollectionDetailScreen({ route, navigation }) {
   const handleUpdateCollection = async () => {
     SoundManager.play('ui.tap');
     if (!editName.trim()) {
-      Alert.alert('Error', 'Please enter a collection name');
+      Alert.alert(t('common.error'), t('collectionDetail.errorEnterName'));
       return;
     }
 
@@ -125,10 +140,10 @@ export default function CollectionDetailScreen({ route, navigation }) {
       };
       setCollection(updatedCollection);
       setEditModalVisible(false);
-      Alert.alert('Success', 'Collection updated successfully');
+      Alert.alert(t('common.success'), t('collectionDetail.updateSuccess'));
     } catch (error) {
       logger.error('Failed to update collection:', error);
-      Alert.alert('Error', 'Failed to update collection. Please try again.');
+      Alert.alert(t('common.error'), t('collectionDetail.updateError'));
     } finally {
       setUpdating(false);
     }
@@ -148,12 +163,12 @@ export default function CollectionDetailScreen({ route, navigation }) {
           {item.title}
         </Text>
         {item.creator_name && (
-          <Text style={styles.gameCreator}>by {item.creator_name}</Text>
+          <Text style={styles.gameCreator}>{t('collectionDetail.byCreator', { creator: item.creator_name })}</Text>
         )}
         <View style={styles.gameStats}>
-          <Text style={styles.statText}>{formatNumber(item.visits)} visits</Text>
+          <Text style={styles.statText}>{formatNumber(item.visits)} {t('collectionDetail.visits')}</Text>
           <Text style={styles.statDivider}>•</Text>
-          <Text style={styles.statText}>{formatNumber(item.active_players)} playing</Text>
+          <Text style={styles.statText}>{formatNumber(item.active_players)} {t('collectionDetail.playing')}</Text>
         </View>
       </View>
       <View style={styles.gameActions}>
@@ -161,13 +176,13 @@ export default function CollectionDetailScreen({ route, navigation }) {
           style={styles.playButton}
           onPress={() => handlePlayGame(item)}
         >
-          <Text style={styles.playButtonText}>Play</Text>
+          <Text style={styles.playButtonText}>{t('collectionDetail.play')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.removeButton}
           onPress={() => handleRemoveGame(item)}
         >
-          <Text style={styles.removeButtonText}>Remove</Text>
+          <Text style={styles.removeButtonText}>{t('common.remove')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -194,7 +209,7 @@ export default function CollectionDetailScreen({ route, navigation }) {
               navigation.goBack();
             }}
           >
-            <Text style={styles.backButtonText}>‹ Back</Text>
+            <Text style={styles.backButtonText}>‹ {t('common.back')}</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.collectionHeader}>
@@ -220,13 +235,13 @@ export default function CollectionDetailScreen({ route, navigation }) {
             navigation.goBack();
           }}
         >
-          <Text style={styles.backButtonText}>‹ Back</Text>
+          <Text style={styles.backButtonText}>‹ {t('common.back')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.editButton}
           onPress={handleOpenEditModal}
         >
-          <Text style={styles.editButtonText}>Edit</Text>
+          <Text style={styles.editButtonText}>{t('common.edit')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -236,15 +251,15 @@ export default function CollectionDetailScreen({ route, navigation }) {
           <Text style={styles.collectionDescription}>{collection.description}</Text>
         )}
         <Text style={styles.gameCount}>
-          {collection.game_count} {collection.game_count === 1 ? 'game' : 'games'}
+          {collection.game_count} {collection.game_count === 1 ? t('collections.game') : t('collections.games')}
         </Text>
       </View>
 
       {games.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No games yet</Text>
+          <Text style={styles.emptyTitle}>{t('collectionDetail.emptyTitle')}</Text>
           <Text style={styles.emptyDescription}>
-            Games you add to this collection will appear here
+            {t('collectionDetail.emptyDescription')}
           </Text>
         </View>
       ) : (
@@ -267,11 +282,11 @@ export default function CollectionDetailScreen({ route, navigation }) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Collection</Text>
+            <Text style={styles.modalTitle}>{t('collectionDetail.editTitle')}</Text>
 
             <TextInput
               style={styles.input}
-              placeholder="Collection name"
+              placeholder={t('collections.namePlaceholder')}
               placeholderTextColor="#666666"
               value={editName}
               onChangeText={setEditName}
@@ -280,7 +295,7 @@ export default function CollectionDetailScreen({ route, navigation }) {
 
             <TextInput
               style={[styles.input, styles.textArea]}
-              placeholder="Description (optional)"
+              placeholder={t('collections.descriptionPlaceholder')}
               placeholderTextColor="#666666"
               value={editDescription}
               onChangeText={setEditDescription}
@@ -297,7 +312,7 @@ export default function CollectionDetailScreen({ route, navigation }) {
                   setEditModalVisible(false);
                 }}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -308,7 +323,7 @@ export default function CollectionDetailScreen({ route, navigation }) {
                 {updating ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.submitButtonText}>Save</Text>
+                  <Text style={styles.submitButtonText}>{t('common.save')}</Text>
                 )}
               </TouchableOpacity>
             </View>

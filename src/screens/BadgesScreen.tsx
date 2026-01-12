@@ -17,6 +17,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useCollection } from '../context/CollectionContext';
 import SoundManager from '../services/SoundManager';
@@ -30,6 +31,7 @@ import ProfileButton from '../components/ProfileButton';
 const HORIZONTAL_PADDING = 20;
 
 export default function BadgesScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { width: screenWidth } = useWindowDimensions();
   const numColumns = getNumColumns(screenWidth);
@@ -109,11 +111,11 @@ export default function BadgesScreen() {
 
   // Get encouragement message based on progress
   const getEncouragement = () => {
-    if (badgePercent === 100) return { emoji: '🎉', text: 'You collected them all!' };
-    if (badgePercent >= 75) return { emoji: '🌟', text: 'Almost there!' };
-    if (badgePercent >= 50) return { emoji: '✨', text: 'Great progress!' };
-    if (badgePercent >= 25) return { emoji: '🚀', text: 'Keep exploring!' };
-    return { emoji: '🎯', text: 'Start your adventure!' };
+    if (badgePercent === 100) return { emoji: '🎉', text: t('badges.encouragement100') };
+    if (badgePercent >= 75) return { emoji: '🌟', text: t('badges.encouragement75') };
+    if (badgePercent >= 50) return { emoji: '✨', text: t('badges.encouragement50') };
+    if (badgePercent >= 25) return { emoji: '🚀', text: t('badges.encouragement25') };
+    return { emoji: '🎯', text: t('badges.encouragementDefault') };
   };
 
   const encouragement = getEncouragement();
@@ -125,8 +127,8 @@ export default function BadgesScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.title}>Badges</Text>
-          <Text style={styles.subtitle}>Earn badges by exploring!</Text>
+          <Text style={styles.title}>{t('badges.title')}</Text>
+          <Text style={styles.subtitle}>{t('badges.subtitle')}</Text>
         </View>
         <ProfileButton />
       </View>
@@ -147,7 +149,7 @@ export default function BadgesScreen() {
               </View>
               <View>
                 <Text style={styles.statNumber}>{unlockedBadges}<Text style={styles.statDivider}>/{totalBadges}</Text></Text>
-                <Text style={styles.statLabel}>Badges</Text>
+                <Text style={styles.statLabel}>{t('badges.title')}</Text>
               </View>
             </View>
 
@@ -164,7 +166,7 @@ export default function BadgesScreen() {
               </View>
               <View>
                 <Text style={styles.statNumber}>{unlockedAnimals}<Text style={styles.statDivider}>/{totalAnimals}</Text></Text>
-                <Text style={styles.statLabel}>Animals</Text>
+                <Text style={styles.statLabel}>{t('badges.sectionAnimals')}</Text>
               </View>
             </Pressable>
           </View>
@@ -186,10 +188,10 @@ export default function BadgesScreen() {
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>
                 <Text style={styles.sectionEmoji}>🐾</Text>
-                <Text style={styles.sectionTitle}>Your Animals</Text>
+                <Text style={styles.sectionTitle}>{t('badges.sectionAnimals')}</Text>
               </View>
               <Pressable style={styles.seeAllButton} onPress={handleGoToCollectables}>
-                <Text style={styles.seeAllText}>See All</Text>
+                <Text style={styles.seeAllText}>{t('badges.buttonSeeAll')}</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.accent.primary} />
               </Pressable>
             </View>
@@ -211,8 +213,7 @@ export default function BadgesScreen() {
               {/* "More" button if there are more animals */}
               {unlockedAnimals > 5 && (
                 <Pressable style={styles.moreAnimalsButton} onPress={handleGoToCollectables}>
-                  <Text style={styles.moreAnimalsCount}>+{unlockedAnimals - 5}</Text>
-                  <Text style={styles.moreAnimalsText}>more</Text>
+                  <Text style={styles.moreAnimalsCount}>{t('badges.moreAnimals', { count: unlockedAnimals - 5 })}</Text>
                 </Pressable>
               )}
             </ScrollView>
@@ -221,8 +222,8 @@ export default function BadgesScreen() {
 
         {/* Section header for badges */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Your Badges</Text>
-          <Text style={styles.sectionCount}>{unlockedBadges} earned</Text>
+          <Text style={styles.sectionTitle}>{t('badges.sectionBadges')}</Text>
+          <Text style={styles.sectionCount}>{unlockedBadges} {t('achievements.unlocked').toLowerCase()}</Text>
         </View>
 
         {/* Badges Grid */}
@@ -441,14 +442,10 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   moreAnimalsCount: {
-    fontSize: 24,
+    fontSize: 16,
     fontWeight: 'bold',
     color: colors.accent.primary,
-  },
-  moreAnimalsText: {
-    fontSize: 12,
-    color: colors.text.tertiary,
-    marginTop: 4,
+    textAlign: 'center',
   },
   badgesGrid: {
     flexDirection: 'row',

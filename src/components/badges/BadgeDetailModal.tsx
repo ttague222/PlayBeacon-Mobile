@@ -17,6 +17,7 @@ import {
   Image,
   ImageSourcePropType,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { BadgeDefinition, RARITY_CONFIG } from '../../types/badges';
 import { useCollection } from '../../context/CollectionContext';
@@ -59,6 +60,7 @@ export default function BadgeDetailModal({
   onClose,
   onViewAnimal,
 }: BadgeDetailModalProps) {
+  const { t } = useTranslation();
   const { getBadgeProgress, isBadgeUnlocked, animals, markBadgeSeen } = useCollection();
 
   const isUnlocked = badge ? isBadgeUnlocked(badge.id) : false;
@@ -182,7 +184,7 @@ export default function BadgeDetailModal({
           {/* Unlocked date */}
           {isUnlocked && progress?.unlockedAt && (
             <Text style={styles.unlockedDate}>
-              Unlocked {new Date(progress.unlockedAt).toLocaleDateString()}
+              {t('achievements.unlocked')} {new Date(progress.unlockedAt).toLocaleDateString()}
             </Text>
           )}
 
@@ -201,11 +203,11 @@ export default function BadgeDetailModal({
                 )}
               </View>
               <View style={styles.animalInfo}>
-                <Text style={styles.animalLabel}>You unlocked:</Text>
+                <Text style={styles.animalLabel}>{t('badgeDetail.youUnlocked')}</Text>
                 <Text style={styles.animalName}>{animal.name}</Text>
                 <View style={[styles.rarityBadge, { backgroundColor: RARITY_CONFIG[animal.rarity].bgColor }]}>
                   <Text style={[styles.rarityText, { color: RARITY_CONFIG[animal.rarity].color }]}>
-                    {RARITY_CONFIG[animal.rarity].label}
+                    {t(`collectables.filter${animal.rarity.charAt(0).toUpperCase() + animal.rarity.slice(1)}`)}
                   </Text>
                 </View>
               </View>

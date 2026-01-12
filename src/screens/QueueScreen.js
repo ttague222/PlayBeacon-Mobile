@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Linking, Modal, Dimensions } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../services/api';
@@ -21,6 +22,7 @@ import { typography, radii, spacing, shadows } from '../styles/kidTheme';
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function QueueScreen() {
+  const { t } = useTranslation();
   const [games, setGames] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -68,7 +70,7 @@ export default function QueueScreen() {
       // Note: VIEW_GAME is tracked per swipe interaction, not on queue load
     } catch (error) {
       logger.error('Error loading queue:', error);
-      setError('Failed to load games. Please check your connection.');
+      setError(t('discover.failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -112,9 +114,9 @@ export default function QueueScreen() {
     } catch (error) {
       logger.error('Error submitting feedback:', error);
       Alert.alert(
-        'Error',
-        'Failed to submit feedback. Please try again.',
-        [{ text: 'OK' }]
+        t('common.error'),
+        t('discover.errorFeedback'),
+        [{ text: t('common.ok') }]
       );
     } finally {
       setSubmittingFeedback(false);
@@ -125,22 +127,35 @@ export default function QueueScreen() {
     const currentGame = games[currentIndex];
     if (!currentGame || !currentGame.root_place_id) return;
 
-    // Track recommendation tap for badge progress (user acted on our recommendation)
-    triggerEvent('TAP_RECOMMENDATION');
+    // Show confirmation dialog before opening external link
+    Alert.alert(
+      t('discover.openRobloxTitle'),
+      t('discover.openRobloxMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('discover.openRobloxConfirm'),
+          onPress: async () => {
+            // Track recommendation tap for badge progress (user acted on our recommendation)
+            triggerEvent('TAP_RECOMMENDATION');
 
-    const url = `https://www.roblox.com/games/${currentGame.root_place_id}`;
+            const url = `https://www.roblox.com/games/${currentGame.root_place_id}`;
 
-    try {
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert('Error', 'Unable to open Roblox game link');
-      }
-    } catch (error) {
-      logger.error('Error opening URL:', error);
-      Alert.alert('Error', 'Failed to open game');
-    }
+            try {
+              const supported = await Linking.canOpenURL(url);
+              if (supported) {
+                await Linking.openURL(url);
+              } else {
+                Alert.alert(t('common.error'), t('discover.errorOpenGame'));
+              }
+            } catch (error) {
+              logger.error('Error opening URL:', error);
+              Alert.alert(t('common.error'), t('discover.errorOpenGameMsg'));
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) {
@@ -154,10 +169,10 @@ export default function QueueScreen() {
   if (error) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorTitle}>Oops!</Text>
+        <Text style={styles.errorTitle}>{t('common.oops')}</Text>
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.button} onPress={loadQueue}>
-          <Text style={styles.buttonText}>Try Again</Text>
+          <Text style={styles.buttonText}>{t('common.tryAgain')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -168,9 +183,9 @@ export default function QueueScreen() {
   if (!currentGame) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.emptyText}>No games in queue</Text>
+        <Text style={styles.emptyText}>{t('discover.noGames')}</Text>
         <TouchableOpacity style={styles.button} onPress={loadQueue}>
-          <Text style={styles.buttonText}>Refresh</Text>
+          <Text style={styles.buttonText}>{t('common.refresh')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -180,7 +195,7 @@ export default function QueueScreen() {
     <View style={styles.container}>
       {/* Header Row */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Discover</Text>
+        <Text style={styles.headerTitle}>{t('discover.title')}</Text>
         <View style={styles.headerRight}>
           {/* Daily Box Icon Button */}
           {dailyBoxStatus && (
@@ -263,7 +278,7 @@ export default function QueueScreen() {
                 </Text>
               </View>
             </View>
-            <Text style={styles.tapHint}>Tap to play on Roblox</Text>
+            <Text style={styles.tapHint}>{t('discover.tapToPlay')}</Text>
           </View>
         </LinearGradient>
       </TouchableOpacity>

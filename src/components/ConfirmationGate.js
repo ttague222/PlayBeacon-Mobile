@@ -1,9 +1,8 @@
 /**
- * Parental Gate Component
+ * Confirmation Gate Component
  *
- * COPPA-compliant gate that requires parental verification
- * before allowing access to in-app purchases.
- * Uses a hold-to-confirm mechanism (3 seconds).
+ * Simple confirmation dialog for account-related actions.
+ * Uses a hold-to-confirm mechanism (2 seconds) to prevent accidental taps.
  */
 
 import React, { useState, useRef, useCallback } from 'react';
@@ -19,9 +18,9 @@ import {
 import { useTranslation } from 'react-i18next';
 import { colors } from '../styles/colors';
 
-const HOLD_DURATION = 3000; // 3 seconds
+const HOLD_DURATION = 2000; // 2 seconds
 
-export default function ParentalGate({ visible, onPass, onCancel }) {
+export default function ConfirmationGate({ visible, onPass, onCancel }) {
   const { t } = useTranslation();
   const [holdProgress, setHoldProgress] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
@@ -57,7 +56,7 @@ export default function ParentalGate({ visible, onPass, onCancel }) {
   }, [onPass, progressAnim]);
 
   const handlePressOut = useCallback(() => {
-    // User released before 3 seconds
+    // User released before completion
     if (holdTimer.current) {
       clearInterval(holdTimer.current);
     }
@@ -72,7 +71,7 @@ export default function ParentalGate({ visible, onPass, onCancel }) {
     outputRange: ['0%', '100%'],
   });
 
-  const remainingSeconds = Math.ceil((1 - holdProgress) * 3);
+  const remainingSeconds = Math.ceil((1 - holdProgress) * 2);
 
   return (
     <Modal
@@ -83,10 +82,9 @@ export default function ParentalGate({ visible, onPass, onCancel }) {
     >
       <View style={styles.overlay}>
         <View style={styles.container}>
-          <Text style={styles.icon}>👨‍👩‍👧</Text>
-          <Text style={styles.title}>{t('parentalGate.title')}</Text>
+          <Text style={styles.title}>{t('components.confirmationTitle')}</Text>
           <Text style={styles.description}>
-            {t('parentalGate.description')}
+            {t('components.confirmationDescription')}
           </Text>
 
           <Pressable
@@ -105,18 +103,14 @@ export default function ParentalGate({ visible, onPass, onCancel }) {
             />
             <Text style={styles.holdButtonText}>
               {isHolding
-                ? t('parentalGate.holdingButton', { seconds: remainingSeconds })
-                : t('parentalGate.holdButton')}
+                ? t('components.confirmationHolding', { seconds: remainingSeconds })
+                : t('components.confirmationHold')}
             </Text>
           </Pressable>
 
           <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-            <Text style={styles.cancelButtonText}>{t('parentalGate.cancel')}</Text>
+            <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
           </TouchableOpacity>
-
-          <Text style={styles.disclaimer}>
-            {t('parentalGate.disclaimer')}
-          </Text>
         </View>
       </View>
     </Modal>
@@ -138,10 +132,6 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 340,
     alignItems: 'center',
-  },
-  icon: {
-    fontSize: 48,
-    marginBottom: 16,
   },
   title: {
     fontSize: 22,
@@ -192,12 +182,5 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 16,
     color: colors.text.tertiary,
-  },
-  disclaimer: {
-    fontSize: 11,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-    marginTop: 16,
-    lineHeight: 16,
   },
 });

@@ -9,11 +9,13 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import { colors } from '../styles/colors';
 import logger from '../utils/logger';
 
 export default function CollectionPickerModal({ visible, onClose, gameId, gameName }) {
+  const { t } = useTranslation();
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(null);
@@ -31,7 +33,7 @@ export default function CollectionPickerModal({ visible, onClose, gameId, gameNa
       setCollections(data.collections);
     } catch (error) {
       logger.error('Failed to fetch collections:', error);
-      Alert.alert('Error', 'Failed to load collections');
+      Alert.alert(t('common.error'), t('components.collectionPickerError'));
     } finally {
       setLoading(false);
     }
@@ -43,14 +45,14 @@ export default function CollectionPickerModal({ visible, onClose, gameId, gameNa
       await api.addGameToCollection(collection.id, gameId);
       // Note: ADD_TO_WISHLIST is tracked when liking a game in the queue,
       // not when organizing into collections (to avoid double-counting)
-      Alert.alert('Success', `Added to "${collection.name}"`);
+      Alert.alert(t('common.success'), t('components.collectionPickerSuccess', { name: collection.name }));
       onClose();
     } catch (error) {
       logger.error('Failed to add to collection:', error);
       if (error.response?.status === 400) {
-        Alert.alert('Already Added', 'This game is already in that collection');
+        Alert.alert(t('components.collectionPickerAlreadyAdded'), t('components.collectionPickerAlreadyAddedMsg'));
       } else {
-        Alert.alert('Error', 'Failed to add game to collection');
+        Alert.alert(t('common.error'), t('components.collectionPickerAddError'));
       }
     } finally {
       setAdding(null);
@@ -66,7 +68,7 @@ export default function CollectionPickerModal({ visible, onClose, gameId, gameNa
       <View style={styles.collectionContent}>
         <Text style={styles.collectionName}>{item.name}</Text>
         <Text style={styles.gameCount}>
-          {item.game_count} {item.game_count === 1 ? 'game' : 'games'}
+          {item.game_count} {item.game_count === 1 ? t('collections.game') : t('collections.games')}
         </Text>
       </View>
       {adding === item.id ? (
@@ -87,9 +89,9 @@ export default function CollectionPickerModal({ visible, onClose, gameId, gameNa
       <View style={styles.overlay}>
         <View style={styles.modalContent}>
           <View style={styles.header}>
-            <Text style={styles.title}>Add to Collection</Text>
+            <Text style={styles.title}>{t('components.collectionPickerTitle')}</Text>
             <TouchableOpacity onPress={onClose}>
-              <Text style={styles.closeButton}>Cancel</Text>
+              <Text style={styles.closeButton}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -105,9 +107,9 @@ export default function CollectionPickerModal({ visible, onClose, gameId, gameNa
             </View>
           ) : collections.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No collections yet</Text>
+              <Text style={styles.emptyText}>{t('components.collectionPickerEmpty')}</Text>
               <Text style={styles.emptySubtext}>
-                Create a collection from the Collections tab first
+                {t('components.collectionPickerEmptyHint')}
               </Text>
             </View>
           ) : (

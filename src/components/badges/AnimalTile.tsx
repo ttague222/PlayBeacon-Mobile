@@ -17,6 +17,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { AnimalDefinition, RARITY_CONFIG, RARITY_STARS } from '../../types/badges';
 import { useCollection } from '../../context/CollectionContext';
 import { colors } from '../../styles/colors';
@@ -58,6 +59,7 @@ const ANIMAL_IMAGES: Record<string, ImageSourcePropType> = {
 };
 
 export default function AnimalTile({ animal, onPress, size = 'medium' }: AnimalTileProps) {
+  const { t } = useTranslation();
   const { width: screenWidth } = useWindowDimensions();
   const { isAnimalUnlocked, getAnimalProgress } = useCollection();
   const isUnlocked = isAnimalUnlocked(animal.id);
@@ -180,7 +182,7 @@ export default function AnimalTile({ animal, onPress, size = 'medium' }: AnimalT
           {/* New indicator */}
           {isNew && (
             <View style={[styles.newIndicator, { backgroundColor: rarityConfig.color }]}>
-              <Text style={styles.newText}>NEW!</Text>
+              <Text style={styles.newText}>{t('animalTile.new')}</Text>
             </View>
           )}
         </View>

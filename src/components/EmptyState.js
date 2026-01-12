@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../styles/colors';
 
 /**
@@ -51,12 +52,13 @@ export default function EmptyState({
 
 // No search results
 export function EmptySearchState({ onRetry }) {
+  const { t } = useTranslation();
   return (
     <EmptyState
-      title="No games found"
-      subtitle="Try a different search term"
+      title={t('components.emptySearchTitle')}
+      subtitle={t('components.emptySearchSubtitle')}
       emoji="🔍"
-      actionLabel={onRetry ? "Try Again" : undefined}
+      actionLabel={onRetry ? t('common.tryAgain') : undefined}
       onAction={onRetry}
     />
   );
@@ -64,12 +66,13 @@ export function EmptySearchState({ onRetry }) {
 
 // Empty favorites/collections
 export function EmptyFavoritesState({ onExplore }) {
+  const { t } = useTranslation();
   return (
     <EmptyState
-      title="No favorites yet"
-      subtitle="Start exploring games to save your favorites!"
+      title={t('components.emptyFavoritesTitle')}
+      subtitle={t('components.emptyFavoritesSubtitle')}
       emoji="💜"
-      actionLabel="Explore Games"
+      actionLabel={t('components.emptyFavoritesButton')}
       onAction={onExplore}
     />
   );
@@ -77,12 +80,13 @@ export function EmptyFavoritesState({ onExplore }) {
 
 // Empty collections list
 export function EmptyCollectionsState({ onCreate }) {
+  const { t } = useTranslation();
   return (
     <EmptyState
-      title="No collections"
-      subtitle="Create your first collection to organize games!"
+      title={t('components.emptyCollectionsTitle')}
+      subtitle={t('components.emptyCollectionsSubtitle')}
       emoji="📁"
-      actionLabel="Create Collection"
+      actionLabel={t('collections.createButton')}
       onAction={onCreate}
     />
   );
@@ -90,12 +94,13 @@ export function EmptyCollectionsState({ onCreate }) {
 
 // Empty queue (no games to show)
 export function EmptyQueueState({ onRefresh }) {
+  const { t } = useTranslation();
   return (
     <EmptyState
-      title="All caught up!"
-      subtitle="Check back later for new game recommendations"
+      title={t('components.emptyQueueTitle')}
+      subtitle={t('components.emptyQueueSubtitle')}
       emoji="✨"
-      actionLabel={onRefresh ? "Refresh" : undefined}
+      actionLabel={onRefresh ? t('common.refresh') : undefined}
       onAction={onRefresh}
     />
   );
@@ -103,12 +108,13 @@ export function EmptyQueueState({ onRefresh }) {
 
 // Error state
 export function ErrorState({ message, onRetry }) {
+  const { t } = useTranslation();
   return (
     <EmptyState
-      title="Oops!"
-      subtitle={message || "Something went wrong. Please try again."}
+      title={t('components.errorStateTitle')}
+      subtitle={message || t('components.errorStateSubtitle')}
       emoji="😕"
-      actionLabel="Try Again"
+      actionLabel={t('common.tryAgain')}
       onAction={onRetry}
     />
   );
@@ -116,22 +122,24 @@ export function ErrorState({ message, onRetry }) {
 
 // Loading state
 export function LoadingState({ message }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
       <Text style={styles.emoji}>⏳</Text>
-      <Text style={styles.loadingText}>{message || "Loading..."}</Text>
+      <Text style={styles.loadingText}>{message || t('common.loading')}</Text>
     </View>
   );
 }
 
 // Welcome state for new users
 export function WelcomeState({ onGetStarted }) {
+  const { t } = useTranslation();
   return (
     <EmptyState
-      title="Welcome to PlayBeacon!"
-      subtitle="Let's find some awesome Roblox games for you"
+      title={t('components.welcomeTitle')}
+      subtitle={t('components.welcomeSubtitle')}
       emoji="🎮"
-      actionLabel="Get Started"
+      actionLabel={t('onboarding.getStarted')}
       onAction={onGetStarted}
     />
   );
@@ -139,12 +147,13 @@ export function WelcomeState({ onGetStarted }) {
 
 // No internet connection
 export function OfflineState({ onRetry }) {
+  const { t } = useTranslation();
   return (
     <EmptyState
-      title="No connection"
-      subtitle="Check your internet and try again"
+      title={t('components.offlineStateTitle')}
+      subtitle={t('components.offlineStateSubtitle')}
       emoji="📡"
-      actionLabel="Retry"
+      actionLabel={t('components.offlineStateButton')}
       onAction={onRetry}
     />
   );

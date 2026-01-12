@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../styles/colors';
 import { radii, shadows } from '../styles/kidTheme';
 import logger from '../utils/logger';
 
 export default function OnboardingScreen({ navigation }) {
+  const { t } = useTranslation();
   const { loginAnonymously } = useAuth();
   const [loading, setLoading] = useState(false);
 
@@ -16,7 +18,7 @@ export default function OnboardingScreen({ navigation }) {
       // Navigation will happen automatically via AuthContext
     } catch (error) {
       logger.error('Guest login error:', error);
-      Alert.alert('Error', 'Failed to continue as guest. Please try again.');
+      Alert.alert(t('common.error'), t('onboarding.errorGuestLogin'));
     } finally {
       setLoading(false);
     }
@@ -25,10 +27,10 @@ export default function OnboardingScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.logo}>PlayBeacon</Text>
-        <Text style={styles.tagline}>Discover Your Next Favorite Roblox Game</Text>
+        <Text style={styles.logo}>{t('onboarding.logo')}</Text>
+        <Text style={styles.tagline}>{t('onboarding.tagline')}</Text>
         <Text style={styles.description}>
-          AI-powered game recommendations tailored just for you
+          {t('onboarding.description')}
         </Text>
       </View>
 
@@ -38,7 +40,7 @@ export default function OnboardingScreen({ navigation }) {
           onPress={() => navigation.navigate('Login')}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>Get Started</Text>
+          <Text style={styles.buttonText}>{t('onboarding.getStarted')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -49,12 +51,12 @@ export default function OnboardingScreen({ navigation }) {
           {loading ? (
             <ActivityIndicator color={colors.text.tertiary} />
           ) : (
-            <Text style={styles.guestButtonText}>Continue as Guest</Text>
+            <Text style={styles.guestButtonText}>{t('onboarding.continueAsGuest')}</Text>
           )}
         </TouchableOpacity>
 
         <Text style={styles.guestNote}>
-          Try the app without signing up. You can create an account later to save your progress.
+          {t('onboarding.guestNote')}
         </Text>
       </View>
     </View>

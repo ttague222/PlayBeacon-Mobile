@@ -18,6 +18,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useCollection } from '../context/CollectionContext';
 import { RARITY_CONFIG } from '../types/badges';
 import { colors } from '../styles/colors';
@@ -58,6 +59,7 @@ export default function AnimalPickerModal({
   selectedAnimalId,
   onSelect,
 }) {
+  const { t } = useTranslation();
   const { getUnlockedAnimals } = useCollection();
   const [saving, setSaving] = useState(false);
   const [localSelection, setLocalSelection] = useState(selectedAnimalId);
@@ -124,7 +126,7 @@ export default function AnimalPickerModal({
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <Ionicons name="close" size={28} color={colors.text.primary} />
           </TouchableOpacity>
-          <Text style={styles.title}>Choose Your Avatar</Text>
+          <Text style={styles.title}>{t('animalPicker.title')}</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -132,9 +134,9 @@ export default function AnimalPickerModal({
         {unlockedAnimals.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="paw" size={64} color={colors.text.tertiary} />
-            <Text style={styles.emptyTitle}>No Animals Yet!</Text>
+            <Text style={styles.emptyTitle}>{t('animalPicker.emptyTitle')}</Text>
             <Text style={styles.emptyText}>
-              Unlock animals by earning badges. Keep exploring to collect them all!
+              {t('animalPicker.emptyText')}
             </Text>
           </View>
         ) : (
@@ -199,7 +201,7 @@ export default function AnimalPickerModal({
                   onPress={handleClearSelection}
                   disabled={saving}
                 >
-                  <Text style={styles.clearButtonText}>Use Default</Text>
+                  <Text style={styles.clearButtonText}>{t('animalPicker.useDefault')}</Text>
                 </TouchableOpacity>
               )}
 
@@ -214,7 +216,7 @@ export default function AnimalPickerModal({
                 {saving ? (
                   <ActivityIndicator color={colors.text.primary} />
                 ) : (
-                  <Text style={styles.saveButtonText}>Save</Text>
+                  <Text style={styles.saveButtonText}>{t('animalPicker.save')}</Text>
                 )}
               </TouchableOpacity>
             </View>

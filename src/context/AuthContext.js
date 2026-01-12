@@ -19,6 +19,9 @@ import {
   GoogleAuthProvider,
   signInWithCredential,
   linkWithCredential,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
@@ -296,6 +299,48 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   /**
+   * Sign up with email and password
+   */
+  const signUpWithEmail = useCallback(async (email, password) => {
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      await SecureStore.setItemAsync(LINKED_GOOGLE_KEY, 'true');
+      setLinkedGoogle(true);
+      return result.user;
+    } catch (error) {
+      logger.error('Email sign up error:', error);
+      throw error;
+    }
+  }, []);
+
+  /**
+   * Sign in with email and password
+   */
+  const signInWithEmail = useCallback(async (email, password) => {
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      await SecureStore.setItemAsync(LINKED_GOOGLE_KEY, 'true');
+      setLinkedGoogle(true);
+      return result.user;
+    } catch (error) {
+      logger.error('Email sign in error:', error);
+      throw error;
+    }
+  }, []);
+
+  /**
+   * Send password reset email
+   */
+  const resetPassword = useCallback(async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+      logger.error('Password reset error:', error);
+      throw error;
+    }
+  }, []);
+
+  /**
    * Get the account status for display
    */
   const getAccountStatus = useCallback(() => {
@@ -334,6 +379,9 @@ export const AuthProvider = ({ children }) => {
         disconnectGoogle,
         logout,
         getAccountStatus,
+        signUpWithEmail,
+        signInWithEmail,
+        resetPassword,
         // Legacy exports for compatibility (to be removed)
         loginAnonymously: async () => signInAnonymously(auth),
         upgradeAnonymousWithGoogle: linkWithGoogle,

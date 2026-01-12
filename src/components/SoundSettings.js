@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
+import { useTranslation } from 'react-i18next';
 import { useSoundSettings } from '../context/SoundContext';
 import { colors } from '../styles/colors';
 
@@ -21,6 +22,7 @@ import { colors } from '../styles/colors';
  * Full sound settings panel
  */
 export default function SoundSettings() {
+  const { t } = useTranslation();
   const {
     soundEnabled,
     masterVolume,
@@ -33,14 +35,14 @@ export default function SoundSettings() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Sound Settings</Text>
+      <Text style={styles.sectionTitle}>{t('soundSettings.title')}</Text>
 
       {/* Master Sound Toggle */}
       <View style={styles.settingRow}>
         <View style={styles.settingInfo}>
-          <Text style={styles.settingLabel}>Sound Effects</Text>
+          <Text style={styles.settingLabel}>{t('soundSettings.soundEffects')}</Text>
           <Text style={styles.settingDescription}>
-            Enable all sound effects in the app
+            {t('soundSettings.soundEffectsDesc')}
           </Text>
         </View>
         <Switch
@@ -55,10 +57,10 @@ export default function SoundSettings() {
       <View style={[styles.settingRow, !soundEnabled && styles.disabled]}>
         <View style={styles.settingInfo}>
           <Text style={[styles.settingLabel, !soundEnabled && styles.disabledText]}>
-            Reduce Loud Sounds
+            {t('soundSettings.reduceLoudSounds')}
           </Text>
           <Text style={[styles.settingDescription, !soundEnabled && styles.disabledText]}>
-            Cap maximum volume for sensitive ears
+            {t('soundSettings.reduceLoudSoundsDesc')}
           </Text>
         </View>
         <Switch
@@ -74,7 +76,7 @@ export default function SoundSettings() {
       <View style={[styles.volumeContainer, !soundEnabled && styles.disabled]}>
         <View style={styles.volumeHeader}>
           <Text style={[styles.settingLabel, !soundEnabled && styles.disabledText]}>
-            Master Volume
+            {t('soundSettings.masterVolume')}
           </Text>
           <Text style={[styles.volumeValue, !soundEnabled && styles.disabledText]}>
             {Math.round(masterVolume * 100)}%
@@ -93,17 +95,17 @@ export default function SoundSettings() {
         />
         <View style={styles.volumeLabels}>
           <Text style={[styles.volumeLabelText, !soundEnabled && styles.disabledText]}>
-            Quiet
+            {t('soundSettings.quiet')}
           </Text>
           <Text style={[styles.volumeLabelText, !soundEnabled && styles.disabledText]}>
-            Loud
+            {t('soundSettings.loud')}
           </Text>
         </View>
       </View>
 
       {/* Reset Button */}
       <TouchableOpacity style={styles.resetButton} onPress={resetSettings}>
-        <Text style={styles.resetButtonText}>Reset to Defaults</Text>
+        <Text style={styles.resetButtonText}>{t('soundSettings.resetToDefaults')}</Text>
       </TouchableOpacity>
     </View>
   );

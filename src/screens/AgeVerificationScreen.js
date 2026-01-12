@@ -23,6 +23,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LottieView from 'lottie-react-native';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../styles/colors';
 import { radii, shadows } from '../styles/kidTheme';
 import { setAgeVerificationStatus } from '../utils/ageVerification';
@@ -42,6 +43,7 @@ for (let year = currentYear - 5; year >= currentYear - 100; year--) {
 }
 
 export default function AgeVerificationScreen({ onComplete }) {
+  const { t } = useTranslation();
   const [step, setStep] = useState('welcome'); // welcome, birth_year, parental_consent, complete
   const [selectedYear, setSelectedYear] = useState(null);
   const [isChild, setIsChild] = useState(false);
@@ -97,9 +99,9 @@ export default function AgeVerificationScreen({ onComplete }) {
     } else {
       // No consent - cannot use the app
       Alert.alert(
-        'Parental Permission Required',
-        'PlayBeacon needs a parent or guardian to help you get started. Please ask a grown-up to help!',
-        [{ text: 'OK', onPress: () => setStep('birth_year') }]
+        t('ageVerification.parentalPermissionTitle'),
+        t('ageVerification.parentalPermissionMessage'),
+        [{ text: t('common.ok'), onPress: () => setStep('birth_year') }]
       );
     }
   };
@@ -146,7 +148,7 @@ export default function AgeVerificationScreen({ onComplete }) {
           >
             <Text style={styles.welcomeTitle}>PlayBeacon</Text>
             <Text style={styles.welcomeTagline}>
-              Find your next favorite Roblox game!
+              {t('ageVerification.welcomeTagline')}
             </Text>
           </Animated.View>
 
@@ -165,11 +167,11 @@ export default function AgeVerificationScreen({ onComplete }) {
               onPress={handleGetStarted}
               activeOpacity={0.9}
             >
-              <Text style={styles.getStartedButtonText}>Get Started</Text>
+              <Text style={styles.getStartedButtonText}>{t('ageVerification.getStarted')}</Text>
             </TouchableOpacity>
 
             <Text style={styles.safetyNote}>
-              🔒 No account required
+              🔒 {t('ageVerification.noAccountRequired')}
             </Text>
           </Animated.View>
         </View>
@@ -182,9 +184,9 @@ export default function AgeVerificationScreen({ onComplete }) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>When were you born?</Text>
+          <Text style={styles.headerTitle}>{t('ageVerification.birthYearTitle')}</Text>
           <Text style={styles.headerSubtitle}>
-            Select the year you were born
+            {t('ageVerification.birthYearSubtitle')}
           </Text>
         </View>
 
@@ -223,47 +225,47 @@ export default function AgeVerificationScreen({ onComplete }) {
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.consentContent}>
           <Text style={styles.emoji}>👨‍👩‍👧‍👦</Text>
-          <Text style={styles.title}>Parent or Guardian Needed!</Text>
+          <Text style={styles.title}>{t('ageVerification.parentNeededTitle')}</Text>
 
           <View style={styles.consentBox}>
             <Text style={styles.consentTitle}>
-              Hey there, parents and guardians!
+              {t('ageVerification.heyParents')}
             </Text>
             <Text style={styles.consentText}>
-              PlayBeacon helps discover Roblox games. Here's what you should know:
+              {t('ageVerification.parentInfo')}
             </Text>
 
             <View style={styles.bulletList}>
               <Text style={styles.bulletItem}>
-                • No account or sign-up required
+                • {t('ageVerification.bulletNoAccount')}
               </Text>
               <Text style={styles.bulletItem}>
-                • No chat or messaging features
+                • {t('ageVerification.bulletNoChat')}
               </Text>
               <Text style={styles.bulletItem}>
-                • No social features or user profiles
+                • {t('ageVerification.bulletNoSocial')}
               </Text>
               <Text style={styles.bulletItem}>
-                • Browse and discover Roblox games
+                • {t('ageVerification.bulletBrowseGames')}
               </Text>
               <Text style={styles.bulletItem}>
-                • We do not sell personal data
+                • {t('ageVerification.bulletNoSellData')}
               </Text>
             </View>
 
             <Text style={styles.consentText}>
-              By tapping "I'm a Parent/Guardian", you confirm that:
+              {t('ageVerification.byTapping')}
             </Text>
 
             <View style={styles.bulletList}>
               <Text style={styles.bulletItem}>
-                1. You are the parent or legal guardian
+                1. {t('ageVerification.confirmParent')}
               </Text>
               <Text style={styles.bulletItem}>
-                2. You give permission for your child to use PlayBeacon
+                2. {t('ageVerification.confirmPermission')}
               </Text>
               <Text style={styles.bulletItem}>
-                3. You have read and agree to our Privacy Policy
+                3. {t('ageVerification.confirmPrivacy')}
               </Text>
             </View>
           </View>
@@ -272,36 +274,36 @@ export default function AgeVerificationScreen({ onComplete }) {
             style={styles.primaryButton}
             onPress={() => handleParentalConsent(true)}
           >
-            <Text style={styles.primaryButtonText}>I'm a Parent/Guardian - I Agree</Text>
+            <Text style={styles.primaryButtonText}>{t('ageVerification.iAmParentAgree')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.secondaryButton}
             onPress={() => handleParentalConsent(false)}
           >
-            <Text style={styles.secondaryButtonText}>Go Back</Text>
+            <Text style={styles.secondaryButtonText}>{t('common.goBack')}</Text>
           </TouchableOpacity>
 
           <View style={styles.legalLinks}>
             <TouchableOpacity
               onPress={() => setShowPrivacyPolicy(true)}
               accessible={true}
-              accessibilityLabel="Read our Privacy Policy"
+              accessibilityLabel={t('legal.privacyPolicyAccessibility')}
               accessibilityRole="link"
             >
               <Text style={styles.policyLink}>
-                📜 Privacy Policy
+                📜 {t('legal.privacyPolicy')}
               </Text>
             </TouchableOpacity>
             <Text style={styles.linkSeparator}>|</Text>
             <TouchableOpacity
               onPress={() => setShowTermsOfService(true)}
               accessible={true}
-              accessibilityLabel="Read our Terms of Service"
+              accessibilityLabel={t('legal.termsAccessibility')}
               accessibilityRole="link"
             >
               <Text style={styles.policyLink}>
-                📋 Terms of Service
+                📋 {t('legal.termsOfService')}
               </Text>
             </TouchableOpacity>
           </View>

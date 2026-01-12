@@ -12,6 +12,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import SoundManager from '../services/SoundManager';
 import SkeletonLoader from '../components/SkeletonLoader';
@@ -29,6 +30,7 @@ import {
 } from '../utils/validation';
 
 export default function CollectionsScreen({ navigation }) {
+  const { t } = useTranslation();
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -56,7 +58,7 @@ export default function CollectionsScreen({ navigation }) {
       setCollections(data.collections);
     } catch (error) {
       logger.error('Failed to fetch collections:', error);
-      setError('Failed to load collections. Please check your connection.');
+      setError(t('collections.errorLoad'));
     } finally {
       setLoading(false);
     }
@@ -67,14 +69,14 @@ export default function CollectionsScreen({ navigation }) {
     // Validate collection name
     const nameValidation = validateCollectionName(newCollectionName);
     if (!nameValidation.valid) {
-      Alert.alert('Invalid Name', nameValidation.error);
+      Alert.alert(t('collections.invalidName'), nameValidation.error);
       return;
     }
 
     // Validate collection description
     const descValidation = validateCollectionDescription(newCollectionDescription);
     if (!descValidation.valid) {
-      Alert.alert('Invalid Description', descValidation.error);
+      Alert.alert(t('collections.invalidDescription'), descValidation.error);
       return;
     }
 
@@ -97,10 +99,10 @@ export default function CollectionsScreen({ navigation }) {
       setNewCollectionDescription('');
       setCreateModalVisible(false);
       await fetchCollections();
-      Alert.alert('Success', 'Collection created successfully');
+      Alert.alert(t('common.success'), t('collections.createSuccess'));
     } catch (error) {
       logger.error('Failed to create collection:', error);
-      Alert.alert('Error', 'Failed to create collection. Please try again.');
+      Alert.alert(t('common.error'), t('collections.createError'));
     } finally {
       setCreating(false);
     }
@@ -109,21 +111,21 @@ export default function CollectionsScreen({ navigation }) {
   const handleDeleteCollection = (collection) => {
     SoundManager.play('ui.tap');
     Alert.alert(
-      'Delete Collection',
-      `Are you sure you want to delete "${collection.name}"? This action cannot be undone.`,
+      t('collections.deleteTitle'),
+      t('collections.deleteConfirm', { name: collection.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await api.deleteCollection(collection.id);
               await fetchCollections();
-              Alert.alert('Success', 'Collection deleted');
+              Alert.alert(t('common.success'), t('collections.deleteSuccess'));
             } catch (error) {
               logger.error('Failed to delete collection:', error);
-              Alert.alert('Error', 'Failed to delete collection. Please try again.');
+              Alert.alert(t('common.error'), t('collections.deleteError'));
             }
           },
         },
@@ -150,7 +152,7 @@ export default function CollectionsScreen({ navigation }) {
           </Text>
         )}
         <Text style={styles.gameCount}>
-          {item.game_count} {item.game_count === 1 ? 'game' : 'games'}
+          {item.game_count} {item.game_count === 1 ? t('collections.game') : t('collections.games')}
         </Text>
       </View>
       <Text style={styles.chevron}>›</Text>
@@ -161,7 +163,7 @@ export default function CollectionsScreen({ navigation }) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Collections</Text>
+          <Text style={styles.headerTitle}>{t('collections.title')}</Text>
           <ProfileButton />
         </View>
         <View style={styles.listContent}>
@@ -174,10 +176,10 @@ export default function CollectionsScreen({ navigation }) {
   if (error) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <Text style={styles.errorTitle}>Oops!</Text>
+        <Text style={styles.errorTitle}>{t('common.oops')}</Text>
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.button} onPress={fetchCollections}>
-          <Text style={styles.buttonText}>Try Again</Text>
+          <Text style={styles.buttonText}>{t('common.tryAgain')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -186,7 +188,7 @@ export default function CollectionsScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Collections</Text>
+        <Text style={styles.headerTitle}>{t('collections.title')}</Text>
         <View style={styles.headerRight}>
           <TouchableOpacity
             style={styles.createButton}
@@ -196,7 +198,7 @@ export default function CollectionsScreen({ navigation }) {
               setCreateModalVisible(true);
             }}
           >
-            <Text style={styles.createButtonText}>+ New</Text>
+            <Text style={styles.createButtonText}>{t('collections.newButton')}</Text>
           </TouchableOpacity>
           <ProfileButton />
         </View>
@@ -204,9 +206,9 @@ export default function CollectionsScreen({ navigation }) {
 
       {collections.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No collections yet</Text>
+          <Text style={styles.emptyTitle}>{t('collections.emptyTitle')}</Text>
           <Text style={styles.emptyDescription}>
-            Create a collection to organize your favorite games
+            {t('collections.emptyDescription')}
           </Text>
           <TouchableOpacity
             style={styles.emptyCreateButton}
@@ -216,7 +218,7 @@ export default function CollectionsScreen({ navigation }) {
               setCreateModalVisible(true);
             }}
           >
-            <Text style={styles.emptyCreateButtonText}>Create Collection</Text>
+            <Text style={styles.emptyCreateButtonText}>{t('collections.createButton')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -239,11 +241,11 @@ export default function CollectionsScreen({ navigation }) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create Collection</Text>
+            <Text style={styles.modalTitle}>{t('collections.createTitle')}</Text>
 
             <TextInput
               style={styles.input}
-              placeholder="Collection name"
+              placeholder={t('collections.namePlaceholder')}
               placeholderTextColor="#666666"
               value={newCollectionName}
               onChangeText={setNewCollectionName}
@@ -252,7 +254,7 @@ export default function CollectionsScreen({ navigation }) {
 
             <TextInput
               style={[styles.input, styles.textArea]}
-              placeholder="Description (optional)"
+              placeholder={t('collections.descriptionPlaceholder')}
               placeholderTextColor="#666666"
               value={newCollectionDescription}
               onChangeText={setNewCollectionDescription}
@@ -271,7 +273,7 @@ export default function CollectionsScreen({ navigation }) {
                   setNewCollectionDescription('');
                 }}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -282,7 +284,7 @@ export default function CollectionsScreen({ navigation }) {
                 {creating ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.submitButtonText}>Create</Text>
+                  <Text style={styles.submitButtonText}>{t('common.create')}</Text>
                 )}
               </TouchableOpacity>
             </View>

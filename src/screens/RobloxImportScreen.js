@@ -9,6 +9,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import { colors } from '../styles/colors';
 import { radii, shadows } from '../styles/kidTheme';
@@ -18,6 +19,7 @@ import { auth } from '../config/firebase';
 import logger from '../utils/logger';
 
 export default function RobloxImportScreen({ navigation, onImportComplete }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,7 +30,7 @@ export default function RobloxImportScreen({ navigation, onImportComplete }) {
     // Validate username
     const validation = validateRobloxUsername(username);
     if (!validation.valid) {
-      Alert.alert('Invalid Username', validation.error);
+      Alert.alert(t('robloxImport.errorInvalid'), validation.error);
       return;
     }
 
@@ -43,7 +45,7 @@ export default function RobloxImportScreen({ navigation, onImportComplete }) {
       const userData = await api.resolveRobloxUsername(sanitizedUsername);
 
       if (!userData) {
-        Alert.alert('Error', 'Roblox user not found. Please check the username and try again.');
+        Alert.alert(t('common.error'), t('robloxImport.errorNotFound'));
         setStep('input');
         return;
       }
@@ -62,8 +64,8 @@ export default function RobloxImportScreen({ navigation, onImportComplete }) {
 
       if (gamesToImport.length === 0) {
         Alert.alert(
-          'No Games Found',
-          'We couldn\'t find any favorite or recently played games on your Roblox account. You can skip this step and start discovering games!'
+          t('robloxImport.errorNoGames'),
+          t('robloxImport.errorNoGamesMsg')
         );
         setStep('input');
         return;
@@ -83,7 +85,7 @@ export default function RobloxImportScreen({ navigation, onImportComplete }) {
       setStep('success');
     } catch (error) {
       logger.error('Import error:', error);
-      Alert.alert('Import Failed', 'Failed to import Roblox data. Please check your connection and try again.');
+      Alert.alert(t('robloxImport.errorImportFailed'), t('robloxImport.errorImportFailedMsg'));
       setStep('input');
     } finally {
       setLoading(false);
@@ -98,7 +100,7 @@ export default function RobloxImportScreen({ navigation, onImportComplete }) {
       const currentUser = auth.currentUser;
       if (!currentUser) {
         logger.error('No authenticated user found');
-        Alert.alert('Authentication Error', 'Please wait for authentication to complete and try again.');
+        Alert.alert(t('robloxImport.errorAuth'), t('robloxImport.errorAuthMsg'));
         return;
       }
 
@@ -113,9 +115,9 @@ export default function RobloxImportScreen({ navigation, onImportComplete }) {
     } catch (error) {
       logger.error('Error skipping import:', error);
       Alert.alert(
-        'Connection Error',
-        'Unable to skip import. Please check your connection and try again.',
-        [{ text: 'OK' }]
+        t('robloxImport.errorConnection'),
+        t('robloxImport.errorConnectionMsg'),
+        [{ text: t('common.ok') }]
       );
     } finally {
       setLoading(false);
@@ -133,8 +135,8 @@ export default function RobloxImportScreen({ navigation, onImportComplete }) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.accent.primary} />
-        <Text style={styles.loadingText}>Importing your Roblox games...</Text>
-        <Text style={styles.loadingSubtext}>This may take a few moments</Text>
+        <Text style={styles.loadingText}>{t('robloxImport.loadingText')}</Text>
+        <Text style={styles.loadingSubtext}>{t('robloxImport.loadingSubtext')}</Text>
       </View>
     );
   }
@@ -144,15 +146,15 @@ export default function RobloxImportScreen({ navigation, onImportComplete }) {
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.successContainer}>
           <Text style={styles.successIcon}>✓</Text>
-          <Text style={styles.successTitle}>Import Successful!</Text>
+          <Text style={styles.successTitle}>{t('robloxImport.successTitle')}</Text>
           <Text style={styles.successMessage}>
-            We imported {importResult.gamesImported} games from your Roblox account ({importResult.username}).
+            {t('robloxImport.successMessage', { count: importResult.gamesImported, username: importResult.username })}
           </Text>
           <Text style={styles.successSubtext}>
-            Your recommendations are now personalized based on your gaming history!
+            {t('robloxImport.successSubtext')}
           </Text>
           <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-            <Text style={styles.continueButtonText}>Start Discovering</Text>
+            <Text style={styles.continueButtonText}>{t('robloxImport.buttonContinue')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -162,16 +164,16 @@ export default function RobloxImportScreen({ navigation, onImportComplete }) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Import Your Roblox Games</Text>
+        <Text style={styles.title}>{t('robloxImport.title')}</Text>
         <Text style={styles.description}>
-          Get personalized recommendations based on your favorite Roblox games!
+          {t('robloxImport.description')}
         </Text>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Roblox Username</Text>
+          <Text style={styles.label}>{t('robloxImport.labelUsername')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter your Roblox username"
+            placeholder={t('robloxImport.placeholderUsername')}
             placeholderTextColor="#666"
             value={username}
             onChangeText={setUsername}
@@ -189,7 +191,7 @@ export default function RobloxImportScreen({ navigation, onImportComplete }) {
           {loading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.importButtonText}>Import Games</Text>
+            <Text style={styles.importButtonText}>{t('robloxImport.buttonImport')}</Text>
           )}
         </TouchableOpacity>
 
@@ -198,14 +200,14 @@ export default function RobloxImportScreen({ navigation, onImportComplete }) {
           onPress={handleSkip}
           disabled={loading}
         >
-          <Text style={styles.skipButtonText}>Skip for now</Text>
+          <Text style={styles.skipButtonText}>{t('robloxImport.buttonSkip')}</Text>
         </TouchableOpacity>
 
         <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>What we'll import:</Text>
-          <Text style={styles.infoText}>• Your favorite games</Text>
-          <Text style={styles.infoText}>• Games where you've earned badges</Text>
-          <Text style={styles.infoText}>• No personal data or passwords</Text>
+          <Text style={styles.infoTitle}>{t('robloxImport.infoTitle')}</Text>
+          <Text style={styles.infoText}>• {t('robloxImport.infoFavorites')}</Text>
+          <Text style={styles.infoText}>• {t('robloxImport.infoBadges')}</Text>
+          <Text style={styles.infoText}>• {t('robloxImport.infoSecurity')}</Text>
         </View>
       </ScrollView>
     </View>

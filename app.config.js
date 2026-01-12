@@ -17,6 +17,7 @@ export default ({ config }) => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.playbeacon.app',
+      buildNumber: '46',
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSUserTrackingUsageDescription: 'PlayBeacon shows non-personalized ads. This permission helps measure ad effectiveness without tracking you personally.',
@@ -79,7 +80,6 @@ export default ({ config }) => {
         },
       ],
       'expo-tracking-transparency',
-      'react-native-iap',
       'expo-secure-store',
       'expo-updates',
     ],

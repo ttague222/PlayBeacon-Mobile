@@ -4,10 +4,12 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../styles/colors';
 import { getTutorialCompleted } from '../utils/tutorialStorage';
-import { getAgeVerificationStatus } from '../utils/ageVerification';
+// TEMPORARILY DISABLED: Age verification not needed for 16+ rating
+// import { getAgeVerificationStatus } from '../utils/ageVerification';
 import { api } from '../services/api';
 import SoundManager from '../services/SoundManager';
 import OfflineBanner from '../components/OfflineBanner';
@@ -15,7 +17,8 @@ import logger from '../utils/logger';
 import { UnlockModalManager } from '../components/badges';
 
 // Import screens
-import AgeVerificationScreen from '../screens/AgeVerificationScreen';
+// TEMPORARILY DISABLED: Age verification not needed for 16+ rating
+// import AgeVerificationScreen from '../screens/AgeVerificationScreen';
 import TutorialScreen from '../screens/TutorialScreen';
 // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
 // import RobloxImportScreen from '../screens/RobloxImportScreen';
@@ -27,12 +30,14 @@ import BadgesScreen from '../screens/BadgesScreen';
 import CollectablesScreen from '../screens/CollectablesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import PremiumUpgradeScreen from '../screens/PremiumUpgradeScreen';
+import EmailSignInScreen from '../screens/EmailSignInScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // Main tab navigator for authenticated users
 const MainTabs = () => {
+  const { t } = useTranslation();
   return (
     <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
       <OfflineBanner />
@@ -57,7 +62,7 @@ const MainTabs = () => {
         name="Queue"
         component={QueueScreen}
         options={{
-          tabBarLabel: 'Discover',
+          tabBarLabel: t('navigation.discover'),
           headerShown: false,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
@@ -72,7 +77,7 @@ const MainTabs = () => {
         name="Collections"
         component={CollectionsScreen}
         options={{
-          tabBarLabel: 'Collections',
+          tabBarLabel: t('navigation.collections'),
           headerShown: false,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
@@ -87,7 +92,7 @@ const MainTabs = () => {
         name="Tasks"
         component={TasksScreen}
         options={{
-          tabBarLabel: 'Tasks',
+          tabBarLabel: t('navigation.tasks'),
           headerShown: false,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
@@ -102,7 +107,7 @@ const MainTabs = () => {
         name="Badges"
         component={BadgesScreen}
         options={{
-          tabBarLabel: 'Badges',
+          tabBarLabel: t('navigation.badges'),
           headerShown: false,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
@@ -119,23 +124,25 @@ const MainTabs = () => {
 };
 
 // Root navigation
-// COPPA-compliant: Users are automatically signed in anonymously
-// No login required for any features - Google sign-in is optional and parent-gated
+// Users are automatically signed in anonymously
+// No login required for any features - email sign-in is optional
 export default function AppNavigator() {
   const { user, loading } = useAuth();
-  const [ageVerified, setAgeVerified] = useState(null); // null = checking
+  // TEMPORARILY DISABLED: Age verification not needed for 16+ rating
+  // const [ageVerified, setAgeVerified] = useState(null); // null = checking
+  const ageVerified = true; // Skip age verification for 16+ rated app
   const [tutorialCompleted, setTutorialCompleted] = useState(null); // null = checking
   // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
   // const [hasCompletedImport, setHasCompletedImport] = useState(null); // null = checking
   const hasCompletedImport = true; // Skip Roblox import screen
 
-  // Check age verification, tutorial, and import status in parallel once auth is ready
+  // Check tutorial and import status once auth is ready
   useEffect(() => {
     const initializeAppState = async () => {
-      // Start age verification check (local storage - fast)
-      const agePromise = getAgeVerificationStatus()
-        .then(status => status !== null)
-        .catch(() => false);
+      // TEMPORARILY DISABLED: Age verification not needed for 16+ rating
+      // const agePromise = getAgeVerificationStatus()
+      //   .then(status => status !== null)
+      //   .catch(() => false);
 
       // Start tutorial check immediately (local storage - fast)
       const tutorialPromise = getTutorialCompleted().catch(() => false);
@@ -153,13 +160,10 @@ export default function AppNavigator() {
       //       })
       //   : Promise.resolve(false);
 
-      // Wait for all to complete in parallel
-      const [ageResult, tutorialResult] = await Promise.all([
-        agePromise,
-        tutorialPromise,
-      ]);
+      // Wait for tutorial check to complete
+      const tutorialResult = await tutorialPromise;
 
-      setAgeVerified(ageResult);
+      // setAgeVerified(ageResult);
       setTutorialCompleted(tutorialResult);
       // setHasCompletedImport(importResult);
 
@@ -178,8 +182,8 @@ export default function AppNavigator() {
   }, [user, loading]);
 
   // Show loading while auth or app state is initializing
-  // TEMPORARILY DISABLED: Removed hasCompletedImport check - Roblox import pending approval
-  const isInitializing = loading || ageVerified === null || tutorialCompleted === null;
+  // TEMPORARILY DISABLED: Removed ageVerified and hasCompletedImport checks
+  const isInitializing = loading || tutorialCompleted === null;
 
   if (isInitializing || !user) {
     return (
@@ -192,11 +196,12 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!ageVerified ? (
+        {/* TEMPORARILY DISABLED: Age verification not needed for 16+ rating */}
+        {/* {!ageVerified ? (
           <Stack.Screen name="AgeVerification">
             {(props) => <AgeVerificationScreen {...props} onComplete={() => setAgeVerified(true)} />}
           </Stack.Screen>
-        ) : !tutorialCompleted ? (
+        ) : */ !tutorialCompleted ? (
           <Stack.Screen name="Tutorial">
             {(props) => <TutorialScreen {...props} onComplete={() => setTutorialCompleted(true)} />}
           </Stack.Screen>
@@ -222,6 +227,14 @@ export default function AppNavigator() {
             <Stack.Screen
               name="Premium"
               component={PremiumUpgradeScreen}
+              options={{
+                presentation: 'modal',
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen
+              name="EmailSignIn"
+              component={EmailSignInScreen}
               options={{
                 presentation: 'modal',
                 gestureEnabled: true,

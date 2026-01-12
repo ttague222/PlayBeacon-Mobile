@@ -2,7 +2,7 @@
  * Premium Upgrade Screen
  *
  * Allows users to purchase the ad-free experience.
- * Includes parental gate for COPPA compliance.
+ * Includes confirmation gate for purchase actions.
  * Shows restore purchases option for existing customers.
  * Supports RevenueCat paywall when enabled.
  */
@@ -18,12 +18,14 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { usePremium, ENABLE_REVENUECAT } from '../context/PremiumContext';
-import ParentalGate from '../components/ParentalGate';
+import ConfirmationGate from '../components/ConfirmationGate';
 import { colors } from '../styles/colors';
 import { radii, shadows } from '../styles/kidTheme';
 
 export default function PremiumUpgradeScreen({ navigation }) {
+  const { t } = useTranslation();
   const {
     isPremium,
     isLoading,
@@ -115,15 +117,14 @@ export default function PremiumUpgradeScreen({ navigation }) {
           style={styles.closeButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.closeButtonText}>Done</Text>
+          <Text style={styles.closeButtonText}>{t('common.done')}</Text>
         </TouchableOpacity>
 
         <View style={styles.successContainer}>
           <Text style={styles.successIcon}>🎉</Text>
-          <Text style={styles.successTitle}>You're Premium!</Text>
+          <Text style={styles.successTitle}>{t('premium.successTitle')}</Text>
           <Text style={styles.successText}>
-            Thank you for supporting PlayBeacon!{'\n'}
-            All ads have been removed from your experience.
+            {t('premium.successText')}
           </Text>
 
           {/* Show Customer Center option for RevenueCat users */}
@@ -133,7 +134,7 @@ export default function PremiumUpgradeScreen({ navigation }) {
               onPress={showCustomerCenter}
             >
               <Text style={styles.customerCenterButtonText}>
-                Manage Purchase
+                {t('premium.managePurchase')}
               </Text>
             </TouchableOpacity>
           )}
@@ -148,7 +149,7 @@ export default function PremiumUpgradeScreen({ navigation }) {
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.accent.primary} />
-          <Text style={styles.loadingText}>Loading...</Text>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -160,31 +161,30 @@ export default function PremiumUpgradeScreen({ navigation }) {
         style={styles.closeButton}
         onPress={() => navigation.goBack()}
       >
-        <Text style={styles.closeButtonText}>Close</Text>
+        <Text style={styles.closeButtonText}>{t('common.close')}</Text>
       </TouchableOpacity>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.badge}>ONE-TIME PURCHASE</Text>
+        <Text style={styles.badge}>{t('premium.badge')}</Text>
 
         <Text style={styles.icon}>✨</Text>
-        <Text style={styles.title}>PlayBeacon Premium</Text>
+        <Text style={styles.title}>{t('premium.title')}</Text>
         <Text style={styles.subtitle}>
-          Remove all ads forever with a single purchase.
-          No subscriptions. No recurring charges.
+          {t('premium.subtitle')}
         </Text>
 
         <View style={styles.featuresCard}>
-          <Text style={styles.featuresTitle}>What you get:</Text>
+          <Text style={styles.featuresTitle}>{t('premium.featuresTitle')}</Text>
 
           <View style={styles.featureRow}>
             <Text style={styles.featureIcon}>🚫</Text>
             <View style={styles.featureTextContainer}>
-              <Text style={styles.featureTitle}>No More Ads</Text>
+              <Text style={styles.featureTitle}>{t('premium.featureNoAdsTitle')}</Text>
               <Text style={styles.featureDescription}>
-                Remove all banner and video ads permanently
+                {t('premium.featureNoAdsDesc')}
               </Text>
             </View>
           </View>
@@ -192,9 +192,9 @@ export default function PremiumUpgradeScreen({ navigation }) {
           <View style={styles.featureRow}>
             <Text style={styles.featureIcon}>⚡</Text>
             <View style={styles.featureTextContainer}>
-              <Text style={styles.featureTitle}>Faster Experience</Text>
+              <Text style={styles.featureTitle}>{t('premium.featureFasterTitle')}</Text>
               <Text style={styles.featureDescription}>
-                Browse games without interruptions
+                {t('premium.featureFasterDesc')}
               </Text>
             </View>
           </View>
@@ -202,9 +202,9 @@ export default function PremiumUpgradeScreen({ navigation }) {
           <View style={styles.featureRow}>
             <Text style={styles.featureIcon}>💝</Text>
             <View style={styles.featureTextContainer}>
-              <Text style={styles.featureTitle}>Support Development</Text>
+              <Text style={styles.featureTitle}>{t('premium.featureSupportTitle')}</Text>
               <Text style={styles.featureDescription}>
-                Help us keep improving PlayBeacon
+                {t('premium.featureSupportDesc')}
               </Text>
             </View>
           </View>
@@ -212,9 +212,9 @@ export default function PremiumUpgradeScreen({ navigation }) {
           <View style={styles.featureRow}>
             <Text style={styles.featureIcon}>🔄</Text>
             <View style={styles.featureTextContainer}>
-              <Text style={styles.featureTitle}>Restore Anytime</Text>
+              <Text style={styles.featureTitle}>{t('premium.featureRestoreTitle')}</Text>
               <Text style={styles.featureDescription}>
-                Your purchase syncs across devices
+                {t('premium.featureRestoreDesc')}
               </Text>
             </View>
           </View>
@@ -222,20 +222,19 @@ export default function PremiumUpgradeScreen({ navigation }) {
 
         <View style={styles.priceContainer}>
           <Text style={styles.price}>{productInfo.price}</Text>
-          <Text style={styles.priceLabel}>One-time payment</Text>
+          <Text style={styles.priceLabel}>{t('premium.oneTimePayment')}</Text>
         </View>
 
         {isExpoGo ? (
           <View style={styles.devModeNotice}>
             <Text style={styles.devModeText}>
-              In-app purchases are not available in development mode.
-              Build with EAS to test purchases.
+              {t('premium.devModeNotice')}
             </Text>
           </View>
         ) : !isIapAvailable ? (
           <View style={styles.connectionErrorContainer}>
             <Text style={styles.connectionErrorText}>
-              Unable to connect to the store right now.
+              {t('premium.connectionError')}
             </Text>
             <TouchableOpacity
               style={[styles.retryButton, isRetrying && styles.buttonDisabled]}
@@ -245,11 +244,11 @@ export default function PremiumUpgradeScreen({ navigation }) {
               {isRetrying ? (
                 <ActivityIndicator color={colors.accent.primary} size="small" />
               ) : (
-                <Text style={styles.retryButtonText}>Try Again</Text>
+                <Text style={styles.retryButtonText}>{t('common.tryAgain')}</Text>
               )}
             </TouchableOpacity>
             <Text style={styles.connectionHintText}>
-              Please check your internet connection and try again.
+              {t('premium.connectionHint')}
             </Text>
           </View>
         ) : (
@@ -265,7 +264,7 @@ export default function PremiumUpgradeScreen({ navigation }) {
                   <ActivityIndicator color={colors.text.primary} />
                 ) : (
                   <Text style={styles.purchaseButtonText}>
-                    Unlock Ad-Free Experience
+                    {t('premium.unlockButton')}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -279,7 +278,7 @@ export default function PremiumUpgradeScreen({ navigation }) {
                   <ActivityIndicator color={colors.text.primary} />
                 ) : (
                   <Text style={styles.purchaseButtonText}>
-                    Unlock Ad-Free Experience
+                    {t('premium.unlockButton')}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -290,18 +289,17 @@ export default function PremiumUpgradeScreen({ navigation }) {
               onPress={handleRestorePress}
               disabled={isPurchasing}
             >
-              <Text style={styles.restoreButtonText}>Restore Purchase</Text>
+              <Text style={styles.restoreButtonText}>{t('premium.restorePurchase')}</Text>
             </TouchableOpacity>
           </>
         )}
 
-        <Text style={styles.parentNote}>
-          A parent or guardian must approve this one-time purchase.
-          No recurring charges will be made.
+        <Text style={styles.purchaseNote}>
+          {t('premium.purchaseNote')}
         </Text>
       </ScrollView>
 
-      <ParentalGate
+      <ConfirmationGate
         visible={showParentalGate}
         onPass={handleParentalGatePass}
         onCancel={handleParentalGateCancel}
@@ -441,7 +439,7 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     textDecorationLine: 'underline',
   },
-  parentNote: {
+  purchaseNote: {
     fontSize: 12,
     color: colors.text.tertiary,
     textAlign: 'center',

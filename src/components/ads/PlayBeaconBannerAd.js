@@ -10,10 +10,12 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Constants from 'expo-constants';
+import { useTranslation } from 'react-i18next';
 import { useAds } from '../../context/AdContext';
 import { AD_UNIT_IDS } from '../../config/admob';
+import { colors } from '../../styles/colors';
 import logger from '../../utils/logger';
 
 // Check if we're running in Expo Go
@@ -42,6 +44,7 @@ export default function PlayBeaconBannerAd({
   style,
   containerStyle,
 }) {
+  const { t } = useTranslation();
   const { shouldShowAds, isInitialized, isExpoGo: contextIsExpoGo } = useAds();
   const [adLoaded, setAdLoaded] = useState(false);
   const [adKey, setAdKey] = useState(0); // Used to force re-render and retry
@@ -103,6 +106,10 @@ export default function PlayBeaconBannerAd({
 
   return (
     <View style={[styles.container, containerStyle, !adLoaded && styles.hidden]}>
+      {/* Ad disclosure label for transparency */}
+      {adLoaded && (
+        <Text style={styles.adLabel}>{t('components.adLabel')}</Text>
+      )}
       <BannerAd
         key={adKey}
         unitId={AD_UNIT_IDS.BANNER}
@@ -132,5 +139,13 @@ const styles = StyleSheet.create({
   hidden: {
     opacity: 0,
     height: 0,
+  },
+  adLabel: {
+    fontSize: 10,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

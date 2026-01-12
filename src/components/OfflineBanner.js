@@ -5,10 +5,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../styles/colors';
 import { useNetwork } from '../context/NetworkContext';
 
 export default function OfflineBanner() {
+  const { t } = useTranslation();
   const { isOffline, offlineQueueCount, checkConnection } = useNetwork();
   const [showReconnected, setShowReconnected] = useState(false);
   const wasOfflineRef = useRef(false);
@@ -52,7 +54,7 @@ export default function OfflineBanner() {
     return (
       <Animated.View style={[styles.banner, styles.successBanner, { opacity: fadeAnim }]}>
         <Ionicons name="checkmark-circle" size={18} color={colors.text.primary} />
-        <Text style={styles.text}>Back online!</Text>
+        <Text style={styles.text}>{t('components.offlineBackOnline')}</Text>
       </Animated.View>
     );
   }
@@ -65,10 +67,10 @@ export default function OfflineBanner() {
   return (
     <TouchableOpacity style={styles.banner} onPress={checkConnection} activeOpacity={0.8}>
       <Ionicons name="cloud-offline" size={18} color={colors.text.primary} />
-      <Text style={styles.text}>You're offline</Text>
+      <Text style={styles.text}>{t('components.offlineTitle')}</Text>
       {offlineQueueCount > 0 && (
         <View style={styles.queueBadge}>
-          <Text style={styles.queueText}>{offlineQueueCount} pending</Text>
+          <Text style={styles.queueText}>{t('components.offlinePending', { count: offlineQueueCount })}</Text>
         </View>
       )}
       <Ionicons name="refresh" size={16} color={colors.text.primary} style={styles.refreshIcon} />

@@ -166,7 +166,7 @@ export function AdProvider({ children }) {
   }, [trackingDate, saveTrackingData]);
 
   /**
-   * Initialize AdMob SDK with COPPA-compliant settings
+   * Initialize AdMob SDK for 16+ rated app
    */
   const initializeAds = useCallback(async () => {
     // Skip initialization in Expo Go
@@ -193,14 +193,14 @@ export function AdProvider({ children }) {
         }
       }
 
-      // COPPA-compliant request configuration
-      const coppaConfig = {
-        maxAdContentRating: MaxAdContentRating.G,
-        tagForChildDirectedTreatment: true,
-        tagForUnderAgeOfConsent: true,
+      // Ad request configuration for 16+ rated app
+      const adConfig = {
+        maxAdContentRating: MaxAdContentRating.T,
+        tagForChildDirectedTreatment: false,
+        tagForUnderAgeOfConsent: false,
       };
 
-      await mobileAds().setRequestConfiguration(coppaConfig);
+      await mobileAds().setRequestConfiguration(adConfig);
       await mobileAds().initialize();
 
       logger.log('AdMob SDK initialized successfully');

@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from 'react-native';
+import { withTranslation } from 'react-i18next';
 import { colors } from '../styles/colors';
 import { captureException, addBreadcrumb } from '../config/sentry';
 import logger from '../utils/logger';
@@ -63,6 +64,8 @@ class ErrorBoundary extends Component {
   };
 
   render() {
+    const { t } = this.props;
+
     if (this.state.hasError) {
       // Render kid-friendly fallback UI
       return (
@@ -71,10 +74,10 @@ class ErrorBoundary extends Component {
             {/* Sad Bear Emoji */}
             <Text style={styles.emoji}>🐻💤</Text>
 
-            <Text style={styles.title}>Oops! Something went wrong</Text>
+            <Text style={styles.title}>{t('components.errorBoundaryTitle')}</Text>
 
             <Text style={styles.message}>
-              Bear got a little confused! Don't worry, let's try again.
+              {t('components.errorBoundaryMessage')}
             </Text>
 
             <TouchableOpacity
@@ -82,7 +85,7 @@ class ErrorBoundary extends Component {
               onPress={this.handleRetry}
               activeOpacity={0.8}
             >
-              <Text style={styles.retryButtonText}>Try Again</Text>
+              <Text style={styles.retryButtonText}>{t('components.errorBoundaryButton')}</Text>
             </TouchableOpacity>
 
             {/* Show technical details only in development */}
@@ -168,4 +171,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ErrorBoundary;
+export default withTranslation()(ErrorBoundary);

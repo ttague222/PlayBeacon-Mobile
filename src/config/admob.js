@@ -1,7 +1,7 @@
 /**
  * AdMob Configuration
  *
- * COPPA-compliant configuration for child-directed ads.
+ * Ad configuration for 16+ rated app.
  * Uses test IDs in development, real IDs in production.
  * Gracefully handles Expo Go (where native ads aren't available).
  */
@@ -90,26 +90,25 @@ export const AD_UNIT_IDS = getAdUnitIds(false);
 export { TEST_IDS };
 
 /**
- * COPPA-compliant request configuration for child-directed ads
- * This is CRITICAL for App Store/Play Store approval
+ * Ad request configuration for 16+ rated app
  *
  * Note: When running in Expo Go, MaxAdContentRating won't be available.
  * The actual config is only used when initializing AdMob in a native build.
  */
-export const COPPA_REQUEST_CONFIG = MaxAdContentRating
+export const AD_REQUEST_CONFIG = MaxAdContentRating
   ? {
-      // Set max ad content rating to 'G' for General audiences
-      maxAdContentRating: MaxAdContentRating.G,
-      // Tag for child-directed treatment (COPPA compliance)
-      tagForChildDirectedTreatment: true,
-      // Tag for users under age of consent (GDPR compliance)
-      tagForUnderAgeOfConsent: true,
+      // Set max ad content rating to 'T' for Teen audiences (16+)
+      maxAdContentRating: MaxAdContentRating.T,
+      // Not a child-directed app (16+ rating)
+      tagForChildDirectedTreatment: false,
+      // Not targeting users under age of consent (16+ rating)
+      tagForUnderAgeOfConsent: false,
     }
   : {
       // Fallback config for Expo Go (won't be used but prevents errors)
-      maxAdContentRating: 'G',
-      tagForChildDirectedTreatment: true,
-      tagForUnderAgeOfConsent: true,
+      maxAdContentRating: 'T',
+      tagForChildDirectedTreatment: false,
+      tagForUnderAgeOfConsent: false,
     };
 
 /**

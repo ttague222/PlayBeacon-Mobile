@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../styles/colors';
 import { radii, shadows } from '../styles/kidTheme';
 
 export default function LoginScreen({ navigation }) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLogin, setIsLogin] = useState(true);
-  const { login, register, loginWithGoogle } = useAuth();
+  const { login, register } = useAuth();
+  // TEMPORARILY DISABLED: Google Sign-In pending Apple developer account migration
+  // const { login, register, loginWithGoogle } = useAuth();
 
   const handleSubmit = async () => {
     try {
@@ -18,25 +22,29 @@ export default function LoginScreen({ navigation }) {
         await register(email, password);
       }
     } catch (error) {
-      Alert.alert('Error', error.message);
+      Alert.alert(t('common.error'), error.message);
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      await loginWithGoogle();
-    } catch (error) {
-      Alert.alert('Error', 'Failed to sign in with Google. Please try again.');
-    }
-  };
+  // TEMPORARILY DISABLED: Google Sign-In pending Apple developer account migration
+  // Need to implement Sign in with Apple before re-enabling Google Sign-In (Apple Guideline 4.8)
+  // const handleGoogleSignIn = async () => {
+  //   try {
+  //     await loginWithGoogle();
+  //   } catch (error) {
+  //     Alert.alert(t('common.error'), t('login.errorGoogle'));
+  //   }
+  // };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{isLogin ? 'Welcome Back' : 'Create Account'}</Text>
+      <Text style={styles.title}>
+        {isLogin ? t('login.titleSignIn') : t('login.titleSignUp')}
+      </Text>
 
       <TextInput
         style={styles.input}
-        placeholder="Email"
+        placeholder={t('login.emailPlaceholder')}
         placeholderTextColor={colors.text.placeholder}
         value={email}
         onChangeText={setEmail}
@@ -46,7 +54,7 @@ export default function LoginScreen({ navigation }) {
 
       <TextInput
         style={styles.input}
-        placeholder="Password"
+        placeholder={t('login.passwordPlaceholder')}
         placeholderTextColor={colors.text.placeholder}
         value={password}
         onChangeText={setPassword}
@@ -54,22 +62,26 @@ export default function LoginScreen({ navigation }) {
       />
 
       <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>{isLogin ? 'Sign In' : 'Sign Up'}</Text>
+        <Text style={styles.buttonText}>
+          {isLogin ? t('login.buttonSignIn') : t('login.buttonSignUp')}
+        </Text>
       </TouchableOpacity>
 
-      <View style={styles.divider}>
+      {/* TEMPORARILY DISABLED: Google Sign-In pending Apple developer account migration */}
+      {/* Need to implement Sign in with Apple before re-enabling (Apple Guideline 4.8) */}
+      {/* <View style={styles.divider}>
         <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>OR</Text>
+        <Text style={styles.dividerText}>{t('login.dividerText')}</Text>
         <View style={styles.dividerLine} />
       </View>
 
       <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignIn}>
-        <Text style={styles.googleButtonText}>Continue with Google</Text>
-      </TouchableOpacity>
+        <Text style={styles.googleButtonText}>{t('login.googleButton')}</Text>
+      </TouchableOpacity> */}
 
       <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
         <Text style={styles.switchText}>
-          {isLogin ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}
+          {isLogin ? t('login.toggleSignUp') : t('login.toggleSignIn')}
         </Text>
       </TouchableOpacity>
     </View>

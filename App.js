@@ -1,5 +1,6 @@
 import { View, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import './src/services/i18n'; // Initialize i18n
 import { AuthProvider } from './src/context/AuthContext';
 import { AdProvider } from './src/context/AdContext';
 import { PremiumProvider } from './src/context/PremiumContext';

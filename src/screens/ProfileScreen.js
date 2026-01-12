@@ -1,9 +1,9 @@
 /**
  * Profile Screen
  *
- * COPPA-compliant profile management:
+ * Profile management:
  * - Shows account status (anonymous or Google-linked)
- * - Parent-gated Google sign-in option for data sync
+ * - Account verification for sign-in options
  * - Premium/ad-free status
  * - Roblox account linking
  * - User stats and history
@@ -20,16 +20,20 @@ import {
   ScrollView,
   Modal,
   TextInput,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useAuth } from '../context/AuthContext';
+import { changeLanguage, getCurrentLanguage, LANGUAGES } from '../services/i18n';
 import SoundManager from '../services/SoundManager';
 import { usePremium } from '../context/PremiumContext';
-import ParentalGate from '../components/ParentalGate';
+import ConfirmationGate from '../components/ConfirmationGate';
 import ProfileAvatar from '../components/ProfileAvatar';
 import AnimalPickerModal from '../components/AnimalPickerModal';
+import LanguagePickerModal from '../components/LanguagePickerModal';
 import { api } from '../services/api';
 import { colors } from '../styles/colors';
 import { typography, radii } from '../styles/kidTheme';
@@ -40,6 +44,7 @@ import logger from '../utils/logger';
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const {
     user,
     logout,
@@ -57,6 +62,7 @@ export default function ProfileScreen() {
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [historyType, setHistoryType] = useState('liked');
   const [historyGames, setHistoryGames] = useState([]);
+  const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
   // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
   // const [robloxModalVisible, setRobloxModalVisible] = useState(false);
   // const [robloxUsername, setRobloxUsername] = useState('');
@@ -69,6 +75,9 @@ export default function ProfileScreen() {
   // Animal picker state
   const [animalPickerVisible, setAnimalPickerVisible] = useState(false);
   const [selectedAnimalId, setSelectedAnimalId] = useState(null);
+
+  // Language picker state
+  const [languagePickerVisible, setLanguagePickerVisible] = useState(false);
 
   const accountStatus = getAccountStatus();
   const appVersion = Constants.expoConfig?.version || '1.0.0';
@@ -115,29 +124,29 @@ export default function ProfileScreen() {
       setHistoryModalVisible(true);
     } catch (error) {
       logger.error('Failed to load history:', error);
-      Alert.alert('Error', 'Failed to load rating history. Please try again.');
+      Alert.alert(t('common.error'), t('profile.errorLoadHistory'));
     }
   };
 
   const handleResetProfile = () => {
     SoundManager.play('ui.tap');
     Alert.alert(
-      'Reset Recommendations',
-      'This will clear all your ratings and reset your recommendations. This action cannot be undone. Are you sure?',
+      t('profile.alertResetTitle'),
+      t('profile.alertResetMsg'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Reset',
+          text: t('profile.resetRecommendations'),
           style: 'destructive',
           onPress: async () => {
             try {
               setResetting(true);
               await api.resetProfile();
               await fetchUserStats();
-              Alert.alert('Success', 'Your recommendations have been reset');
+              Alert.alert(t('common.success'), t('profile.alertSuccessReset'));
             } catch (error) {
               logger.error('Failed to reset profile:', error);
-              Alert.alert('Error', 'Failed to reset profile. Please try again.');
+              Alert.alert(t('common.error'), t('profile.errorReset'));
             } finally {
               setResetting(false);
             }
@@ -150,12 +159,12 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     SoundManager.play('ui.tap');
     Alert.alert(
-      'Start Fresh',
-      'This will completely reset the app - clearing all progress, badges, settings, and starting from the tutorial. Are you sure?',
+      t('profile.alertLogoutTitle'),
+      t('profile.alertLogoutMsg'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Start Fresh',
+          text: t('profile.startFresh'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -165,7 +174,7 @@ export default function ProfileScreen() {
               await logout();
               // The app will restart at age verification/tutorial
             } catch (error) {
-              Alert.alert('Error', error.message);
+              Alert.alert(t('common.error'), error.message);
             }
           },
         },
@@ -176,22 +185,22 @@ export default function ProfileScreen() {
   const handleDeleteAccount = async () => {
     SoundManager.play('ui.tap');
     Alert.alert(
-      'Delete Account',
-      'This will permanently delete your account and all your data including ratings, collections, and preferences. This action cannot be undone.',
+      t('profile.alertDeleteTitle'),
+      t('profile.alertDeleteMsg'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete Account',
+          text: t('profile.deleteAccount'),
           style: 'destructive',
           onPress: () => {
             // Second confirmation for destructive action
             Alert.alert(
-              'Are you absolutely sure?',
-              'All your data will be permanently deleted. This cannot be recovered.',
+              t('profile.alertDeleteConfirm'),
+              t('profile.alertDeleteConfirmMsg'),
               [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                  text: 'Yes, Delete Everything',
+                  text: t('profile.alertDeleteConfirmButton'),
                   style: 'destructive',
                   onPress: async () => {
                     try {
@@ -205,7 +214,7 @@ export default function ProfileScreen() {
                       // The app will restart at age verification/tutorial
                     } catch (error) {
                       logger.error('Failed to delete account:', error);
-                      Alert.alert('Error', 'Failed to delete account. Please try again or contact support.');
+                      Alert.alert(t('common.error'), t('profile.errorDeleteAccount'));
                     } finally {
                       setResetting(false);
                     }
@@ -226,6 +235,12 @@ export default function ProfileScreen() {
     setShowParentalGate(true);
   };
 
+  const handleEmailSignInPress = () => {
+    SoundManager.play('ui.tap');
+    setPendingAction('email_signin');
+    setShowParentalGate(true);
+  };
+
   const handleDisconnectGooglePress = () => {
     SoundManager.play('ui.tap');
     setPendingAction('disconnect_google');
@@ -241,19 +256,25 @@ export default function ProfileScreen() {
   const handleParentalGatePass = async () => {
     setShowParentalGate(false);
 
+    if (pendingAction === 'email_signin') {
+      navigation.navigate('EmailSignIn');
+      setPendingAction(null);
+      return;
+    }
+
     if (pendingAction === 'link_google') {
       try {
         const result = await linkWithGoogle();
         if (result.success) {
           if (result.merged) {
             Alert.alert(
-              'Account Synced',
-              'Your data has been merged with your existing Google account.'
+              t('profile.alertAccountSynced'),
+              t('profile.alertAccountSyncedMsg')
             );
           } else {
             Alert.alert(
-              'Success',
-              'Your account is now linked to Google. Your data will sync across devices.'
+              t('common.success'),
+              t('profile.alertGoogleLinked')
             );
           }
           await fetchUserStats();
@@ -266,8 +287,8 @@ export default function ProfileScreen() {
       try {
         await disconnectGoogle();
         Alert.alert(
-          'Disconnected',
-          'Your Google account has been disconnected. A new anonymous account has been created.'
+          t('profile.alertDisconnected'),
+          t('profile.alertDisconnectedMsg')
         );
       } catch (error) {
         logger.error('Disconnect error:', error);
@@ -282,6 +303,24 @@ export default function ProfileScreen() {
   const handleParentalGateCancel = () => {
     setShowParentalGate(false);
     setPendingAction(null);
+  };
+
+  const handleOpenLanguagePicker = () => {
+    SoundManager.play('ui.tap');
+    setLanguagePickerVisible(true);
+  };
+
+  const handleSelectLanguage = async (langCode) => {
+    if (langCode === currentLang) {
+      setLanguagePickerVisible(false);
+      return;
+    }
+
+    const success = await changeLanguage(langCode);
+    if (success) {
+      setCurrentLang(langCode);
+    }
+    setLanguagePickerVisible(false);
   };
 
   // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
@@ -349,13 +388,13 @@ export default function ProfileScreen() {
   if (error) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <Text style={styles.errorTitle}>Oops!</Text>
+        <Text style={styles.errorTitle}>{t('common.oops')}</Text>
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.button} onPress={() => {
           SoundManager.play('ui.tap');
           fetchUserStats();
         }}>
-          <Text style={styles.buttonText}>Try Again</Text>
+          <Text style={styles.buttonText}>{t('common.tryAgain')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -365,7 +404,7 @@ export default function ProfileScreen() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.headerContainer}>
-        <Text style={styles.header}>Profile</Text>
+        <Text style={styles.header}>{t('profile.title')}</Text>
         <TouchableOpacity
           style={styles.closeButton}
           onPress={() => {
@@ -405,8 +444,8 @@ export default function ProfileScreen() {
               </>
             ) : ( */}
               <>
-                <Text style={styles.profileName}>PlayBeacon User</Text>
-                <Text style={styles.profileSubtext}>Discover your next favorite game</Text>
+                <Text style={styles.profileName}>{t('profile.defaultUsername')}</Text>
+                <Text style={styles.profileSubtext}>{t('profile.tagline')}</Text>
               </>
             {/* )} */}
           </View>
@@ -417,17 +456,17 @@ export default function ProfileScreen() {
           <View style={styles.quickStats}>
             <View style={styles.quickStatItem}>
               <Text style={styles.quickStatValue}>{stats.liked_count}</Text>
-              <Text style={styles.quickStatLabel}>Liked</Text>
+              <Text style={styles.quickStatLabel}>{t('profile.statsLiked')}</Text>
             </View>
             <View style={styles.quickStatDivider} />
             <View style={styles.quickStatItem}>
               <Text style={styles.quickStatValue}>{stats.disliked_count}</Text>
-              <Text style={styles.quickStatLabel}>Passed</Text>
+              <Text style={styles.quickStatLabel}>{t('profile.statsPassed')}</Text>
             </View>
             <View style={styles.quickStatDivider} />
             <View style={styles.quickStatItem}>
               <Text style={styles.quickStatValue}>{stats.total_ratings}</Text>
-              <Text style={styles.quickStatLabel}>Total</Text>
+              <Text style={styles.quickStatLabel}>{t('profile.statsTotal')}</Text>
             </View>
           </View>
         )}
@@ -469,12 +508,12 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.premiumTextContainer}>
             <Text style={styles.premiumTitle}>
-              {isPremium ? 'Premium Active' : 'Go Ad-Free'}
+              {isPremium ? t('profile.premiumActive') : t('profile.goAdFree')}
             </Text>
             <Text style={styles.premiumDescription}>
               {isPremium
-                ? 'Thank you for supporting PlayBeacon!'
-                : 'Remove all ads with a one-time purchase'}
+                ? t('profile.premiumThankYou')
+                : t('profile.premiumDescription')}
             </Text>
           </View>
         </View>
@@ -487,7 +526,7 @@ export default function ProfileScreen() {
 
       {/* Settings Section */}
       <View style={styles.settingsSection}>
-        <Text style={styles.sectionLabel}>HISTORY</Text>
+        <Text style={styles.sectionLabel}>{t('profile.sectionHistory')}</Text>
         <View style={styles.settingsCard}>
           <TouchableOpacity
             style={styles.settingsRow}
@@ -497,7 +536,7 @@ export default function ProfileScreen() {
               <View style={[styles.settingsIcon, { backgroundColor: colors.success + '20' }]}>
                 <Ionicons name="heart" size={18} color={colors.success} />
               </View>
-              <Text style={styles.settingsRowText}>Liked Games</Text>
+              <Text style={styles.settingsRowText}>{t('profile.likedGames')}</Text>
             </View>
             <View style={styles.settingsRowRight}>
               <Text style={styles.settingsRowCount}>{stats?.liked_count || 0}</Text>
@@ -515,7 +554,7 @@ export default function ProfileScreen() {
               <View style={[styles.settingsIcon, { backgroundColor: colors.error + '20' }]}>
                 <Ionicons name="close-circle" size={18} color={colors.error} />
               </View>
-              <Text style={styles.settingsRowText}>Passed Games</Text>
+              <Text style={styles.settingsRowText}>{t('profile.passedGames')}</Text>
             </View>
             <View style={styles.settingsRowRight}>
               <Text style={styles.settingsRowCount}>{stats?.disliked_count || 0}</Text>
@@ -527,7 +566,7 @@ export default function ProfileScreen() {
 
       {/* Account Section */}
       <View style={styles.settingsSection}>
-        <Text style={styles.sectionLabel}>ACCOUNT</Text>
+        <Text style={styles.sectionLabel}>{t('profile.sectionAccount')}</Text>
         <View style={styles.settingsCard}>
           {/* Account Status Row */}
           <View style={styles.settingsRowStatic}>
@@ -536,7 +575,7 @@ export default function ProfileScreen() {
                 <Ionicons name="person" size={18} color={colors.accent.primary} />
               </View>
               <View>
-                <Text style={styles.settingsRowText}>Account Type</Text>
+                <Text style={styles.settingsRowText}>{t('profile.accountType')}</Text>
                 <Text style={styles.settingsRowSubtext}>{accountStatus.label}</Text>
               </View>
             </View>
@@ -545,27 +584,50 @@ export default function ProfileScreen() {
           <View style={styles.settingsRowDivider} />
 
           {/* Google Sign-In / Disconnect */}
+          {/* TEMPORARILY DISABLED: Google Sign-In pending Apple developer account migration */}
+          {/* Need to implement Sign in with Apple before re-enabling (Apple Guideline 4.8) */}
           {accountStatus.type === 'anonymous' ? (
-            <TouchableOpacity
-              style={styles.settingsRow}
-              onPress={handleGoogleSignInPress}
-              disabled={isLinkingAccount}
-            >
-              <View style={styles.settingsRowLeft}>
-                <View style={[styles.settingsIcon, { backgroundColor: '#4285F420' }]}>
-                  <Ionicons name="logo-google" size={18} color="#4285F4" />
+            <>
+              {/* <TouchableOpacity
+                style={styles.settingsRow}
+                onPress={handleGoogleSignInPress}
+                disabled={isLinkingAccount}
+              >
+                <View style={styles.settingsRowLeft}>
+                  <View style={[styles.settingsIcon, { backgroundColor: '#4285F420' }]}>
+                    <Ionicons name="logo-google" size={18} color="#4285F4" />
+                  </View>
+                  <View>
+                    <Text style={styles.settingsRowText}>Link Google Account</Text>
+                    <Text style={styles.settingsRowSubtext}>Sync data across devices</Text>
+                  </View>
                 </View>
-                <View>
-                  <Text style={styles.settingsRowText}>Link Google Account</Text>
-                  <Text style={styles.settingsRowSubtext}>Sync data across devices</Text>
+                <View style={styles.parentBadgeSmall}>
+                  <Text style={styles.parentBadgeText}>Parent</Text>
                 </View>
-              </View>
-              <View style={styles.parentBadgeSmall}>
-                <Text style={styles.parentBadgeText}>Parent</Text>
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+
+              <View style={styles.settingsRowDivider} /> */}
+
+              <TouchableOpacity
+                style={styles.settingsRow}
+                onPress={handleEmailSignInPress}
+              >
+                <View style={styles.settingsRowLeft}>
+                  <View style={[styles.settingsIcon, { backgroundColor: '#3b82f620' }]}>
+                    <Ionicons name="mail" size={18} color="#3b82f6" />
+                  </View>
+                  <View>
+                    <Text style={styles.settingsRowText}>{t('profile.emailSignIn')}</Text>
+                    <Text style={styles.settingsRowSubtext}>{t('profile.emailSignInDesc')}</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+              </TouchableOpacity>
+            </>
           ) : (
-            <TouchableOpacity
+            /* TEMPORARILY DISABLED: Google Sign-In pending Apple developer account migration */
+            /* <TouchableOpacity
               style={styles.settingsRow}
               onPress={handleDisconnectGooglePress}
             >
@@ -581,7 +643,8 @@ export default function ProfileScreen() {
               <View style={styles.parentBadgeSmall}>
                 <Text style={styles.parentBadgeText}>Parent</Text>
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */
+            null
           )}
 
           <View style={styles.settingsRowDivider} />
@@ -594,10 +657,35 @@ export default function ProfileScreen() {
               <View style={[styles.settingsIcon, { backgroundColor: colors.warning + '20' }]}>
                 <Ionicons name="refresh" size={18} color={colors.warning} />
               </View>
-              <Text style={styles.settingsRowText}>Restore Purchases</Text>
+              <Text style={styles.settingsRowText}>{t('profile.restorePurchases')}</Text>
             </View>
-            <View style={styles.parentBadgeSmall}>
-              <Text style={styles.parentBadgeText}>Parent</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Settings Section */}
+      <View style={styles.settingsSection}>
+        <Text style={styles.sectionLabel}>{t('profile.sectionSettings') || 'SETTINGS'}</Text>
+        <View style={styles.settingsCard}>
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={handleOpenLanguagePicker}
+          >
+            <View style={styles.settingsRowLeft}>
+              <View style={[styles.settingsIcon, { backgroundColor: colors.accent.secondary + '20' }]}>
+                <Ionicons name="language" size={18} color={colors.accent.secondary} />
+              </View>
+              <View>
+                <Text style={styles.settingsRowText}>{t('settings.language')}</Text>
+                <Text style={styles.settingsRowSubtext}>
+                  {currentLang === 'en' ? t('settings.languageEnglish') : t('settings.languageSpanish')}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.settingsRowRight}>
+              <Text style={styles.settingsRowCount}>{currentLang.toUpperCase()}</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
             </View>
           </TouchableOpacity>
         </View>
@@ -605,7 +693,7 @@ export default function ProfileScreen() {
 
       {/* Data Section */}
       <View style={styles.settingsSection}>
-        <Text style={styles.sectionLabel}>DATA</Text>
+        <Text style={styles.sectionLabel}>{t('profile.sectionData')}</Text>
         <View style={styles.settingsCard}>
           <TouchableOpacity
             style={styles.settingsRow}
@@ -622,9 +710,9 @@ export default function ProfileScreen() {
               </View>
               <View>
                 <Text style={[styles.settingsRowText, { color: colors.error }]}>
-                  Reset Recommendations
+                  {t('profile.resetRecommendations')}
                 </Text>
-                <Text style={styles.settingsRowSubtext}>Clear all ratings</Text>
+                <Text style={styles.settingsRowSubtext}>{t('profile.resetRecommendationsDesc')}</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -640,8 +728,8 @@ export default function ProfileScreen() {
                 <Ionicons name="exit-outline" size={18} color={colors.text.tertiary} />
               </View>
               <View>
-                <Text style={styles.settingsRowText}>Start Fresh</Text>
-                <Text style={styles.settingsRowSubtext}>Reset app and restart tutorial</Text>
+                <Text style={styles.settingsRowText}>{t('profile.startFresh')}</Text>
+                <Text style={styles.settingsRowSubtext}>{t('profile.startFreshDesc')}</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -663,11 +751,61 @@ export default function ProfileScreen() {
               </View>
               <View>
                 <Text style={[styles.settingsRowText, { color: colors.error }]}>
-                  Delete Account
+                  {t('profile.deleteAccount')}
                 </Text>
-                <Text style={styles.settingsRowSubtext}>Permanently delete all data</Text>
+                <Text style={styles.settingsRowSubtext}>{t('profile.deleteAccountDesc')}</Text>
               </View>
             </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Legal Section */}
+      <View style={styles.settingsSection}>
+        <Text style={styles.sectionLabel}>{t('profile.sectionLegal')}</Text>
+        <View style={styles.settingsCard}>
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={() => {
+              SoundManager.play('ui.tap');
+              Linking.openURL('https://watchlightinteractive.com/playbeacon-privacy-policy').catch((err) => {
+                logger.error('Failed to open privacy policy:', err);
+              });
+            }}
+          >
+            <View style={styles.settingsRowLeft}>
+              <View style={[styles.settingsIcon, { backgroundColor: colors.accent.secondary + '20' }]}>
+                <Ionicons name="shield-checkmark" size={18} color={colors.accent.secondary} />
+              </View>
+              <View>
+                <Text style={styles.settingsRowText}>{t('profile.privacyPolicy')}</Text>
+                <Text style={styles.settingsRowSubtext}>{t('profile.privacyPolicyDesc')}</Text>
+              </View>
+            </View>
+            <Ionicons name="open-outline" size={18} color={colors.text.tertiary} />
+          </TouchableOpacity>
+
+          <View style={styles.settingsRowDivider} />
+
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={() => {
+              SoundManager.play('ui.tap');
+              Linking.openURL('https://watchlightinteractive.com/playbeacon-terms-of-service').catch((err) => {
+                logger.error('Failed to open terms of service:', err);
+              });
+            }}
+          >
+            <View style={styles.settingsRowLeft}>
+              <View style={[styles.settingsIcon, { backgroundColor: colors.accent.tertiary + '20' }]}>
+                <Ionicons name="document-text" size={18} color={colors.accent.tertiary} />
+              </View>
+              <View>
+                <Text style={styles.settingsRowText}>{t('profile.termsOfService')}</Text>
+                <Text style={styles.settingsRowSubtext}>{t('profile.termsOfServiceDesc')}</Text>
+              </View>
+            </View>
+            <Ionicons name="open-outline" size={18} color={colors.text.tertiary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -687,18 +825,18 @@ export default function ProfileScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
-              {historyType === 'liked' ? 'Liked Games' : 'Disliked Games'}
+              {historyType === 'liked' ? t('profile.likedGames') : t('profile.passedGames')}
             </Text>
             <TouchableOpacity onPress={() => {
               SoundManager.play('ui.modal_close');
               setHistoryModalVisible(false);
             }}>
-              <Text style={styles.modalCloseText}>Close</Text>
+              <Text style={styles.modalCloseText}>{t('common.close')}</Text>
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.modalContent}>
             {historyGames.length === 0 ? (
-              <Text style={styles.emptyText}>No games found</Text>
+              <Text style={styles.emptyText}>{t('profile.noGamesFound')}</Text>
             ) : (
               historyGames.map((game) => (
                 <View key={game.universe_id} style={styles.gameItem}>
@@ -773,8 +911,8 @@ export default function ProfileScreen() {
         </View>
       </Modal> */}
 
-      {/* Parental Gate */}
-      <ParentalGate
+      {/* Confirmation Gate */}
+      <ConfirmationGate
         visible={showParentalGate}
         onPass={handleParentalGatePass}
         onCancel={handleParentalGateCancel}
@@ -789,6 +927,14 @@ export default function ProfileScreen() {
         }}
         selectedAnimalId={selectedAnimalId}
         onSelect={handleAnimalSelect}
+      />
+
+      {/* Language Picker Modal */}
+      <LanguagePickerModal
+        visible={languagePickerVisible}
+        onClose={() => setLanguagePickerVisible(false)}
+        currentLanguage={currentLang}
+        onSelectLanguage={handleSelectLanguage}
       />
     </ScrollView>
   );

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../styles/colors';
 import { radii, typography } from '../styles/kidTheme';
 import {
@@ -76,23 +77,42 @@ const AchievementCard = ({ achievement, userAchievement, userStats }) => {
       )}
 
       {completed && userAchievement?.completedAt && (
-        <Text style={styles.completedDate}>
-          Unlocked {new Date(userAchievement.completedAt).toLocaleDateString()}
-        </Text>
+        <UnlockedDate date={userAchievement.completedAt} />
       )}
     </View>
   );
 };
 
-const CategorySection = ({ category, achievements, userAchievements, userStats }) => {
+const UnlockedDate = ({ date }) => {
+  const { t } = useTranslation();
+  return (
+    <Text style={styles.completedDate}>
+      {t('achievements.unlocked')} {new Date(date).toLocaleDateString()}
+    </Text>
+  );
+};
+
+const CategorySection = ({ category, achievements, userAchievements, userStats, t }) => {
   const categoryInfo = CATEGORY_INFO[category];
   const categoryAchievements = getAchievementsByCategory(category);
+
+  // Map category to translation key
+  const getCategoryTitle = (cat) => {
+    const categoryTitleMap = {
+      [ACHIEVEMENT_CATEGORIES.DISCOVERY]: t('achievements.categoryDiscovery'),
+      [ACHIEVEMENT_CATEGORIES.COLLECTIONS]: t('achievements.categoryCollections'),
+      [ACHIEVEMENT_CATEGORIES.TASKS]: t('achievements.categoryTasks'),
+      [ACHIEVEMENT_CATEGORIES.AI]: t('achievements.categoryAI'),
+      [ACHIEVEMENT_CATEGORIES.ENGAGEMENT]: t('achievements.categoryEngagement'),
+    };
+    return categoryTitleMap[cat] || categoryInfo.title;
+  };
 
   return (
     <View style={styles.categorySection}>
       <View style={styles.categoryHeader}>
         <Text style={styles.categoryEmoji}>{categoryInfo.emoji}</Text>
-        <Text style={styles.categoryTitle}>{categoryInfo.title}</Text>
+        <Text style={styles.categoryTitle}>{getCategoryTitle(category)}</Text>
       </View>
 
       {categoryAchievements.map((achievement) => (
@@ -108,6 +128,7 @@ const CategorySection = ({ category, achievements, userAchievements, userStats }
 };
 
 export default function AchievementsScreen() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [userStats, setUserStats] = useState(null);
   const [userAchievements, setUserAchievements] = useState({});
@@ -137,7 +158,7 @@ export default function AchievementsScreen() {
       setUserAchievements(achievementsMap);
     } catch (error) {
       logger.error('Failed to fetch achievements:', error);
-      setError('Failed to load achievements. Please try again.');
+      setError(t('achievements.errorLoad'));
     } finally {
       setLoading(false);
     }
@@ -165,7 +186,7 @@ export default function AchievementsScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={styles.header}>Achievements</Text>
+        <Text style={styles.header}>{t('achievements.title')}</Text>
         <ProfileButton />
       </View>
 
@@ -179,7 +200,7 @@ export default function AchievementsScreen() {
       {/* Achievement Summary */}
       <View style={styles.summaryCard}>
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Unlocked</Text>
+          <Text style={styles.summaryLabel}>{t('achievements.unlockedLabel')}</Text>
           <Text style={styles.summaryValue}>
             {completedCount} / {totalCount}
           </Text>
@@ -200,6 +221,7 @@ export default function AchievementsScreen() {
         achievements={getAllAchievements()}
         userAchievements={userAchievements}
         userStats={userStats}
+        t={t}
       />
 
       <CategorySection
@@ -207,6 +229,7 @@ export default function AchievementsScreen() {
         achievements={getAllAchievements()}
         userAchievements={userAchievements}
         userStats={userStats}
+        t={t}
       />
 
       <CategorySection
@@ -214,6 +237,7 @@ export default function AchievementsScreen() {
         achievements={getAllAchievements()}
         userAchievements={userAchievements}
         userStats={userStats}
+        t={t}
       />
 
       <View style={styles.bottomPadding} />

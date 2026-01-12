@@ -17,6 +17,7 @@ import {
   Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import SoundManager from '../services/SoundManager';
 import SkeletonLoader from '../components/SkeletonLoader';
@@ -27,16 +28,18 @@ import { colors } from '../styles/colors';
 import logger from '../utils/logger';
 import { typography, radii, shadows } from '../styles/kidTheme';
 
-const TABS = [
-  { key: 'all', label: 'All' },
-  { key: 'daily', label: 'Daily' },
-  { key: 'weekly', label: 'Weekly' },
-];
-
-const PRIORITY_LABELS = ['Low', 'Medium', 'High'];
 const PRIORITY_COLORS = [colors.text.tertiary, colors.warning, colors.error];
 
 export default function TasksScreen({ navigation }) {
+  const { t } = useTranslation();
+
+  const TABS = [
+    { key: 'all', label: t('tasks.tabAll') },
+    { key: 'daily', label: t('tasks.tabDaily') },
+    { key: 'weekly', label: t('tasks.tabWeekly') },
+  ];
+
+  const PRIORITY_LABELS = [t('tasks.priorityLow'), t('tasks.priorityMedium'), t('tasks.priorityHigh')];
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -69,7 +72,7 @@ export default function TasksScreen({ navigation }) {
       setTasks(data.tasks || []);
     } catch (error) {
       logger.error('Failed to fetch tasks:', error);
-      setError('Failed to load tasks. Please check your connection.');
+      setError(t('tasks.errorLoad'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -108,7 +111,7 @@ export default function TasksScreen({ navigation }) {
   const handleCreateTask = async () => {
     SoundManager.play('ui.tap');
     if (!newTaskTitle.trim()) {
-      Alert.alert('Error', 'Please enter a task title');
+      Alert.alert(t('common.error'), t('tasks.errorEnterTitle'));
       return;
     }
 
@@ -129,7 +132,7 @@ export default function TasksScreen({ navigation }) {
       await fetchTasks();
     } catch (error) {
       logger.error('Failed to create task:', error);
-      Alert.alert('Error', 'Failed to create task. Please try again.');
+      Alert.alert(t('common.error'), t('tasks.errorCreate'));
     } finally {
       setCreating(false);
     }
@@ -166,7 +169,7 @@ export default function TasksScreen({ navigation }) {
           result.new_achievements.forEach(achievement => {
             setTimeout(() => {
               Alert.alert(
-                'Achievement Unlocked!',
+                t('tasks.achievementUnlocked'),
                 `${achievement.title}: ${achievement.description}\n+${achievement.xp_reward} XP`
               );
             }, 2000);
@@ -184,13 +187,13 @@ export default function TasksScreen({ navigation }) {
       } else {
         // Revert optimistic update on other errors
         setTasks(prevTasks =>
-          prevTasks.map(t =>
-            t.taskId === task.taskId
-              ? { ...t, completed: wasCompleted, completedAt: wasCompleted ? task.completedAt : null }
-              : t
+          prevTasks.map(tk =>
+            tk.taskId === task.taskId
+              ? { ...tk, completed: wasCompleted, completedAt: wasCompleted ? task.completedAt : null }
+              : tk
           )
         );
-        Alert.alert('Error', 'Failed to update task. Please try again.');
+        Alert.alert(t('common.error'), t('tasks.errorUpdate'));
       }
     }
   };
@@ -198,20 +201,20 @@ export default function TasksScreen({ navigation }) {
   const handleDeleteTask = (task) => {
     SoundManager.play('ui.tap');
     Alert.alert(
-      'Delete Task',
-      `Are you sure you want to delete "${task.title}"?`,
+      t('tasks.deleteTitle'),
+      t('tasks.deleteConfirm', { title: task.title }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await api.deleteTask(task.taskId);
-              setTasks(prevTasks => prevTasks.filter(t => t.taskId !== task.taskId));
+              setTasks(prevTasks => prevTasks.filter(tk => tk.taskId !== task.taskId));
             } catch (error) {
               logger.error('Failed to delete task:', error);
-              Alert.alert('Error', 'Failed to delete task. Please try again.');
+              Alert.alert(t('common.error'), t('tasks.errorDelete'));
             }
           },
         },
@@ -255,7 +258,7 @@ export default function TasksScreen({ navigation }) {
           {item.taskType !== 'one_time' && (
             <View style={[styles.taskBadge, styles.typeBadge]}>
               <Text style={styles.taskBadgeText}>
-                {item.taskType === 'daily' ? 'Daily' : 'Weekly'}
+                {item.taskType === 'daily' ? t('tasks.tabDaily') : t('tasks.tabWeekly')}
               </Text>
             </View>
           )}
@@ -317,9 +320,9 @@ export default function TasksScreen({ navigation }) {
   const renderTaskTypeSelector = () => (
     <View style={styles.typeSelector}>
       {[
-        { key: 'one_time', label: 'One-time' },
-        { key: 'daily', label: 'Daily' },
-        { key: 'weekly', label: 'Weekly' },
+        { key: 'one_time', label: t('tasks.typeOneTime') },
+        { key: 'daily', label: t('tasks.tabDaily') },
+        { key: 'weekly', label: t('tasks.tabWeekly') },
       ].map(type => (
         <TouchableOpacity
           key={type.key}
@@ -380,7 +383,7 @@ export default function TasksScreen({ navigation }) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Tasks</Text>
+          <Text style={styles.headerTitle}>{t('tasks.title')}</Text>
           <ProfileButton />
         </View>
         {renderTabs()}
@@ -394,10 +397,10 @@ export default function TasksScreen({ navigation }) {
   if (error) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <Text style={styles.errorTitle}>Oops!</Text>
+        <Text style={styles.errorTitle}>{t('common.oops')}</Text>
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.button} onPress={fetchTasks}>
-          <Text style={styles.buttonText}>Try Again</Text>
+          <Text style={styles.buttonText}>{t('common.tryAgain')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -406,7 +409,7 @@ export default function TasksScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Tasks</Text>
+        <Text style={styles.headerTitle}>{t('tasks.title')}</Text>
         <View style={styles.headerRight}>
           <TouchableOpacity
             style={styles.createButton}
@@ -416,7 +419,7 @@ export default function TasksScreen({ navigation }) {
               setCreateModalVisible(true);
             }}
           >
-            <Text style={styles.createButtonText}>+ New</Text>
+            <Text style={styles.createButtonText}>{t('tasks.newButton')}</Text>
           </TouchableOpacity>
           <ProfileButton />
         </View>
@@ -427,9 +430,9 @@ export default function TasksScreen({ navigation }) {
       {tasks.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="checkbox-outline" size={64} color={colors.text.tertiary} />
-          <Text style={styles.emptyTitle}>No tasks yet</Text>
+          <Text style={styles.emptyTitle}>{t('tasks.emptyTitle')}</Text>
           <Text style={styles.emptyDescription}>
-            Create a task to track your gaming goals and earn XP
+            {t('tasks.emptyDescription')}
           </Text>
           <TouchableOpacity
             style={styles.emptyCreateButton}
@@ -439,7 +442,7 @@ export default function TasksScreen({ navigation }) {
               setCreateModalVisible(true);
             }}
           >
-            <Text style={styles.emptyCreateButtonText}>Create Task</Text>
+            <Text style={styles.emptyCreateButtonText}>{t('tasks.createButton')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -488,7 +491,7 @@ export default function TasksScreen({ navigation }) {
             >
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>New Task</Text>
+                  <Text style={styles.modalTitle}>{t('tasks.newTaskTitle')}</Text>
                   <TouchableOpacity
                     style={styles.modalCloseButton}
                     onPress={() => {
@@ -507,7 +510,7 @@ export default function TasksScreen({ navigation }) {
 
                 <TextInput
                   style={styles.input}
-                  placeholder="What do you want to do?"
+                  placeholder={t('tasks.taskPlaceholder')}
                   placeholderTextColor={colors.text.placeholder}
                   value={newTaskTitle}
                   onChangeText={setNewTaskTitle}
@@ -515,15 +518,15 @@ export default function TasksScreen({ navigation }) {
                   autoFocus={true}
                 />
 
-                <Text style={styles.inputLabel}>Type</Text>
+                <Text style={styles.inputLabel}>{t('tasks.typeLabel')}</Text>
                 {renderTaskTypeSelector()}
 
-                <Text style={styles.inputLabel}>Priority</Text>
+                <Text style={styles.inputLabel}>{t('tasks.priorityLabel')}</Text>
                 {renderPrioritySelector()}
 
                 <TextInput
                   style={[styles.input, styles.textArea]}
-                  placeholder="Add notes (optional)"
+                  placeholder={t('tasks.notesPlaceholder')}
                   placeholderTextColor={colors.text.placeholder}
                   value={newTaskNotes}
                   onChangeText={setNewTaskNotes}
@@ -543,7 +546,7 @@ export default function TasksScreen({ navigation }) {
                   {creating ? (
                     <ActivityIndicator color={colors.text.primary} />
                   ) : (
-                    <Text style={styles.createTaskButtonText}>Create Task</Text>
+                    <Text style={styles.createTaskButtonText}>{t('tasks.createButton')}</Text>
                   )}
                 </TouchableOpacity>
               </View>

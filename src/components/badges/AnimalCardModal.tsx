@@ -17,6 +17,7 @@ import {
   Image,
   ImageSourcePropType,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { AnimalDefinition, RARITY_CONFIG, RARITY_STARS } from '../../types/badges';
 import { useCollection } from '../../context/CollectionContext';
@@ -57,6 +58,7 @@ export default function AnimalCardModal({
   visible,
   onClose,
 }: AnimalCardModalProps) {
+  const { t } = useTranslation();
   const { isAnimalUnlocked, markAnimalSeen, getAnimalProgress } = useCollection();
 
   const isUnlocked = animal ? isAnimalUnlocked(animal.id) : false;
@@ -211,7 +213,7 @@ export default function AnimalCardModal({
                 ))}
               </View>
               <Text style={[styles.rarityLabel, { color: rarityConfig.color }]}>
-                {rarityConfig.label}
+                {t(`collectables.filter${animal.rarity.charAt(0).toUpperCase() + animal.rarity.slice(1)}`)}
               </Text>
             </View>
           )}
@@ -256,7 +258,7 @@ export default function AnimalCardModal({
             </View>
           ) : (
             <Text style={styles.lockedHint}>
-              Earn the "{animal.badgeId.replace(/_/g, ' ')}" badge to unlock!
+              {t('animalCard.earnBadgeToUnlock', { badge: animal.badgeId.replace(/_/g, ' ') })}
             </Text>
           )}
 

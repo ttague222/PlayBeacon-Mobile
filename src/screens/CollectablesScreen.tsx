@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useCollection } from '../context/CollectionContext';
 import SoundManager from '../services/SoundManager';
 import { AnimalDefinition, RARITY_CONFIG } from '../types/badges';
@@ -33,6 +34,7 @@ type CollectablesRouteParams = {
 };
 
 export default function CollectablesScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<RouteProp<CollectablesRouteParams, 'Collectables'>>();
   const initialAnimalId = route.params?.animalId;
@@ -125,11 +127,11 @@ export default function CollectablesScreen() {
 
   // Get encouragement message based on progress
   const getEncouragement = () => {
-    if (progressPercent === 100) return { emoji: '🎊', text: 'You collected them all!' };
-    if (rarityCounts.special > 0) return { emoji: '✨', text: 'You have special animals!' };
-    if (progressPercent >= 50) return { emoji: '🌟', text: 'Great collection!' };
-    if (progressPercent >= 25) return { emoji: '🚀', text: 'Keep earning badges!' };
-    return { emoji: '🎯', text: 'Earn badges for animals!' };
+    if (progressPercent === 100) return { emoji: '🎊', text: t('collectables.encouragement100') };
+    if (rarityCounts.special > 0) return { emoji: '✨', text: t('collectables.encouragementSpecial') };
+    if (progressPercent >= 50) return { emoji: '🌟', text: t('collectables.encouragement50') };
+    if (progressPercent >= 25) return { emoji: '🚀', text: t('collectables.encouragement25') };
+    return { emoji: '🎯', text: t('collectables.encouragementDefault') };
   };
 
   const encouragement = getEncouragement();
@@ -144,8 +146,8 @@ export default function CollectablesScreen() {
           <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.title}>Collectables</Text>
-          <Text style={styles.subtitle}>Your animal friends!</Text>
+          <Text style={styles.title}>{t('collectables.title')}</Text>
+          <Text style={styles.subtitle}>{t('collectables.subtitle')}</Text>
         </View>
         <View style={styles.headerRight} />
       </View>
@@ -248,8 +250,8 @@ export default function CollectablesScreen() {
 
         {/* Section header */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Your Animals</Text>
-          <Text style={styles.sectionCount}>{unlockedCount} collected</Text>
+          <Text style={styles.sectionTitle}>{t('collectables.sectionAnimals')}</Text>
+          <Text style={styles.sectionCount}>{unlockedCount} {t('collected')}</Text>
         </View>
 
         {/* Animals Grid */}
@@ -280,13 +282,13 @@ export default function CollectablesScreen() {
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>🔍</Text>
             <Text style={styles.emptyText}>
-              No {RARITY_CONFIG[filterRarity as keyof typeof RARITY_CONFIG].label.toLowerCase()} animals yet!
+              {t('collectables.emptyNoAnimals', { rarity: RARITY_CONFIG[filterRarity as keyof typeof RARITY_CONFIG].label.toLowerCase() })}
             </Text>
             <Pressable
               style={styles.clearFilterButton}
               onPress={handleClearFilter}
             >
-              <Text style={styles.clearFilterText}>Show all</Text>
+              <Text style={styles.clearFilterText}>{t('collectables.buttonShowAll')}</Text>
             </Pressable>
           </View>
         )}

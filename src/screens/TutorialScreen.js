@@ -4,6 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import AppIntroSlider from 'react-native-app-intro-slider';
 import LottieView from 'lottie-react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../styles/colors';
 import { radii, shadows } from '../styles/kidTheme';
 import { setTutorialCompleted } from '../utils/tutorialStorage';
@@ -20,80 +21,82 @@ const TUTORIAL_ANIMATIONS = {
 
 const { width, height } = Dimensions.get('window');
 
-const slides = [
+// Slides will be generated in component to use translations
+const getSlides = (t) => [
   {
     key: '1',
-    // TEMPORARILY DISABLED: Roblox import feature pending Roblox approval
-    // title: 'Connect Your Roblox',
-    // text: 'Add your Roblox username to get games you\'ll love, or jump right in!',
-    title: 'Welcome to PlayBeacon!',
+    title: t('tutorial.slide1Title'),
     emoji: '⭐',
-    text: 'Discover amazing games you\'ll love - let\'s get started!',
-    backgroundColor: colors.accent.primary,  // Coral pink
+    text: t('tutorial.slide1Text'),
+    backgroundColor: colors.accent.primary,
   },
   {
     key: '2',
-    title: 'Tell Us What You Think!',
+    title: t('tutorial.slide2Title'),
     emoji: '🎯',
-    text: "Not for you? Tap ✗. Love it? Tap ❤️!",
+    text: t('tutorial.slide2Text'),
     interactive: 'rateButtons',
-    backgroundColor: colors.accent.secondary,  // Vibrant orange
+    backgroundColor: colors.accent.secondary,
   },
   {
     key: '3',
-    title: 'Save Your Favorites',
+    title: t('tutorial.slide3Title'),
     emoji: '📚',
-    text: 'Tap + to save games you want to play later!',
+    text: t('tutorial.slide3Text'),
     interactive: 'addButton',
-    backgroundColor: colors.accent.tertiary,  // Purple-violet (better contrast)
+    backgroundColor: colors.accent.tertiary,
   },
   {
     key: '4',
-    title: 'We Get Smarter!',
+    title: t('tutorial.slide4Title'),
     emoji: '🤖',
     animation: TUTORIAL_ANIMATIONS.lightbulb,
-    text: 'The more you play, the better we get at finding games you\'ll love!',
-    backgroundColor: colors.action.info,  // Magenta-pink
+    text: t('tutorial.slide4Text'),
+    backgroundColor: colors.action.info,
   },
   {
     key: '5',
-    title: 'Daily Surprise!',
+    title: t('tutorial.slide5Title'),
     emoji: '🎁',
     animation: TUTORIAL_ANIMATIONS.giftBox,
-    text: 'Open your mystery box every day for a cool new game!',
-    backgroundColor: colors.accent.secondary,  // Vibrant orange
+    text: t('tutorial.slide5Text'),
+    backgroundColor: colors.accent.secondary,
   },
   {
     key: '6',
-    title: 'Make a Game Plan',
+    title: t('tutorial.slide6Title'),
     emoji: '📋',
-    text: 'Add games to your to-do list and earn XP when you try them!',
-    backgroundColor: colors.action.info,  // Magenta-pink
+    text: t('tutorial.slide6Text'),
+    backgroundColor: colors.action.info,
   },
   {
     key: '7',
-    title: 'Collect Badges!',
+    title: t('tutorial.slide7Title'),
     emoji: '🏆',
     animation: TUTORIAL_ANIMATIONS.trophy,
-    text: 'Earn cool badges and level up as you discover games!',
-    backgroundColor: colors.accent.tertiary,  // Purple-violet
+    text: t('tutorial.slide7Text'),
+    backgroundColor: colors.accent.tertiary,
   },
   {
     key: '8',
-    title: 'Ready to Play?',
+    title: t('tutorial.slide8Title'),
     emoji: '🚀',
     animation: TUTORIAL_ANIMATIONS.rocket,
-    text: 'Your adventure starts now!',
-    backgroundColor: colors.accent.primary,  // Coral pink
+    text: t('tutorial.slide8Text'),
+    backgroundColor: colors.accent.primary,
   },
 ];
 
 export default function TutorialScreen({ navigation, onComplete }) {
+  const { t } = useTranslation();
   const sliderRef = useRef(null);
   const { triggerEvent } = useCollection();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [practiceComplete, setPracticeComplete] = useState({});
   const insets = useSafeAreaInsets();
+
+  // Generate slides with translations
+  const slides = getSlides(t);
 
   // Animation refs for interactive elements
   const dislikeScale = useRef(new Animated.Value(1)).current;
@@ -164,7 +167,7 @@ export default function TutorialScreen({ navigation, onComplete }) {
     return (
       <View style={styles.practiceContainer}>
         <Text style={styles.practiceLabel}>
-          {allDone ? 'Great job! 🎉' : 'Try it out!'}
+          {allDone ? t('tutorial.greatJob') : t('tutorial.tryItOut')}
         </Text>
         <View style={styles.practiceButtons}>
           <Animated.View style={{ transform: [{ scale: dislikeScale }] }}>
@@ -215,7 +218,7 @@ export default function TutorialScreen({ navigation, onComplete }) {
     return (
       <View style={styles.practiceContainer}>
         <Text style={styles.practiceLabel}>
-          {addPressed ? 'Saved! 🎉' : 'Try it out!'}
+          {addPressed ? t('tutorial.saved') : t('tutorial.tryItOut')}
         </Text>
         <Animated.View style={{ transform: [{ scale: addScale }] }}>
           <TouchableOpacity
@@ -278,7 +281,7 @@ export default function TutorialScreen({ navigation, onComplete }) {
               onPress={handleDone}
               activeOpacity={0.8}
             >
-              <Text style={styles.inlineButtonText}>Start Exploring</Text>
+              <Text style={styles.inlineButtonText}>{t('tutorial.startExploring')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -306,7 +309,7 @@ export default function TutorialScreen({ navigation, onComplete }) {
         onPress={handleSkip}
         activeOpacity={0.7}
       >
-        <Text style={styles.skipButtonText}>Skip</Text>
+        <Text style={styles.skipButtonText}>{t('common.skip')}</Text>
       </TouchableOpacity>
     );
   };

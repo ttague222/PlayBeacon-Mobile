@@ -17,8 +17,6 @@
       "bundleIdentifier": "com.playbeacon.app",
       "buildNumber": "3",
       "infoPlist": {
-        "NSCameraUsageDescription": "PlayBeacon needs camera access to scan QR codes",
-        "NSPhotoLibraryUsageDescription": "PlayBeacon needs photo library access to upload game screenshots",
         "NSUserTrackingUsageDescription": "PlayBeacon shows non-personalized ads. This permission helps measure ad effectiveness without tracking you personally.",
         "SKAdNetworkItems": [
           {
@@ -63,9 +61,6 @@
       "package": "com.playbeacon.app",
       "versionCode": 3,
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
         "com.google.android.gms.permission.AD_ID"
       ]
     },

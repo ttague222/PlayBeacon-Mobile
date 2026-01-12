@@ -14,6 +14,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../styles/colors';
 import { useNetwork } from '../context/NetworkContext';
 
@@ -35,11 +36,11 @@ const KidRefreshControl = ({ refreshing, onRefresh, tintColor, title }) => (
 /**
  * Empty list component
  */
-const DefaultEmptyComponent = ({ message, isOffline }) => (
+const DefaultEmptyComponent = ({ message, isOffline, t }) => (
   <View style={styles.emptyContainer}>
     <Text style={styles.emptyEmoji}>{isOffline ? '📶' : '🐻'}</Text>
     <Text style={styles.emptyText}>
-      {isOffline ? "Can't load while offline" : message || 'Nothing here yet!'}
+      {isOffline ? t('refreshableList.offlineEmpty') : message || t('refreshableList.defaultEmpty')}
     </Text>
   </View>
 );
@@ -47,13 +48,13 @@ const DefaultEmptyComponent = ({ message, isOffline }) => (
 /**
  * Footer loading indicator
  */
-const FooterLoadingIndicator = ({ loading }) => {
+const FooterLoadingIndicator = ({ loading, t }) => {
   if (!loading) return null;
 
   return (
     <View style={styles.footerLoader}>
       <ActivityIndicator size="small" color={colors.accent.primary} />
-      <Text style={styles.footerText}>Loading more...</Text>
+      <Text style={styles.footerText}>{t('refreshableList.loadingMore')}</Text>
     </View>
   );
 };
@@ -78,6 +79,7 @@ export default function RefreshableList({
   columnWrapperStyle,
   ...props
 }) {
+  const { t } = useTranslation();
   const { isOffline } = useNetwork();
   const [internalRefreshing, setInternalRefreshing] = useState(false);
 
@@ -101,11 +103,11 @@ export default function RefreshableList({
 
   // Default empty component with offline awareness
   const EmptyComponent = ListEmptyComponent || (
-    <DefaultEmptyComponent message={emptyMessage} isOffline={isOffline} />
+    <DefaultEmptyComponent message={emptyMessage} isOffline={isOffline} t={t} />
   );
 
   // Footer with loading indicator
-  const Footer = ListFooterComponent || <FooterLoadingIndicator loading={loadingMore} />;
+  const Footer = ListFooterComponent || <FooterLoadingIndicator loading={loadingMore} t={t} />;
 
   return (
     <FlatList
@@ -117,7 +119,7 @@ export default function RefreshableList({
           <KidRefreshControl
             refreshing={isRefreshing}
             onRefresh={handleRefresh}
-            title={refreshTitle || (isOffline ? "You're offline" : 'Pull to refresh')}
+            title={refreshTitle || (isOffline ? t('refreshableList.offlineRefresh') : t('refreshableList.pullToRefresh'))}
           />
         )
       }
@@ -150,6 +152,7 @@ export function RefreshableScrollView({
   contentContainerStyle,
   ...props
 }) {
+  const { t } = useTranslation();
   const { isOffline } = useNetwork();
   const [internalRefreshing, setInternalRefreshing] = useState(false);
 
@@ -178,7 +181,7 @@ export function RefreshableScrollView({
           <KidRefreshControl
             refreshing={isRefreshing}
             onRefresh={handleRefresh}
-            title={refreshTitle || (isOffline ? "You're offline" : 'Pull to refresh')}
+            title={refreshTitle || (isOffline ? t('refreshableList.offlineRefresh') : t('refreshableList.pullToRefresh'))}
           />
         )
       }

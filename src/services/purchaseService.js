@@ -11,7 +11,7 @@ import logger from '../utils/logger';
 
 // RevenueCat API Keys (Production)
 const REVENUECAT_API_KEY_IOS = 'appl_wdjPBYDohYXJnxCuXaioQTDyRkj';
-const REVENUECAT_API_KEY_ANDROID = 'appl_wdjPBYDohYXJnxCuXaioQTDyRkj'; // Update with Android-specific key when available
+const REVENUECAT_API_KEY_ANDROID = 'goog_mFzpkfXNDhOlHCgDHoyZXlOrXgV';
 
 // Entitlement and Product IDs
 export const ENTITLEMENT_ID = 'PlayBeacon Premium';
