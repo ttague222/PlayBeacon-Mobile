@@ -9,7 +9,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Constants from 'expo-constants';
 import { useAds } from '../context/AdContext';
-import { AD_UNIT_IDS } from '../config/admob';
+import { getAdUnitIds } from '../config/admob';
 import logger from '../utils/logger';
 
 // Check if we're running in Expo Go
@@ -36,7 +36,7 @@ const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 5000;
 
 export function useRewarded() {
-  const { shouldShowAds, isExpoGo: contextIsExpoGo } = useAds();
+  const { shouldShowAds, isExpoGo: contextIsExpoGo, isTestMode } = useAds();
   const [isLoaded, setIsLoaded] = useState(false);
   const [isShowing, setIsShowing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -62,10 +62,12 @@ export function useRewarded() {
       setIsLoading(true);
       setLoadError(null);
 
-      logger.log('Rewarded ad: creating ad request with unit ID:', AD_UNIT_IDS.REWARDED);
+      // Get ad unit ID based on test mode from Remote Config
+      const adUnitId = getAdUnitIds(isTestMode).REWARDED;
+      logger.log('Rewarded ad: creating ad request with unit ID:', adUnitId);
 
       // Create new rewarded ad instance
-      const rewarded = RewardedAd.createForAdRequest(AD_UNIT_IDS.REWARDED, {
+      const rewarded = RewardedAd.createForAdRequest(adUnitId, {
         requestNonPersonalizedAdsOnly: true,
       });
 
@@ -132,7 +134,7 @@ export function useRewarded() {
       setIsLoading(false);
       setLoadError(error?.message || 'Failed to create ad');
     }
-  }, [adsAvailable, shouldShowAds, isLoading]);
+  }, [adsAvailable, shouldShowAds, isLoading, isTestMode]);
 
   /**
    * Show rewarded ad with callback for reward

@@ -236,6 +236,22 @@ export default function KidGameCard({
               </View>
             </View>
           )}
+
+          {/* Tips section */}
+          {game?.tips && game.tips.length > 0 && (
+            <View style={styles.tipsContainer}>
+              <View style={styles.tipsHeader}>
+                <Ionicons name="bulb-outline" size={14} color={colors.primary.main} />
+                <Text style={styles.tipsTitle}>{t('kidGameCard.tips')}</Text>
+              </View>
+              {game.tips.slice(0, 2).map((tip, index) => (
+                <View key={index} style={styles.tipRow}>
+                  <Text style={styles.tipBullet}>•</Text>
+                  <Text style={styles.tipText}>{tip}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
       </Pressable>
     </Animated.View>
@@ -528,6 +544,42 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.small,
     fontWeight: typography.fontWeight.medium,
     color: colors.text.secondary,
+  },
+
+  // Tips section styles
+  tipsContainer: {
+    marginTop: spacing.s,
+    paddingTop: spacing.s,
+    borderTopWidth: 1,
+    borderTopColor: colors.background.elevated,
+  },
+  tipsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xxs,
+  },
+  tipsTitle: {
+    fontSize: typography.fontSize.small,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.primary.main,
+    marginLeft: spacing.xxs,
+  },
+  tipRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: spacing.xxs,
+  },
+  tipBullet: {
+    fontSize: typography.fontSize.small,
+    color: colors.text.tertiary,
+    marginRight: spacing.xxs,
+    lineHeight: typography.fontSize.small * 1.4,
+  },
+  tipText: {
+    fontSize: typography.fontSize.small,
+    color: colors.text.secondary,
+    flex: 1,
+    lineHeight: typography.fontSize.small * 1.4,
   },
 
   // Compact card styles

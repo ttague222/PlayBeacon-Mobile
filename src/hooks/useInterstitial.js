@@ -9,7 +9,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Constants from 'expo-constants';
 import { useAds } from '../context/AdContext';
-import { AD_UNIT_IDS } from '../config/admob';
+import { getAdUnitIds } from '../config/admob';
 import logger from '../utils/logger';
 
 // Check if we're running in Expo Go
@@ -30,7 +30,7 @@ if (!isExpoGo) {
 }
 
 export function useInterstitial() {
-  const { shouldShowAds, trackGameView, resetInterstitialCounter, isExpoGo: contextIsExpoGo } = useAds();
+  const { shouldShowAds, trackGameView, resetInterstitialCounter, isExpoGo: contextIsExpoGo, isTestMode } = useAds();
   const [isLoaded, setIsLoaded] = useState(false);
   const [isShowing, setIsShowing] = useState(false);
   const interstitialRef = useRef(null);
@@ -47,8 +47,11 @@ export function useInterstitial() {
     }
 
     try {
+      // Get ad unit ID based on test mode from Remote Config
+      const adUnitId = getAdUnitIds(isTestMode).INTERSTITIAL;
+
       // Create new interstitial instance
-      const interstitial = InterstitialAd.createForAdRequest(AD_UNIT_IDS.INTERSTITIAL, {
+      const interstitial = InterstitialAd.createForAdRequest(adUnitId, {
         requestNonPersonalizedAdsOnly: true,
       });
 
@@ -83,7 +86,7 @@ export function useInterstitial() {
     } catch (error) {
       logger.error('Failed to create interstitial ad:', error);
     }
-  }, [adsAvailable, shouldShowAds]);
+  }, [adsAvailable, shouldShowAds, isTestMode]);
 
   /**
    * Show interstitial if loaded

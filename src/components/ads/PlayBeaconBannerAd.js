@@ -14,7 +14,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import Constants from 'expo-constants';
 import { useTranslation } from 'react-i18next';
 import { useAds } from '../../context/AdContext';
-import { AD_UNIT_IDS } from '../../config/admob';
+import { getAdUnitIds } from '../../config/admob';
 import { colors } from '../../styles/colors';
 import logger from '../../utils/logger';
 
@@ -45,7 +45,7 @@ export default function PlayBeaconBannerAd({
   containerStyle,
 }) {
   const { t } = useTranslation();
-  const { shouldShowAds, isInitialized, isExpoGo: contextIsExpoGo } = useAds();
+  const { shouldShowAds, isInitialized, isExpoGo: contextIsExpoGo, isTestMode } = useAds();
   const [adLoaded, setAdLoaded] = useState(false);
   const [adKey, setAdKey] = useState(0); // Used to force re-render and retry
   const [retryCount, setRetryCount] = useState(0);
@@ -104,6 +104,9 @@ export default function PlayBeaconBannerAd({
   // Use default size if not provided
   const bannerSize = size || (BannerAdSize ? BannerAdSize.ANCHORED_ADAPTIVE_BANNER : 'ANCHORED_ADAPTIVE_BANNER');
 
+  // Get ad unit ID based on test mode from Remote Config
+  const adUnitId = getAdUnitIds(isTestMode).BANNER;
+
   return (
     <View style={[styles.container, containerStyle, !adLoaded && styles.hidden]}>
       {/* Ad disclosure label for transparency */}
@@ -112,7 +115,7 @@ export default function PlayBeaconBannerAd({
       )}
       <BannerAd
         key={adKey}
-        unitId={AD_UNIT_IDS.BANNER}
+        unitId={adUnitId}
         size={bannerSize}
         requestOptions={{
           requestNonPersonalizedAdsOnly: true,

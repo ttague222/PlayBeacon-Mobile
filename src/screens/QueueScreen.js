@@ -278,6 +278,20 @@ export default function QueueScreen() {
                 </Text>
               </View>
             </View>
+
+            {/* Tips Section */}
+            {currentGame.tips && currentGame.tips.length > 0 && (
+              <View style={styles.tipsContainer}>
+                <View style={styles.tipsHeader}>
+                  <Ionicons name="bulb-outline" size={14} color={colors.accent.secondary} />
+                  <Text style={styles.tipsTitle}>{t('discover.tips')}</Text>
+                </View>
+                {currentGame.tips.slice(0, 2).map((tip, index) => (
+                  <Text key={index} style={styles.tipText}>• {tip}</Text>
+                ))}
+              </View>
+            )}
+
             <Text style={styles.tapHint}>{t('discover.tapToPlay')}</Text>
           </View>
         </LinearGradient>
@@ -483,6 +497,33 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.5)',
     marginTop: 8,
     fontStyle: 'italic',
+  },
+
+  // Tips Section
+  tipsContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.2)',
+  },
+  tipsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  tipsTitle: {
+    fontSize: 13,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.accent.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  tipText: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    lineHeight: 18,
+    marginTop: 2,
   },
 
   // Action Buttons
