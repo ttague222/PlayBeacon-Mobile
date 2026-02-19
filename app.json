@@ -2,7 +2,7 @@
   "expo": {
     "name": "PlayBeacon",
     "slug": "playbeacon",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -15,7 +15,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.playbeacon.app",
-      "buildNumber": "3",
       "infoPlist": {
         "NSUserTrackingUsageDescription": "PlayBeacon shows non-personalized ads. This permission helps measure ad effectiveness without tracking you personally.",
         "SKAdNetworkItems": [

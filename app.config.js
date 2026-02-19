@@ -5,7 +5,7 @@ export default ({ config }) => {
     ...config,
     name: 'PlayBeacon',
     slug: 'playbeacon',
-    version: '1.0.0',
+    version: '1.0.2',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
@@ -17,7 +17,6 @@ export default ({ config }) => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.playbeacon.app',
-      buildNumber: '46',
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSUserTrackingUsageDescription: 'PlayBeacon shows non-personalized ads. This permission helps measure ad effectiveness without tracking you personally.',
