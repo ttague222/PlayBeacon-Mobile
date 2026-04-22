@@ -46,9 +46,7 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "ttague222@gmail.com",
-        "ascAppId": "6756545114",
-        "appleTeamId": "B6NRXB2NBV"
+        "ascAppId": "6756545114"
       },
       "android": {
         "serviceAccountKeyPath": "./playbeacon-play-store-service-account.json",
