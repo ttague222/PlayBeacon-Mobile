@@ -56,11 +56,16 @@ firebaseServiceAccount*.json
 
 # App Signing & Credentials
 *.keystore
-!debug.keystore
 credentials.json
 playbeacon-play-store-service-account.json
 google-services.json
 GoogleService-Info.plist
 
-.env.local
+# Test artifacts
+coverage/
+dist-check/
+
+# Claude / AI dev notes (internal only)
+CLAUDE.md
+
 nul
