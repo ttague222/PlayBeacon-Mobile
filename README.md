@@ -4,7 +4,8 @@
 
 The Roblox catalog has millions of games. Finding good ones is hard — especially for parents who want to help their kids without wading through it all themselves. PlayBeacon brings a curated, swipeable discovery experience to families, with personalized recommendations that improve the more you use it.
 
-Live on **iOS** and **Android**.
+[![App Store](https://img.shields.io/badge/Download_on_the-App_Store-000000?style=for-the-badge&logo=apple&logoColor=white)](https://apps.apple.com/us/app/playbeacon/id6756545114)
+[![Google Play](https://img.shields.io/badge/Get_it_on-Google_Play-414141?style=for-the-badge&logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=com.playbeacon.app)
 
 ---
 
