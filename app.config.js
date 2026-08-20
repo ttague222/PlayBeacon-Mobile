@@ -1,14 +1,14 @@
-export default ({ config }) => {
+export default () => {
   const env = process.env.APP_ENV || 'development';
 
   return {
-    ...config,
     name: 'PlayBeacon',
     slug: 'playbeacon',
     version: '1.0.2',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
+    newArchEnabled: true,
     splash: {
       image: './assets/splash-icon.png',
       resizeMode: 'contain',
@@ -51,6 +51,7 @@ export default ({ config }) => {
         backgroundColor: '#ffffff',
       },
       package: 'com.playbeacon.app',
+      permissions: ['com.google.android.gms.permission.AD_ID'],
     },
     web: {
       favicon: './assets/favicon.png',
@@ -72,15 +73,24 @@ export default ({ config }) => {
       [
         'react-native-google-mobile-ads',
         {
-          // Use production App IDs from env vars, fall back to test IDs for development
-          androidAppId: process.env.EXPO_PUBLIC_ADMOB_APP_ID_ANDROID || 'ca-app-pub-3940256099942544~3347511713',
-          iosAppId: process.env.EXPO_PUBLIC_ADMOB_APP_ID_IOS || 'ca-app-pub-3940256099942544~1458002511',
+          // Production AdMob App IDs (not secrets — they ship in the app manifest).
+          // Env vars can still override, e.g. to force test IDs in development.
+          androidAppId: process.env.EXPO_PUBLIC_ADMOB_APP_ID_ANDROID || 'ca-app-pub-6866584041914873~1187787683',
+          iosAppId: process.env.EXPO_PUBLIC_ADMOB_APP_ID_IOS || 'ca-app-pub-6866584041914873~6185141102',
           userTrackingUsageDescription: 'PlayBeacon shows non-personalized ads. This permission helps measure ad effectiveness without tracking you personally.',
         },
       ],
       'expo-tracking-transparency',
       'expo-secure-store',
       'expo-updates',
+      [
+        '@sentry/react-native/expo',
+        {
+          url: 'https://sentry.io/',
+          project: 'react-native',
+          organization: 'thomas-tague',
+        },
+      ],
     ],
     extra: {
       env,
