@@ -80,9 +80,6 @@ export { default as SkeletonLoader } from './SkeletonLoader';
 export { default as ProfileButton } from './ProfileButton';
 export { default as CollectionPickerModal } from './CollectionPickerModal';
 
-// Image Caching
-export { default as CachedImage, preloadImages, clearImageCache, getImageCacheStats } from './CachedImage';
-
 // Network & Offline
 export { default as OfflineBanner, OfflineIndicator } from './OfflineBanner';
 
