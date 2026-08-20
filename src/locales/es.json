@@ -169,8 +169,8 @@
     "errorOpenGame": "No se puede abrir el enlace del minijuego",
     "errorOpenGameMsg": "Error al abrir el minijuego",
     "tapToPlay": "Toca para jugar",
-    "openRobloxTitle": "Abrir minijuego",
-    "openRobloxMessage": "Esto abrira el minijuego. Continuar?",
+    "openRobloxTitle": "Abrir en Roblox",
+    "openRobloxMessage": "Esto abrira el juego en Roblox. Continuar?",
     "openRobloxConfirm": "Abrir",
     "tips": "Consejos"
   },

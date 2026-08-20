@@ -145,7 +145,7 @@ PlayBeacon is built with safety in mind:
 ✓ No account required to browse
 ✓ No chat or messaging features
 ✓ No social features or public profiles
-✓ COPPA compliant for children under 13
+✓ Privacy-friendly: no personal info needed to browse
 ✓ Parental controls for in-app purchases
 ✓ Non-personalized, kid-safe ads
 

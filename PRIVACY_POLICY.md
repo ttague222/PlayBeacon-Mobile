@@ -1,12 +1,12 @@
 # PlayBeacon Privacy Policy
 
-**Last Updated: December 2024**
+**Last Updated: August 2026**
 
 ## Introduction
 
-PlayBeacon ("we," "us," or "our") is committed to protecting the privacy of children who use our mobile application. This Privacy Policy explains how we collect, use, and protect information from users of PlayBeacon, a Roblox game discovery app designed for children.
+PlayBeacon ("we," "us," or "our") is committed to protecting the privacy of everyone who uses our mobile application. This Privacy Policy explains how we collect, use, and protect information from users of PlayBeacon, a Roblox game discovery app for teens and families.
 
-**PlayBeacon is designed to comply with the Children's Online Privacy Protection Act (COPPA) and is intended for users of all ages, with special protections for children under 13.**
+**PlayBeacon is not directed to children under 13. We do not knowingly collect personal information from children under 13; if we learn that we have collected such information, we will delete it promptly.**
 
 ## Information We Collect
 
@@ -27,7 +27,7 @@ When you use PlayBeacon, we may automatically collect:
   - Display name (optional)
   - Profile picture (optional)
 
-**Important: Google Sign-In is parent-gated and requires parental consent for users under 13.**
+**Important: Google Sign-In is parent-gated and intended for parents, guardians, and users 13 or older.**
 
 ## How We Use Information
 
@@ -60,10 +60,10 @@ PlayBeacon uses the following third-party services:
 - **Purpose**: Authentication, data storage, and app analytics
 - **Privacy Policy**: https://firebase.google.com/support/privacy
 
-### Google AdMob (COPPA-Compliant)
+### Google AdMob
 - **Purpose**: Display non-personalized advertisements
 - **Privacy Policy**: https://policies.google.com/privacy
-- **Note**: We have configured AdMob to serve only child-directed, non-personalized ads
+- **Note**: We have configured AdMob to serve non-personalized ads with content rated appropriate for teens
 
 ### Roblox (Data Display Only)
 - **Purpose**: We display publicly available game information from Roblox

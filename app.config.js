@@ -4,7 +4,7 @@ export default () => {
   return {
     name: 'PlayBeacon',
     slug: 'playbeacon',
-    version: '1.0.2',
+    version: '1.0.3',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
@@ -60,11 +60,8 @@ export default () => {
       [
         'expo-build-properties',
         {
-          android: {
-            compileSdkVersion: 35,
-            targetSdkVersion: 35,
-            buildToolsVersion: '35.0.0',
-          },
+          // Android compile/target SDK intentionally not pinned — SDK 54 applies
+          // 36 (Android 16), required by Play for updates after Aug 31, 2026.
           ios: {
             deploymentTarget: '15.1',
           },
@@ -114,6 +111,8 @@ export default () => {
       url: 'https://u.expo.dev/23865d64-b2c1-4555-89f6-e85e795bc696',
       fallbackToCacheTimeout: 0,
     },
-    runtimeVersion: '1.0.0',
+    // Must change whenever native code changes (SDK/plugin/target bumps) so OTA
+    // updates never reach binaries with a different native runtime.
+    runtimeVersion: '1.0.3',
   };
 };

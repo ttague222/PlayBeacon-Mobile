@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
+import { recordSaveAndMaybeAskForReview } from '../services/reviewPrompt';
 import { colors } from '../styles/colors';
 import logger from '../utils/logger';
 
@@ -47,6 +48,7 @@ export default function CollectionPickerModal({ visible, onClose, gameId, gameNa
       // not when organizing into collections (to avoid double-counting)
       Alert.alert(t('common.success'), t('components.collectionPickerSuccess', { name: collection.name }));
       onClose();
+      recordSaveAndMaybeAskForReview();
     } catch (error) {
       logger.error('Failed to add to collection:', error);
       if (error.response?.status === 400) {

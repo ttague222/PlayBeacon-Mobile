@@ -169,8 +169,8 @@
     "errorOpenGame": "Unable to open game link",
     "errorOpenGameMsg": "Failed to open game",
     "tapToPlay": "Tap to play",
-    "openRobloxTitle": "Open Game",
-    "openRobloxMessage": "This will open the game. Continue?",
+    "openRobloxTitle": "Open in Roblox",
+    "openRobloxMessage": "This will open the game in Roblox. Continue?",
     "openRobloxConfirm": "Open",
     "tips": "Tips"
   },
