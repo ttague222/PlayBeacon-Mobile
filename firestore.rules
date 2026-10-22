@@ -62,6 +62,12 @@ service cloud.firestore {
       // Users can update their own document with restrictions
       allow update: if isOwner(userId)
         && isValidUserData(request.resource.data)
+        // Only the fields the app writes. The API (Admin SDK, which bypasses
+        // these rules) owns everything else on this doc, including is_admin,
+        // liked_count and profile_embedding.
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'premium', 'linkedGoogle', 'linkedAt', 'mergedFrom', 'mergedAt'
+        ])
         // Prevent users from giving themselves premium status
         && (request.resource.data.premium == resource.data.premium
             || request.resource.data.premium == false)
