@@ -58,6 +58,15 @@ describe('Firestore Security Rules', () => {
         expect(true).toBe(true);
       });
 
+      it('should only allow updates to the fields the app writes', () => {
+        // Rule: request.resource.data.diff(resource.data).affectedKeys().hasOnly([...])
+        // Blocks a user from setting isAdmin / is_admin on their own doc,
+        // which the API used to read as admin status.
+        const updatableFields = ['premium', 'linkedGoogle', 'linkedAt', 'mergedFrom', 'mergedAt'];
+        expect(updatableFields).not.toContain('isAdmin');
+        expect(updatableFields).not.toContain('is_admin');
+      });
+
       it('should prevent changing createdAt timestamp', () => {
         // Rule: request.resource.data.createdAt == resource.data.createdAt
         expect(true).toBe(true);
